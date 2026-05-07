@@ -1,10 +1,17 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { ChevronLeft, Send } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { MOCK_CHAT_MESSAGES, MOCK_MENTORSHIPS } from "@/lib/mock-data";
+
+type Message = {
+  id: string;
+  content: string;
+  senderName: string;
+  timestamp: string;
+  isMine: boolean;
+};
 
 export default function MentorshipChatPage({
   params,
@@ -12,83 +19,103 @@ export default function MentorshipChatPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
-  const mentorship = MOCK_MENTORSHIPS.find((m) => m.id === id) ?? MOCK_MENTORSHIPS[0];
-  const [messages, setMessages] = useState(MOCK_CHAT_MESSAGES);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
+  const [sending, setSending] = useState(false);
+  const bottomRef = useRef<HTMLDivElement>(null);
 
-  function sendMessage() {
-    if (!input.trim()) return;
+  async function loadMessages() {
+    try {
+      const res = await fetch(`/api/messages/${id}`);
+      if (res.ok) {
+        const data: Message[] = await res.json();
+        setMessages(data);
+      }
+    } catch {
+      // ignore network errors
+    }
+  }
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    loadMessages();
+    const interval = setInterval(loadMessages, 5000);
+    return () => clearInterval(interval);
+  }, [id]);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  async function sendMessage() {
+    if (!input.trim() || sending) return;
+    const content = input.trim();
+    setInput("");
+    setSending(true);
+
     setMessages((prev) => [
       ...prev,
       {
-        id: `c${prev.length + 1}`,
-        senderId: "u1",
-        senderName: "Aminata Koroma",
-        content: input.trim(),
+        id: `opt-${Date.now()}`,
+        content,
+        senderName: "You",
         timestamp: new Date().toISOString(),
         isMine: true,
       },
     ]);
-    setInput("");
+
+    try {
+      await fetch("/api/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mentorshipId: id, content }),
+      });
+      await loadMessages();
+    } finally {
+      setSending(false);
+    }
   }
 
   return (
     <div className="flex h-screen flex-col bg-background">
       {/* Header */}
       <div className="flex items-center gap-3 border-b border-border bg-card px-4 py-3">
-        <Link
-          href="/mentorship"
-          className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-        >
+        <Link href="/mentorship" className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
           <ChevronLeft className="size-4" />
         </Link>
         <div className="flex size-9 items-center justify-center rounded-full bg-primary-muted/30 font-display text-sm font-bold text-primary">
-          DS
+          M
         </div>
         <div>
-          <p className="text-sm font-semibold text-foreground">
-            {mentorship.mentor.displayName}
-          </p>
-          <p className="text-xs text-muted-foreground">Mentor · Active</p>
+          <p className="text-sm font-semibold text-foreground">Mentor</p>
+          <p className="text-xs text-muted-foreground">Mentorship Chat</p>
         </div>
       </div>
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-6 pb-24">
+        {messages.length === 0 && (
+          <p className="mt-8 text-center text-sm text-muted-foreground">No messages yet. Say hello!</p>
+        )}
         <div className="space-y-4">
           {messages.map((msg) => (
-            <div
-              key={msg.id}
-              className={cn(
-                "flex",
-                msg.isMine ? "justify-end" : "justify-start"
-              )}
-            >
+            <div key={msg.id} className={cn("flex", msg.isMine ? "justify-end" : "justify-start")}>
               <div
                 className={cn(
                   "max-w-[75%] rounded-2xl px-4 py-3 text-sm",
                   msg.isMine
                     ? "rounded-br-sm bg-primary text-primary-foreground"
-                    : "rounded-bl-sm bg-card border border-border text-foreground"
+                    : "rounded-bl-sm border border-border bg-card text-foreground"
                 )}
               >
                 <p>{msg.content}</p>
-                <p
-                  className={cn(
-                    "mt-1 text-[10px]",
-                    msg.isMine
-                      ? "text-primary-muted/70"
-                      : "text-muted-foreground"
-                  )}
-                >
-                  {new Date(msg.timestamp).toLocaleTimeString("en-GB", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
+                <p className={cn("mt-1 text-[10px]", msg.isMine ? "text-primary-muted/70" : "text-muted-foreground")}>
+                  {new Date(msg.timestamp).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
                 </p>
               </div>
             </div>
           ))}
+          <div ref={bottomRef} />
         </div>
       </div>
 
@@ -104,7 +131,7 @@ export default function MentorshipChatPage({
           />
           <button
             onClick={sendMessage}
-            disabled={!input.trim()}
+            disabled={!input.trim() || sending}
             className="flex size-10 items-center justify-center rounded-full bg-primary text-primary-foreground disabled:opacity-40"
           >
             <Send className="size-4" />

@@ -5,8 +5,9 @@ export const roleEnum = pgEnum("role", ["mentee", "mentor", "club_lead", "admin"
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
   clerkId: text("clerk_id").notNull().unique(),
-  role: roleEnum("role").notNull(),        // 'mentee' | 'mentor' | 'club_lead' | 'admin'
+  role: roleEnum("role").notNull().default("mentee"),
   displayName: text("display_name"),
+  bio: text("bio"),
   interestTags: text("interest_tags").array(),
   schoolId: uuid("school_id").references(() => schools.id),
   growthLevel: integer("growth_level").default(1), // 1=Explorer, 2=Advocate, 3=Mentor
@@ -67,4 +68,12 @@ export const pushNotifications = pgTable("push_notifications", {
   body: text("body").notNull(),
   type: text("type"),                      // 'nudge' | 'match' | 'milestone' | 'broadcast'
   sentAt: timestamp("sent_at").defaultNow(),
+});
+
+export const messages = pgTable("messages", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  mentorshipId: uuid("mentorship_id").references(() => mentorships.id),
+  senderId: uuid("sender_id").references(() => users.id),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
 });

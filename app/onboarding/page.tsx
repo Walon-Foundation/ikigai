@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
-import { ArrowRight, Check, ChevronLeft } from "lucide-react";
+import { useState, useTransition } from "react";
+import { ArrowRight, Check, ChevronLeft, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { INTEREST_TAGS, QUIZ_QUESTIONS } from "@/lib/mock-data";
+import { completeOnboarding } from "./actions";
 
 type Role = "mentee" | "mentor" | "club_lead";
 
@@ -34,6 +34,7 @@ export default function OnboardingPage() {
   const [role, setRole] = useState<Role | null>(null);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [quizAnswers, setQuizAnswers] = useState<Record<string, number>>({});
+  const [isPending, startTransition] = useTransition();
 
   const totalSteps = 4;
 
@@ -264,12 +265,21 @@ export default function OnboardingPage() {
                 ))}
               </ul>
             </div>
-            <Link
-              href="/dashboard"
-              className="inline-flex items-center gap-2 rounded-full bg-primary px-10 py-4 text-base font-semibold text-primary-foreground transition-colors hover:bg-primary-light"
+            <button
+              onClick={() =>
+                startTransition(() =>
+                  completeOnboarding({ role: role!, interestTags: selectedTags })
+                )
+              }
+              disabled={isPending}
+              className="inline-flex items-center gap-2 rounded-full bg-primary px-10 py-4 text-base font-semibold text-primary-foreground transition-colors hover:bg-primary-light disabled:opacity-60"
             >
-              Go to My Dashboard <ArrowRight className="size-4" />
-            </Link>
+              {isPending ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <>Go to My Dashboard <ArrowRight className="size-4" /></>
+              )}
+            </button>
           </div>
         )}
       </div>
