@@ -17,12 +17,23 @@ const isProtectedRoute = createRouteMatcher([
 export default clerkMiddleware(async (auth, request) => {
   const hostname = request.headers.get("host") ?? "";
   const isAdminSubdomain = hostname.startsWith("admin.");
+  const pathname = request.nextUrl.pathname;
 
-  if (isAdminSubdomain && !request.nextUrl.pathname.startsWith("/admin")) {
-    const url = request.nextUrl.clone();
-    url.pathname =
-      url.pathname === "/" ? "/admin" : `/admin${url.pathname}`;
-    return NextResponse.rewrite(url);
+  if (isAdminSubdomain) {
+    // Block sign-up on admin subdomain — redirect to sign-in
+    if (pathname.startsWith("/sign-up")) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/sign-in";
+      return NextResponse.redirect(url);
+    }
+
+    // Rewrite all non-admin-prefixed paths to /admin/*
+    // Includes /sign-in → /admin/sign-in (so admin gets its own sign-in page)
+    if (!pathname.startsWith("/admin") && !pathname.startsWith("/sso-callback")) {
+      const url = request.nextUrl.clone();
+      url.pathname = pathname === "/" ? "/admin" : `/admin${pathname}`;
+      return NextResponse.rewrite(url);
+    }
   }
 
   if (isProtectedRoute(request)) {
