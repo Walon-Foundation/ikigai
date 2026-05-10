@@ -2,7 +2,9 @@ import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { getOrCreateDbUser } from "@/lib/db-user";
 import { AppNav } from "@/components/app-nav";
+import { AppSidebar } from "@/components/app-sidebar";
 import { PwaInstallPrompt } from "@/components/pwa-install-prompt";
+import { LiteModeInit } from "@/components/lite-mode-init";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const { userId } = await auth();
@@ -14,8 +16,15 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className="min-h-screen bg-background pb-16">
-      {children}
+    <div className="min-h-screen bg-background lg:flex">
+      <LiteModeInit />
+      {/* Desktop sidebar — hidden on mobile */}
+      <AppSidebar />
+      {/* Content area */}
+      <div className="flex-1 min-w-0 pb-16 lg:pb-0 lg:overflow-y-auto">
+        {children}
+      </div>
+      {/* Mobile bottom nav — hidden on desktop */}
       <AppNav />
       <PwaInstallPrompt />
     </div>
