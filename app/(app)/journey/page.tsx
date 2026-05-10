@@ -1,8 +1,10 @@
 import { Check, Lock } from "lucide-react";
+import { GrowthTree } from "@/components/growth-tree";
 import { getDbUser } from "@/lib/db-user";
 import { db } from "@/db/db";
 import { milestones } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { PageHeader } from "@/components/page-header";
 
 const LEVELS = [
   { level: 1, name: "Explorer", emoji: "🌱", desc: "Beginning your ikigai journey", required: 3 },
@@ -33,36 +35,14 @@ export default async function JourneyPage() {
   const progress = Math.min((completed / nextLevelRequired) * 100, 100);
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-6">
-      <div className="mb-6">
-        <h1 className="font-display text-2xl font-black text-foreground">Growth Tree</h1>
-        <p className="text-sm text-muted-foreground">Track your purpose journey</p>
-      </div>
+    <>
+      <PageHeader title="Journey" />
+      <div className="mx-auto max-w-2xl px-4 py-6">
 
       {/* Tree Visual */}
       <div className="mb-6 flex flex-col items-center rounded-3xl border border-border bg-card p-8">
-        <div className="relative flex flex-col items-center">
-          <div className="relative">
-            <div className="h-28 w-28 rounded-full bg-primary-muted/30 flex items-center justify-center">
-              <div className="h-20 w-20 rounded-full bg-primary-muted/50 flex items-center justify-center">
-                <div className="h-12 w-12 rounded-full bg-primary-muted flex items-center justify-center text-3xl">
-                  🌳
-                </div>
-              </div>
-            </div>
-            <span className="absolute -right-3 top-2 text-lg">🍃</span>
-            <span className="absolute -left-4 top-6 text-base">🍃</span>
-            <span className="absolute right-0 bottom-2 text-sm">🌿</span>
-          </div>
-          <div className="h-10 w-3 rounded-b-full bg-primary/40" />
-          <div className="h-2 w-24 rounded-full bg-primary-muted/40" />
-        </div>
-        <div className="mt-6 text-center">
-          <span className="rounded-full bg-primary-muted/20 px-3 py-1 text-sm font-semibold text-primary">
-            Explorer — Level {user?.growthLevel ?? 1}
-          </span>
-          <p className="mt-2 text-sm text-muted-foreground">{completed} milestones completed</p>
-        </div>
+        <GrowthTree completedCount={completed} level={user?.growthLevel ?? 1} />
+        <p className="mt-3 text-sm text-muted-foreground">{completed} milestone{completed !== 1 ? "s" : ""} completed</p>
       </div>
 
       {/* Progress */}
@@ -157,5 +137,6 @@ export default async function JourneyPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }

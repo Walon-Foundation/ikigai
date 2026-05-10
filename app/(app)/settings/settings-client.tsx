@@ -4,6 +4,7 @@ import { useState } from "react";
 import { User, Bell, Lock, Monitor, ChevronRight, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useClerk } from "@clerk/nextjs";
+import { PageHeader } from "@/components/page-header";
 
 type DbUser = {
   displayName: string | null;
@@ -13,7 +14,10 @@ type DbUser = {
 };
 
 export function SettingsClient({ user }: { user: DbUser }) {
-  const [liteMode, setLiteMode] = useState(false);
+  const [liteMode, setLiteMode] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("liteMode") === "true";
+  });
   const [pushEnabled, setPushEnabled] = useState(false);
   const [journalPrivacy, setJournalPrivacy] = useState(true);
   const { signOut } = useClerk();
@@ -25,11 +29,9 @@ export function SettingsClient({ user }: { user: DbUser }) {
     .join("");
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-6">
-      <div className="mb-6">
-        <h1 className="font-display text-2xl font-black text-foreground">Settings</h1>
-      </div>
-
+    <>
+      <PageHeader title="Settings" />
+      <div className="mx-auto max-w-2xl px-4 py-6">
       {/* Profile */}
       <div className="mb-6 rounded-2xl border border-border bg-card p-5">
         <div className="flex items-center gap-4">
@@ -87,7 +89,11 @@ export function SettingsClient({ user }: { user: DbUser }) {
           label="Lite Mode"
           desc="Text only — no images. Saves data."
           value={liteMode}
-          onChange={setLiteMode}
+          onChange={(v) => {
+            setLiteMode(v);
+            localStorage.setItem("liteMode", String(v));
+            document.documentElement.setAttribute("data-lite", String(v));
+          }}
         />
       </SettingsSection>
 
@@ -118,6 +124,7 @@ export function SettingsClient({ user }: { user: DbUser }) {
         <span className="text-sm font-medium">Sign out</span>
       </button>
     </div>
+    </>
   );
 }
 

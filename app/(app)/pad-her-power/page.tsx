@@ -1,5 +1,16 @@
+import dynamic from "next/dynamic";
 import { Heart, MapPin } from "lucide-react";
 import { PAD_HER_POWER_RESOURCES } from "@/lib/mock-data";
+import { PageHeader } from "@/components/page-header";
+
+const ResourceMap = dynamic(() => import("@/components/resource-map"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-[300px] items-center justify-center rounded-2xl border border-border bg-muted text-sm text-muted-foreground">
+      Loading map…
+    </div>
+  ),
+});
 
 const CATEGORIES = [
   "Menstrual Health",
@@ -16,8 +27,10 @@ export default function PadHerPowerPage() {
   })).filter((g) => g.resources.length > 0);
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-6">
-      {/* Header */}
+    <>
+      <PageHeader title="Pad Her Power" />
+      <div className="mx-auto max-w-2xl px-4 py-6">
+      {/* Hero */}
       <div className="mb-6 rounded-2xl bg-earth p-6 text-white">
         <div className="flex items-center gap-2 mb-3">
           <Heart className="size-5 text-earth-light" />
@@ -34,20 +47,17 @@ export default function PadHerPowerPage() {
         </p>
       </div>
 
-      {/* Resource Map placeholder */}
-      <div className="mb-6 rounded-2xl border border-border bg-card p-5">
+      {/* Resource Map */}
+      <div className="mb-6">
         <div className="flex items-center gap-2 mb-3">
           <MapPin className="size-4 text-primary" />
-          <p className="font-semibold text-foreground">Nearby Health Clinics</p>
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Resource Map
+          </p>
         </div>
-        <div className="flex h-40 items-center justify-center rounded-xl bg-muted text-sm text-muted-foreground">
-          Map view — Freetown & Western Rural Area
-          <br />
-          <span className="text-xs">(Leaflet.js integration coming soon)</span>
-        </div>
+        <ResourceMap />
         <p className="mt-2 text-xs text-muted-foreground">
-          Showing government health centres and reproductive health clinics near
-          you.
+          Health centres and support services in Freetown &amp; Western Rural Area. Tap a pin for contact details.
         </p>
       </div>
 
@@ -78,5 +88,6 @@ export default function PadHerPowerPage() {
         ))}
       </div>
     </div>
+    </>
   );
 }

@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Shield, Phone, AlertTriangle, ChevronRight, Send } from "lucide-react";
 import { SAFETY_RESOURCES } from "@/lib/mock-data";
+import { PageHeader } from "@/components/page-header";
 
 export default function SafetyPage() {
   const [reportType, setReportType] = useState("inappropriate");
@@ -17,16 +18,9 @@ export default function SafetyPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-6">
-      <div className="mb-6">
-        <h1 className="font-display text-2xl font-black text-foreground">
-          Safety &amp; Support
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Resources, reporting, and crisis support
-        </p>
-      </div>
-
+    <>
+      <PageHeader title="Safety" />
+      <div className="mx-auto max-w-2xl px-4 py-6">
       {/* Crisis banner */}
       <Link
         href="/safety/help"
@@ -135,5 +129,6 @@ export default function SafetyPage() {
         )}
       </div>
     </div>
+    </>
   );
 }

@@ -5,14 +5,11 @@ import Link from "next/link";
 import {
   TreePine,
   BookOpen,
-  Shield,
   MessageCircle,
   ChevronRight,
-  Clock,
-  Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { MOCK_SCHOOL_MEMBERS } from "@/lib/mock-data";
+import { PageHeader } from "@/components/page-header";
 
 type Role = "mentee" | "mentor" | "club_lead";
 const ROLE_LABELS: Record<Role, string> = {
@@ -42,34 +39,10 @@ export function DashboardClient({ user, activeMentorship, latestEntry, milestone
     (user.role as Role) in ROLE_LABELS ? (user.role as Role) : "mentee"
   );
 
-  const firstName = user.displayName.split(" ")[0];
-
   return (
-    <div className="mx-auto max-w-2xl px-4 py-6">
-      {/* Header */}
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="font-display text-2xl font-black text-foreground">
-            Good morning, {firstName} 🌱
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            {new Date().toLocaleDateString("en-GB", {
-              weekday: "long",
-              day: "numeric",
-              month: "long",
-              year: "numeric",
-            })}
-          </p>
-        </div>
-        <div className="flex size-10 items-center justify-center rounded-full bg-primary font-display text-sm font-bold text-primary-foreground">
-          {user.displayName
-            .split(" ")
-            .map((n) => n[0])
-            .slice(0, 2)
-            .join("")}
-        </div>
-      </div>
-
+    <>
+      <PageHeader showGreeting />
+      <div className="mx-auto max-w-2xl px-4 py-6">
       {/* Role Switcher */}
       <div className="mb-6 flex rounded-xl border border-border bg-muted p-1">
         {(Object.keys(ROLE_LABELS) as Role[]).map((r) => (
@@ -99,6 +72,7 @@ export function DashboardClient({ user, activeMentorship, latestEntry, milestone
       {role === "mentor" && <MentorView />}
       {role === "club_lead" && <ClubLeadView />}
     </div>
+    </>
   );
 }
 
@@ -270,44 +244,18 @@ function MenteeView({ user, activeMentorship, latestEntry, milestoneCount }: Omi
 }
 
 function MentorView() {
-  const mentees = [
-    { name: "Aminata Koroma", lastActivity: "Today", level: 1, initials: "AK" },
-    { name: "Isata Mansaray", lastActivity: "2 days ago", level: 2, initials: "IM" },
-  ];
-
   return (
     <div className="space-y-4">
       <div className="rounded-2xl bg-primary p-5 text-primary-foreground">
-        <p className="font-display text-2xl font-black">
-          You&apos;re guiding {mentees.length} mentees
-        </p>
+        <p className="font-display text-2xl font-black">Mentor Dashboard</p>
         <p className="mt-1 text-sm text-primary-muted">Keep up the great work</p>
       </div>
       <div>
         <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           My Mentees
         </p>
-        <div className="space-y-3">
-          {mentees.map((m) => (
-            <div
-              key={m.name}
-              className="flex items-center gap-3 rounded-xl border border-border bg-card p-4"
-            >
-              <div className="flex size-10 items-center justify-center rounded-full bg-primary-muted/30 font-display text-sm font-bold text-primary">
-                {m.initials}
-              </div>
-              <div className="flex-1">
-                <p className="font-semibold text-foreground">{m.name}</p>
-                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <Clock className="size-3" />
-                  <span>Active {m.lastActivity}</span>
-                </div>
-              </div>
-              <span className="rounded-full bg-primary-muted/20 px-2 py-0.5 text-xs font-medium text-primary">
-                Lvl {m.level}
-              </span>
-            </div>
-          ))}
+        <div className="rounded-xl border border-border bg-card p-6 text-center text-sm text-muted-foreground">
+          No active mentees yet.
         </div>
       </div>
     </div>
@@ -320,34 +268,13 @@ function ClubLeadView() {
       <div className="rounded-2xl bg-primary p-5 text-primary-foreground">
         <p className="text-sm text-primary-muted">Your School</p>
         <p className="font-display text-xl font-black">Your Club</p>
-        <div className="mt-3 flex items-center gap-2">
-          <Users className="size-4 text-primary-muted" />
-          <span className="text-sm text-primary-muted">
-            {MOCK_SCHOOL_MEMBERS.length} members
-          </span>
-        </div>
       </div>
       <div>
         <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Club Members
         </p>
-        <div className="space-y-3">
-          {MOCK_SCHOOL_MEMBERS.slice(0, 3).map((m) => (
-            <div
-              key={m.id}
-              className="flex items-center gap-3 rounded-xl border border-border bg-card p-3"
-            >
-              <div className="flex size-9 items-center justify-center rounded-full bg-primary-muted/30 font-display text-xs font-bold text-primary">
-                {m.displayName.split(" ").map((n: string) => n[0]).join("")}
-              </div>
-              <div className="flex-1 text-sm font-medium text-foreground">
-                {m.displayName}
-              </div>
-              <span className="text-xs text-muted-foreground">
-                Level {m.growthLevel}
-              </span>
-            </div>
-          ))}
+        <div className="rounded-xl border border-border bg-card p-6 text-center text-sm text-muted-foreground">
+          View your school page to see members.
         </div>
       </div>
       <Link

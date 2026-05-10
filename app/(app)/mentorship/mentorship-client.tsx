@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { MessageCircle, Star, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PageHeader } from "@/components/page-header";
 
 type MentorUser = {
   id: string;
@@ -30,12 +31,9 @@ export function MentorshipClient({ activeMentorships, suggestedMentors }: Props)
   const [showMatches, setShowMatches] = useState(false);
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-6">
-      <div className="mb-6">
-        <h1 className="font-display text-2xl font-black text-foreground">Mentorship</h1>
-        <p className="text-sm text-muted-foreground">Your connections and Vibe-Match</p>
-      </div>
-
+    <>
+      <PageHeader title="Match" />
+      <div className="mx-auto max-w-2xl px-4 py-6">
       {/* Active Mentorships */}
       {activeMentorships.length > 0 && (
         <div className="mb-6">
@@ -118,6 +116,7 @@ export function MentorshipClient({ activeMentorships, suggestedMentors }: Props)
         )}
       </div>
     </div>
+    </>
   );
 }
 
