@@ -5,6 +5,8 @@ import { journalEntries } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { JournalClient } from "./journal-client";
 
+type Visibility = "private" | "mentor_only" | "community";
+
 export default async function JournalPage() {
   const user = await getDbUser();
   if (!user) redirect("/sign-in");
@@ -21,7 +23,7 @@ export default async function JournalPage() {
       initialEntries={entries.map((e) => ({
         id: e.id,
         content: e.content,
-        visibility: e.visibility ?? "private",
+        visibility: (e.visibility ?? "private") as Visibility,
         keywordFlag: e.keywordFlag ?? false,
         createdAt: e.createdAt?.toISOString() ?? new Date().toISOString(),
       }))}
