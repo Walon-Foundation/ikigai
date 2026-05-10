@@ -142,3 +142,8 @@
     @apply font-sans;
   }
 }
+
+/* Lite Mode — hide decorative/media content to save data */
+html[data-lite="true"] .lite-hidden { display: none !important; }
+html[data-lite="true"] img:not([data-essential]) { display: none !important; }
+html[data-lite="true"] [data-decorative] { display: none !important; }
