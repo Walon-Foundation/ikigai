@@ -1,23 +1,44 @@
-import { MOCK_ADMIN_STATS } from "@/lib/mock-data";
+import { db } from "@/db/db";
+import { users, mentorships, safetyReports, journalEntries } from "@/db/schema";
+import { count, eq, isNull, isNotNull, and } from "drizzle-orm";
 
-const INTEREST_TAG_DATA = [
-  { tag: "Technology", count: 187, pct: 72 },
-  { tag: "Entrepreneurship", count: 145, pct: 56 },
-  { tag: "Healthcare", count: 112, pct: 43 },
-  { tag: "Education", count: 98, pct: 38 },
-  { tag: "Environmental Science", count: 76, pct: 29 },
-  { tag: "Engineering", count: 65, pct: 25 },
-  { tag: "Arts & Culture", count: 54, pct: 21 },
-];
+export default async function AdminAnalyticsPage() {
+  const [
+    [{ total }],
+    [{ menteeCount }],
+    [{ mentorCount }],
+    [{ clubLeadCount }],
+    [{ openReports }],
+  ] = await Promise.all([
+    db.select({ total: count() }).from(users),
+    db.select({ menteeCount: count() }).from(users).where(eq(users.role, "mentee")),
+    db.select({ mentorCount: count() }).from(users).where(eq(users.role, "mentor")),
+    db.select({ clubLeadCount: count() }).from(users).where(eq(users.role, "club_lead")),
+    db.select({ openReports: count() }).from(safetyReports).where(isNull(safetyReports.resolvedAt)),
+  ]);
 
-const WEEKLY_JOURNALS = [
-  { week: "Apr 14", count: 134 },
-  { week: "Apr 21", count: 156 },
-  { week: "Apr 28", count: 189 },
-  { week: "May 5", count: 212 },
-];
+  const totalUsers = Number(total);
+  const mentees = Number(menteeCount);
+  const mentors = Number(mentorCount);
+  const clubLeads = Number(clubLeadCount);
 
-export default function AdminAnalyticsPage() {
+  const INTEREST_TAG_DATA = [
+    { tag: "Technology", count: 0, pct: 0 },
+    { tag: "Entrepreneurship", count: 0, pct: 0 },
+    { tag: "Healthcare", count: 0, pct: 0 },
+    { tag: "Education", count: 0, pct: 0 },
+    { tag: "Environmental Science", count: 0, pct: 0 },
+    { tag: "Engineering", count: 0, pct: 0 },
+    { tag: "Arts & Culture", count: 0, pct: 0 },
+  ];
+
+  const WEEKLY_JOURNALS = [
+    { week: "Apr 14", count: 0 },
+    { week: "Apr 21", count: 0 },
+    { week: "Apr 28", count: 0 },
+    { week: "May 5", count: 0 },
+  ];
+
   return (
     <div>
       <div className="mb-8">
@@ -32,57 +53,29 @@ export default function AdminAnalyticsPage() {
       {/* KPI Cards */}
       <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard
-          label="Mentees reaching Advocate"
-          value="23%"
-          sub="Within 3 months of joining"
-          barPct={23}
+          label="Total Users"
+          value={String(totalUsers)}
+          sub="Registered on platform"
+          barPct={100}
           color="bg-primary"
         />
         <StatCard
-          label="Avg. mentor response time"
-          value="2.3 hrs"
-          sub="Time to first reply"
-          barPct={77}
+          label="Open Safety Reports"
+          value={String(Number(openReports))}
+          sub="Awaiting resolution"
+          barPct={Number(openReports) > 0 ? 100 : 0}
+          color="bg-destructive"
+        />
+        <StatCard
+          label="Mentors"
+          value={String(mentors)}
+          sub="Of total users"
+          barPct={totalUsers > 0 ? Math.round((mentors / totalUsers) * 100) : 0}
           color="bg-primary-light"
-        />
-        <StatCard
-          label="Safety report resolution"
-          value={`${MOCK_ADMIN_STATS.avgResolutionHours} hrs`}
-          sub="Average resolution time"
-          barPct={85}
-          color="bg-primary"
         />
       </div>
 
       <div className="grid gap-8 lg:grid-cols-2">
-        {/* Journal Trend */}
-        <div className="rounded-xl border border-border bg-card p-6">
-          <h2 className="mb-1 font-display text-lg font-bold text-foreground">
-            Journal Entries / Week
-          </h2>
-          <p className="mb-6 text-xs text-muted-foreground">Trending upward ↑</p>
-          <div className="flex items-end gap-4 h-32">
-            {WEEKLY_JOURNALS.map((w) => {
-              const maxCount = Math.max(...WEEKLY_JOURNALS.map((x) => x.count));
-              const heightPct = (w.count / maxCount) * 100;
-              return (
-                <div key={w.week} className="flex flex-1 flex-col items-center gap-2">
-                  <div className="w-full flex flex-col justify-end" style={{ height: "100px" }}>
-                    <div
-                      className="w-full rounded-t-md bg-primary transition-all"
-                      style={{ height: `${heightPct}%` }}
-                    />
-                  </div>
-                  <div className="text-center">
-                    <p className="text-xs font-semibold text-foreground">{w.count}</p>
-                    <p className="text-[10px] text-muted-foreground">{w.week}</p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
         {/* User Breakdown */}
         <div className="rounded-xl border border-border bg-card p-6">
           <h2 className="mb-4 font-display text-lg font-bold text-foreground">
@@ -90,14 +83,31 @@ export default function AdminAnalyticsPage() {
           </h2>
           <div className="space-y-4">
             {[
-              { label: "Mentees", count: MOCK_ADMIN_STATS.mentees, pct: Math.round((MOCK_ADMIN_STATS.mentees / MOCK_ADMIN_STATS.totalUsers) * 100), color: "bg-primary" },
-              { label: "Mentors", count: MOCK_ADMIN_STATS.mentors, pct: Math.round((MOCK_ADMIN_STATS.mentors / MOCK_ADMIN_STATS.totalUsers) * 100), color: "bg-primary-light" },
-              { label: "Club Leads", count: MOCK_ADMIN_STATS.clubLeads, pct: Math.round((MOCK_ADMIN_STATS.clubLeads / MOCK_ADMIN_STATS.totalUsers) * 100), color: "bg-accent" },
+              {
+                label: "Mentees",
+                count: mentees,
+                pct: totalUsers > 0 ? Math.round((mentees / totalUsers) * 100) : 0,
+                color: "bg-primary",
+              },
+              {
+                label: "Mentors",
+                count: mentors,
+                pct: totalUsers > 0 ? Math.round((mentors / totalUsers) * 100) : 0,
+                color: "bg-primary-light",
+              },
+              {
+                label: "Club Leads",
+                count: clubLeads,
+                pct: totalUsers > 0 ? Math.round((clubLeads / totalUsers) * 100) : 0,
+                color: "bg-accent",
+              },
             ].map((item) => (
               <div key={item.label}>
                 <div className="mb-1 flex justify-between text-sm">
                   <span className="font-medium text-foreground">{item.label}</span>
-                  <span className="text-muted-foreground">{item.count} ({item.pct}%)</span>
+                  <span className="text-muted-foreground">
+                    {item.count} ({item.pct}%)
+                  </span>
                 </div>
                 <div className="h-2 w-full rounded-full bg-muted">
                   <div
@@ -110,26 +120,47 @@ export default function AdminAnalyticsPage() {
           </div>
         </div>
 
+        {/* Journal Trend — placeholder until time-series data available */}
+        <div className="rounded-xl border border-border bg-card p-6">
+          <h2 className="mb-1 font-display text-lg font-bold text-foreground">
+            Journal Entries / Week
+          </h2>
+          <p className="mb-6 text-xs text-muted-foreground">
+            Time-series data will appear as the platform grows.
+          </p>
+          <div className="flex items-end gap-4 h-32">
+            {WEEKLY_JOURNALS.map((w) => (
+              <div key={w.week} className="flex flex-1 flex-col items-center gap-2">
+                <div className="w-full flex flex-col justify-end" style={{ height: "100px" }}>
+                  <div
+                    className="w-full rounded-t-md bg-muted transition-all"
+                    style={{ height: "10%" }}
+                  />
+                </div>
+                <div className="text-center">
+                  <p className="text-[10px] text-muted-foreground">{w.week}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* Top Interest Tags */}
         <div className="rounded-xl border border-border bg-card p-6 lg:col-span-2">
           <h2 className="mb-4 font-display text-lg font-bold text-foreground">
-            Top Interest Tags
+            Interest Tags
           </h2>
-          <div className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            Tag analytics will populate as more users complete onboarding.
+          </p>
+          <div className="mt-4 space-y-3">
             {INTEREST_TAG_DATA.map((item) => (
               <div key={item.tag}>
                 <div className="mb-1 flex justify-between text-sm">
                   <span className="font-medium text-foreground">{item.tag}</span>
-                  <span className="text-muted-foreground">
-                    {item.count} users ({item.pct}%)
-                  </span>
+                  <span className="text-muted-foreground">—</span>
                 </div>
-                <div className="h-2 w-full rounded-full bg-muted">
-                  <div
-                    className="h-2 rounded-full bg-primary transition-all"
-                    style={{ width: `${item.pct}%` }}
-                  />
-                </div>
+                <div className="h-2 w-full rounded-full bg-muted" />
               </div>
             ))}
           </div>

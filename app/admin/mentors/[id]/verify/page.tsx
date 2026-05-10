@@ -1,55 +1,25 @@
-"use client";
-
-import { use, useState } from "react";
 import Link from "next/link";
-import { ChevronLeft, FileText, CreditCard, Check, X } from "lucide-react";
-import { MOCK_PENDING_MENTORS } from "@/lib/mock-data";
+import { ChevronLeft, FileText, CreditCard, Check } from "lucide-react";
+import { db } from "@/db/db";
+import { users } from "@/db/schema";
+import { eq, and } from "drizzle-orm";
+import { notFound } from "next/navigation";
+import { VerifyActions } from "./verify-actions";
 
-export default function VerifyMentorPage({
+export default async function VerifyMentorPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { id } = use(params);
-  const mentor =
-    MOCK_PENDING_MENTORS.find((m) => m.id === id) ?? MOCK_PENDING_MENTORS[0];
-  const [decision, setDecision] = useState<"approved" | "rejected" | null>(
-    null
-  );
+  const { id } = await params;
 
-  if (decision) {
-    return (
-      <div className="flex h-full flex-col items-center justify-center py-20 text-center">
-        <div
-          className={`mb-4 flex size-16 items-center justify-center rounded-full ${
-            decision === "approved" ? "bg-primary/10" : "bg-destructive/10"
-          }`}
-        >
-          {decision === "approved" ? (
-            <Check className="size-8 text-primary" />
-          ) : (
-            <X className="size-8 text-destructive" />
-          )}
-        </div>
-        <h2 className="font-display text-2xl font-black text-foreground">
-          {decision === "approved"
-            ? `${mentor.displayName} approved`
-            : `${mentor.displayName} rejected`}
-        </h2>
-        <p className="mt-2 text-muted-foreground">
-          {decision === "approved"
-            ? "They can now be matched with mentees."
-            : "They have been notified by email."}
-        </p>
-        <Link
-          href="/admin/mentors"
-          className="mt-8 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground"
-        >
-          Back to Queue
-        </Link>
-      </div>
-    );
-  }
+  const [mentor] = await db
+    .select()
+    .from(users)
+    .where(and(eq(users.id, id), eq(users.role, "mentor")))
+    .limit(1);
+
+  if (!mentor) notFound();
 
   return (
     <div className="max-w-2xl">
@@ -69,13 +39,13 @@ export default function VerifyMentorPage({
       <div className="mb-6 rounded-xl border border-border bg-card p-6">
         <div className="mb-4 flex items-center gap-4">
           <div className="flex size-14 items-center justify-center rounded-full bg-primary/10 font-display text-lg font-bold text-primary">
-            {mentor.displayName.split(" ").map((n) => n[0]).join("")}
+            {(mentor.displayName ?? "?").split(" ").map((n) => n[0]).join("")}
           </div>
           <div>
             <h2 className="font-display text-xl font-bold text-foreground">
-              {mentor.displayName}
+              {mentor.displayName ?? "Unknown"}
             </h2>
-            <p className="text-sm text-muted-foreground">{mentor.email}</p>
+            <p className="text-sm text-muted-foreground">{mentor.email ?? "—"}</p>
           </div>
         </div>
 
@@ -83,36 +53,40 @@ export default function VerifyMentorPage({
           <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Bio
           </p>
-          <p className="text-sm text-foreground">{mentor.bio}</p>
+          <p className="text-sm text-foreground">{mentor.bio ?? "No bio provided."}</p>
         </div>
 
-        <div className="mb-4">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Interest Areas
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {mentor.interestTags.map((tag) => (
-              <span
-                key={tag}
-                className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium capitalize text-primary"
-              >
-                {tag.replace("_", " ")}
-              </span>
-            ))}
+        {mentor.interestTags && mentor.interestTags.length > 0 && (
+          <div className="mb-4">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Interest Areas
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {mentor.interestTags.map((tag) => (
+                <span
+                  key={tag}
+                  className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium capitalize text-primary"
+                >
+                  {tag.replace("_", " ")}
+                </span>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         <div>
           <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Submitted
           </p>
           <p className="text-sm text-foreground">
-            {new Date(mentor.submittedAt).toLocaleDateString("en-GB", {
-              weekday: "long",
-              day: "numeric",
-              month: "long",
-              year: "numeric",
-            })}
+            {mentor.createdAt
+              ? new Date(mentor.createdAt).toLocaleDateString("en-GB", {
+                  weekday: "long",
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                })
+              : "—"}
           </p>
         </div>
       </div>
@@ -144,23 +118,10 @@ export default function VerifyMentorPage({
         </div>
       </div>
 
-      {/* Actions */}
-      <div className="flex gap-4">
-        <button
-          onClick={() => setDecision("approved")}
-          className="flex flex-1 items-center justify-center gap-2 rounded-full bg-primary py-4 font-semibold text-primary-foreground hover:bg-primary-light transition-colors"
-        >
-          <Check className="size-5" />
-          Approve Mentor
-        </button>
-        <button
-          onClick={() => setDecision("rejected")}
-          className="flex flex-1 items-center justify-center gap-2 rounded-full border border-destructive py-4 font-semibold text-destructive hover:bg-destructive/10 transition-colors"
-        >
-          <X className="size-5" />
-          Reject
-        </button>
-      </div>
+      <VerifyActions
+        mentorId={id}
+        mentorName={mentor.displayName ?? "This mentor"}
+      />
     </div>
   );
 }

@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { AlertTriangle, CheckCircle, ChevronRight } from "lucide-react";
-import { MOCK_REPORTS } from "@/lib/mock-data";
+import { db } from "@/db/db";
+import { safetyReports, users } from "@/db/schema";
+import { eq, isNull, isNotNull, desc } from "drizzle-orm";
+import { aliasedTable } from "drizzle-orm";
 import { cn } from "@/lib/utils";
 
 const TYPE_STYLES: Record<string, string> = {
@@ -8,9 +11,27 @@ const TYPE_STYLES: Record<string, string> = {
   concern: "bg-accent/10 text-accent",
 };
 
-export default function AdminReportsPage() {
-  const open = MOCK_REPORTS.filter((r) => !r.resolvedAt);
-  const resolved = MOCK_REPORTS.filter((r) => r.resolvedAt);
+export default async function AdminReportsPage() {
+  const reporterUser = aliasedTable(users, "reporter");
+  const reportedUser = aliasedTable(users, "reported");
+
+  const rows = await db
+    .select({
+      id: safetyReports.id,
+      type: safetyReports.type,
+      notes: safetyReports.notes,
+      resolvedAt: safetyReports.resolvedAt,
+      createdAt: safetyReports.createdAt,
+      reporterName: reporterUser.displayName,
+      reportedName: reportedUser.displayName,
+    })
+    .from(safetyReports)
+    .leftJoin(reporterUser, eq(safetyReports.reporterId, reporterUser.id))
+    .leftJoin(reportedUser, eq(safetyReports.reportedId, reportedUser.id))
+    .orderBy(desc(safetyReports.createdAt));
+
+  const open = rows.filter((r) => !r.resolvedAt);
+  const resolved = rows.filter((r) => r.resolvedAt);
 
   return (
     <div>
@@ -53,7 +74,7 @@ export default function AdminReportsPage() {
                     <span
                       className={cn(
                         "rounded-full px-2 py-0.5 text-xs font-semibold capitalize",
-                        TYPE_STYLES[report.type] ?? "bg-muted text-muted-foreground"
+                        TYPE_STYLES[report.type ?? ""] ?? "bg-muted text-muted-foreground"
                       )}
                     >
                       {report.type}
@@ -63,8 +84,10 @@ export default function AdminReportsPage() {
                     {report.notes}
                   </p>
                   <p className="mt-0.5 text-xs text-muted-foreground">
-                    Reported by {report.reporter.displayName} ·{" "}
-                    {new Date(report.createdAt).toLocaleDateString("en-GB")}
+                    Reported by {report.reporterName ?? "Anonymous"} ·{" "}
+                    {report.createdAt
+                      ? new Date(report.createdAt).toLocaleDateString("en-GB")
+                      : "—"}
                   </p>
                 </div>
                 <ChevronRight className="size-4 text-muted-foreground" />
@@ -79,29 +102,37 @@ export default function AdminReportsPage() {
         <h2 className="mb-4 font-display text-lg font-bold text-foreground">
           Resolved
         </h2>
-        <div className="space-y-3">
-          {resolved.map((report) => (
-            <Link
-              key={report.id}
-              href={`/admin/reports/${report.id}`}
-              className="flex items-center gap-4 rounded-xl border border-border bg-card p-5 opacity-70 hover:opacity-100 transition-opacity"
-            >
-              <CheckCircle className="size-5 text-primary shrink-0" />
-              <div className="flex-1">
-                <p className="text-sm text-foreground line-clamp-1">
-                  {report.notes}
-                </p>
-                <p className="mt-0.5 text-xs text-muted-foreground">
-                  Reported by {report.reporter.displayName} · Resolved{" "}
-                  {new Date(report.resolvedAt!).toLocaleDateString("en-GB")}
-                </p>
-              </div>
-              <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
-                Resolved
-              </span>
-            </Link>
-          ))}
-        </div>
+        {resolved.length === 0 ? (
+          <div className="rounded-xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
+            No resolved reports yet.
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {resolved.map((report) => (
+              <Link
+                key={report.id}
+                href={`/admin/reports/${report.id}`}
+                className="flex items-center gap-4 rounded-xl border border-border bg-card p-5 opacity-70 hover:opacity-100 transition-opacity"
+              >
+                <CheckCircle className="size-5 text-primary shrink-0" />
+                <div className="flex-1">
+                  <p className="text-sm text-foreground line-clamp-1">
+                    {report.notes}
+                  </p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    Reported by {report.reporterName ?? "Anonymous"} · Resolved{" "}
+                    {report.resolvedAt
+                      ? new Date(report.resolvedAt).toLocaleDateString("en-GB")
+                      : "—"}
+                  </p>
+                </div>
+                <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
+                  Resolved
+                </span>
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

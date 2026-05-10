@@ -8,74 +8,115 @@ import {
   TrendingUp,
   ChevronRight,
 } from "lucide-react";
-import { MOCK_ADMIN_STATS } from "@/lib/mock-data";
+import { db } from "@/db/db";
+import { users, mentorships, schools, safetyReports } from "@/db/schema";
+import { count, eq, isNull, isNotNull, and, desc } from "drizzle-orm";
 
-const KPI_CARDS = [
-  {
-    label: "Total Users",
-    value: MOCK_ADMIN_STATS.totalUsers,
-    sub: `${MOCK_ADMIN_STATS.mentees} mentees · ${MOCK_ADMIN_STATS.mentors} mentors`,
-    icon: Users,
-    color: "text-primary",
-    bg: "bg-primary/10",
-    href: "/admin/users",
-  },
-  {
-    label: "Active Mentorships",
-    value: MOCK_ADMIN_STATS.activeMentorships,
-    sub: "Ongoing connections",
-    icon: Activity,
-    color: "text-primary",
-    bg: "bg-primary/10",
-    href: null,
-  },
-  {
-    label: "Pending Mentors",
-    value: MOCK_ADMIN_STATS.pendingMentors,
-    sub: "Awaiting verification",
-    icon: UserCheck,
-    color: "text-accent",
-    bg: "bg-accent/10",
-    href: "/admin/mentors",
-  },
-  {
-    label: "Pending Schools",
-    value: MOCK_ADMIN_STATS.pendingSchools,
-    sub: "Awaiting vetting",
-    icon: School,
-    color: "text-accent",
-    bg: "bg-accent/10",
-    href: "/admin/schools",
-  },
-  {
-    label: "Open Reports",
-    value: MOCK_ADMIN_STATS.openReports,
-    sub: "Needs attention",
-    icon: AlertTriangle,
-    color: "text-destructive",
-    bg: "bg-destructive/10",
-    href: "/admin/reports",
-  },
-  {
-    label: "Schools Established",
-    value: MOCK_ADMIN_STATS.schoolsEstablished,
-    sub: "Verified clubs active",
-    icon: TrendingUp,
-    color: "text-primary",
-    bg: "bg-primary/10",
-    href: "/admin/analytics",
-  },
-];
+export default async function AdminDashboardPage() {
+  const [
+    [{ total }],
+    [{ menteeCount }],
+    [{ mentorCount }],
+    [{ clubLeadCount }],
+    [{ activeMentorships }],
+    [{ pendingMentors }],
+    [{ pendingSchools }],
+    [{ openReports }],
+    [{ schoolsEstablished }],
+    recentUsers,
+  ] = await Promise.all([
+    db.select({ total: count() }).from(users),
+    db.select({ menteeCount: count() }).from(users).where(eq(users.role, "mentee")),
+    db.select({ mentorCount: count() }).from(users).where(eq(users.role, "mentor")),
+    db.select({ clubLeadCount: count() }).from(users).where(eq(users.role, "club_lead")),
+    db.select({ activeMentorships: count() }).from(mentorships).where(eq(mentorships.status, "active")),
+    db.select({ pendingMentors: count() }).from(users).where(and(eq(users.role, "mentor"), isNull(users.verifiedAt))),
+    db.select({ pendingSchools: count() }).from(schools).where(isNull(schools.verifiedAt)),
+    db.select({ openReports: count() }).from(safetyReports).where(isNull(safetyReports.resolvedAt)),
+    db.select({ schoolsEstablished: count() }).from(schools).where(isNotNull(schools.verifiedAt)),
+    db.select({ displayName: users.displayName, createdAt: users.createdAt }).from(users).orderBy(desc(users.createdAt)).limit(5),
+  ]);
 
-const ACTIVITY_FEED = [
-  { time: "10 min ago", text: "Kadiatu Fofanah submitted mentor application", type: "mentor" },
-  { time: "1 hour ago", text: "New safety report filed by Isata Mansaray", type: "report" },
-  { time: "2 hours ago", text: "Christo-Rama Secondary School registered", type: "school" },
-  { time: "Yesterday", text: "Abu Kamara approved as verified mentor", type: "mentor" },
-  { time: "Yesterday", text: "Safety report #r2 marked as resolved", type: "report" },
-];
+  const stats = {
+    totalUsers: Number(total),
+    mentees: Number(menteeCount),
+    mentors: Number(mentorCount),
+    clubLeads: Number(clubLeadCount),
+    activeMentorships: Number(activeMentorships),
+    pendingMentors: Number(pendingMentors),
+    pendingSchools: Number(pendingSchools),
+    openReports: Number(openReports),
+    schoolsEstablished: Number(schoolsEstablished),
+  };
 
-export default function AdminDashboardPage() {
+  const KPI_CARDS = [
+    {
+      label: "Total Users",
+      value: stats.totalUsers,
+      sub: `${stats.mentees} mentees · ${stats.mentors} mentors`,
+      icon: Users,
+      color: "text-primary",
+      bg: "bg-primary/10",
+      href: "/admin/users",
+    },
+    {
+      label: "Active Mentorships",
+      value: stats.activeMentorships,
+      sub: "Ongoing connections",
+      icon: Activity,
+      color: "text-primary",
+      bg: "bg-primary/10",
+      href: null,
+    },
+    {
+      label: "Pending Mentors",
+      value: stats.pendingMentors,
+      sub: "Awaiting verification",
+      icon: UserCheck,
+      color: "text-accent",
+      bg: "bg-accent/10",
+      href: "/admin/mentors",
+    },
+    {
+      label: "Pending Schools",
+      value: stats.pendingSchools,
+      sub: "Awaiting vetting",
+      icon: School,
+      color: "text-accent",
+      bg: "bg-accent/10",
+      href: "/admin/schools",
+    },
+    {
+      label: "Open Reports",
+      value: stats.openReports,
+      sub: "Needs attention",
+      icon: AlertTriangle,
+      color: "text-destructive",
+      bg: "bg-destructive/10",
+      href: "/admin/reports",
+    },
+    {
+      label: "Schools Established",
+      value: stats.schoolsEstablished,
+      sub: "Verified clubs active",
+      icon: TrendingUp,
+      color: "text-primary",
+      bg: "bg-primary/10",
+      href: "/admin/analytics",
+    },
+  ];
+
+  function timeAgo(date: Date | null): string {
+    if (!date) return "Recently";
+    const diff = Date.now() - date.getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 60) return `${mins} min ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs} hour${hrs > 1 ? "s" : ""} ago`;
+    const days = Math.floor(hrs / 24);
+    return `${days} day${days > 1 ? "s" : ""} ago`;
+  }
+
   return (
     <div>
       <div className="mb-8">
@@ -83,7 +124,13 @@ export default function AdminDashboardPage() {
           Dashboard
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Platform overview — {new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+          Platform overview —{" "}
+          {new Date().toLocaleDateString("en-GB", {
+            weekday: "long",
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+          })}
         </p>
       </div>
 
@@ -125,18 +172,26 @@ export default function AdminDashboardPage() {
         {/* Activity Feed */}
         <div className="rounded-xl border border-border bg-card p-6">
           <h2 className="mb-4 font-display text-lg font-bold text-foreground">
-            Recent Activity
+            Recent Users
           </h2>
           <div className="space-y-3">
-            {ACTIVITY_FEED.map((item, i) => (
-              <div key={i} className="flex items-start gap-3">
-                <div className="mt-1.5 size-2 shrink-0 rounded-full bg-primary" />
-                <div>
-                  <p className="text-sm text-foreground">{item.text}</p>
-                  <p className="text-xs text-muted-foreground">{item.time}</p>
+            {recentUsers.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No users yet.</p>
+            ) : (
+              recentUsers.map((u, i) => (
+                <div key={i} className="flex items-start gap-3">
+                  <div className="mt-1.5 size-2 shrink-0 rounded-full bg-primary" />
+                  <div>
+                    <p className="text-sm text-foreground">
+                      New user: {u.displayName ?? "Unknown"} joined
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {timeAgo(u.createdAt)}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
 
@@ -147,9 +202,9 @@ export default function AdminDashboardPage() {
           </h2>
           <div className="space-y-3">
             {[
-              { href: "/admin/mentors", label: "Mentor Verification", count: MOCK_ADMIN_STATS.pendingMentors, urgent: false },
-              { href: "/admin/schools", label: "School Vetting", count: MOCK_ADMIN_STATS.pendingSchools, urgent: false },
-              { href: "/admin/reports", label: "Safety Reports", count: MOCK_ADMIN_STATS.openReports, urgent: true },
+              { href: "/admin/mentors", label: "Mentor Verification", count: stats.pendingMentors, urgent: false },
+              { href: "/admin/schools", label: "School Vetting", count: stats.pendingSchools, urgent: false },
+              { href: "/admin/reports", label: "Safety Reports", count: stats.openReports, urgent: true },
             ].map((item) => (
               <Link
                 key={item.href}

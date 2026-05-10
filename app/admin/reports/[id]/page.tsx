@@ -1,19 +1,42 @@
-"use client";
-
-import { use, useState } from "react";
 import Link from "next/link";
-import { ChevronLeft, Check } from "lucide-react";
-import { MOCK_REPORTS } from "@/lib/mock-data";
+import { ChevronLeft } from "lucide-react";
+import { db } from "@/db/db";
+import { safetyReports, users } from "@/db/schema";
+import { eq } from "drizzle-orm";
+import { aliasedTable } from "drizzle-orm";
+import { notFound } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { ResolveActions } from "./resolve-actions";
 
-export default function AdminReportDetailPage({
+export default async function AdminReportDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { id } = use(params);
-  const report = MOCK_REPORTS.find((r) => r.id === id) ?? MOCK_REPORTS[0];
-  const [resolved, setResolved] = useState(!!report.resolvedAt);
+  const { id } = await params;
+
+  const reporterUser = aliasedTable(users, "reporter");
+  const reportedUser = aliasedTable(users, "reported");
+
+  const [report] = await db
+    .select({
+      id: safetyReports.id,
+      type: safetyReports.type,
+      notes: safetyReports.notes,
+      resolvedAt: safetyReports.resolvedAt,
+      createdAt: safetyReports.createdAt,
+      reporterName: reporterUser.displayName,
+      reportedName: reportedUser.displayName,
+    })
+    .from(safetyReports)
+    .leftJoin(reporterUser, eq(safetyReports.reporterId, reporterUser.id))
+    .leftJoin(reportedUser, eq(safetyReports.reportedId, reportedUser.id))
+    .where(eq(safetyReports.id, id))
+    .limit(1);
+
+  if (!report) notFound();
+
+  const isResolved = !!report.resolvedAt;
 
   return (
     <div className="max-w-2xl">
@@ -32,12 +55,12 @@ export default function AdminReportDetailPage({
         <span
           className={cn(
             "rounded-full px-3 py-1 text-xs font-bold capitalize",
-            resolved
+            isResolved
               ? "bg-primary/10 text-primary"
               : "bg-destructive/10 text-destructive"
           )}
         >
-          {resolved ? "Resolved" : "Open"}
+          {isResolved ? "Resolved" : "Open"}
         </span>
       </div>
 
@@ -49,7 +72,7 @@ export default function AdminReportDetailPage({
               Reported By
             </p>
             <p className="font-medium text-foreground">
-              {report.reporter.displayName}
+              {report.reporterName ?? "Anonymous"}
             </p>
           </div>
           <div>
@@ -57,7 +80,7 @@ export default function AdminReportDetailPage({
               Reported User
             </p>
             <p className="font-medium text-foreground">
-              {report.reported.displayName}
+              {report.reportedName ?? "Unknown"}
             </p>
           </div>
           <div>
@@ -80,11 +103,13 @@ export default function AdminReportDetailPage({
               Date
             </p>
             <p className="font-medium text-foreground">
-              {new Date(report.createdAt).toLocaleDateString("en-GB", {
-                day: "numeric",
-                month: "long",
-                year: "numeric",
-              })}
+              {report.createdAt
+                ? new Date(report.createdAt).toLocaleDateString("en-GB", {
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                  })
+                : "—"}
             </p>
           </div>
         </div>
@@ -94,41 +119,16 @@ export default function AdminReportDetailPage({
             Notes
           </p>
           <p className="text-sm text-foreground leading-relaxed">
-            {report.notes}
+            {report.notes ?? "No notes provided."}
           </p>
         </div>
       </div>
 
-      {/* Admin Notes */}
-      <div className="mb-6 rounded-xl border border-border bg-card p-6">
-        <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Admin Notes
-        </p>
-        <textarea
-          rows={3}
-          placeholder="Add notes about the action taken..."
-          className="w-full resize-none rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none focus:border-primary placeholder:text-muted-foreground"
-        />
-      </div>
-
-      {/* Action */}
-      {!resolved ? (
-        <button
-          onClick={() => setResolved(true)}
-          className="flex w-full items-center justify-center gap-2 rounded-full bg-primary py-4 font-semibold text-primary-foreground hover:bg-primary-light transition-colors"
-        >
-          <Check className="size-5" />
-          Mark as Resolved
-        </button>
-      ) : (
-        <div className="flex items-center justify-center gap-2 rounded-full border border-primary py-4 text-sm font-semibold text-primary">
-          <Check className="size-5" />
-          Resolved on{" "}
-          {report.resolvedAt
-            ? new Date(report.resolvedAt).toLocaleDateString("en-GB")
-            : "today"}
-        </div>
-      )}
+      <ResolveActions
+        reportId={id}
+        initialResolved={isResolved}
+        resolvedAt={report.resolvedAt?.toISOString() ?? null}
+      />
     </div>
   );
 }

@@ -1,46 +1,34 @@
-"use client";
-
-import { use, useState } from "react";
 import Link from "next/link";
-import { ChevronLeft, Check, X } from "lucide-react";
-import { MOCK_PENDING_SCHOOLS } from "@/lib/mock-data";
+import { ChevronLeft } from "lucide-react";
+import { db } from "@/db/db";
+import { schools, users } from "@/db/schema";
+import { eq } from "drizzle-orm";
+import { notFound } from "next/navigation";
+import { VetActions } from "./vet-actions";
 
-export default function VetSchoolPage({
+export default async function VetSchoolPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { id } = use(params);
-  const school =
-    MOCK_PENDING_SCHOOLS.find((s) => s.id === id) ?? MOCK_PENDING_SCHOOLS[0];
-  const [decision, setDecision] = useState<"approved" | "rejected" | null>(null);
+  const { id } = await params;
 
-  if (decision) {
-    return (
-      <div className="flex h-full flex-col items-center justify-center py-20 text-center">
-        <div
-          className={`mb-4 flex size-16 items-center justify-center rounded-full text-3xl`}
-        >
-          {decision === "approved" ? "🏫" : "❌"}
-        </div>
-        <h2 className="font-display text-2xl font-black text-foreground">
-          {decision === "approved"
-            ? `${school.name} approved`
-            : `${school.name} rejected`}
-        </h2>
-        <p className="mt-2 text-muted-foreground">
-          {decision === "approved"
-            ? "The school clubhouse is now active."
-            : "The club lead has been notified."}
-        </p>
-        <Link
-          href="/admin/schools"
-          className="mt-8 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground"
-        >
-          Back to Schools
-        </Link>
-      </div>
-    );
+  const [school] = await db
+    .select()
+    .from(schools)
+    .where(eq(schools.id, id))
+    .limit(1);
+
+  if (!school) notFound();
+
+  let clubLeadName: string | null = null;
+  if (school.clubLeadId) {
+    const [lead] = await db
+      .select({ displayName: users.displayName })
+      .from(users)
+      .where(eq(users.id, school.clubLeadId))
+      .limit(1);
+    clubLeadName = lead?.displayName ?? null;
   }
 
   return (
@@ -65,32 +53,22 @@ export default function VetSchoolPage({
               {school.name}
             </h2>
             <p className="text-sm capitalize text-muted-foreground">
-              {school.region.replace("_", " ")}
+              {school.region?.replace("_", " ") ?? "—"}
             </p>
           </div>
         </div>
 
         <div className="space-y-3 text-sm">
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Submitted by</span>
-            <span className="font-medium text-foreground">
-              {school.submittedBy}
-            </span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Date submitted</span>
-            <span className="font-medium text-foreground">
-              {new Date(school.submittedAt).toLocaleDateString("en-GB", {
-                day: "numeric",
-                month: "long",
-                year: "numeric",
-              })}
-            </span>
-          </div>
+          {clubLeadName && (
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Submitted by</span>
+              <span className="font-medium text-foreground">{clubLeadName}</span>
+            </div>
+          )}
           <div className="flex justify-between">
             <span className="text-muted-foreground">Region</span>
             <span className="font-medium capitalize text-foreground">
-              {school.region.replace("_", " ")}
+              {school.region?.replace("_", " ") ?? "—"}
             </span>
           </div>
         </div>
@@ -104,22 +82,7 @@ export default function VetSchoolPage({
         </p>
       </div>
 
-      <div className="flex gap-4">
-        <button
-          onClick={() => setDecision("approved")}
-          className="flex flex-1 items-center justify-center gap-2 rounded-full bg-primary py-4 font-semibold text-primary-foreground hover:bg-primary-light transition-colors"
-        >
-          <Check className="size-5" />
-          Approve School
-        </button>
-        <button
-          onClick={() => setDecision("rejected")}
-          className="flex flex-1 items-center justify-center gap-2 rounded-full border border-destructive py-4 font-semibold text-destructive hover:bg-destructive/10 transition-colors"
-        >
-          <X className="size-5" />
-          Reject
-        </button>
-      </div>
+      <VetActions schoolId={id} schoolName={school.name} />
     </div>
   );
 }
