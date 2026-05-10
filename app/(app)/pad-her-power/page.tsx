@@ -1,16 +1,7 @@
-import dynamic from "next/dynamic";
 import { Heart, MapPin } from "lucide-react";
 import { PAD_HER_POWER_RESOURCES } from "@/lib/mock-data";
 import { PageHeader } from "@/components/page-header";
-
-const ResourceMap = dynamic(() => import("@/components/resource-map"), {
-  ssr: false,
-  loading: () => (
-    <div className="flex h-[300px] items-center justify-center rounded-2xl border border-border bg-muted text-sm text-muted-foreground">
-      Loading map…
-    </div>
-  ),
-});
+import { ResourceMapClient } from "./resource-map-client";
 
 const CATEGORIES = [
   "Menstrual Health",
@@ -55,7 +46,7 @@ export default function PadHerPowerPage() {
             Resource Map
           </p>
         </div>
-        <ResourceMap />
+        <ResourceMapClient />
         <p className="mt-2 text-xs text-muted-foreground">
           Health centres and support services in Freetown &amp; Western Rural Area. Tap a pin for contact details.
         </p>
