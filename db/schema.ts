@@ -5,6 +5,7 @@ export const roleEnum = pgEnum("role", ["mentee", "mentor", "club_lead", "admin"
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
   clerkId: text("clerk_id").notNull().unique(),
+  email: text("email"),
   role: roleEnum("role").notNull().default("mentee"),
   displayName: text("display_name"),
   bio: text("bio"),

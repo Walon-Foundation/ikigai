@@ -10,7 +10,7 @@ export default function SignInPage() {
           </h1>
           <p className="mt-2 text-muted-foreground">Welcome back</p>
         </div>
-        <SignIn />
+        <SignIn fallbackRedirectUrl="/dashboard" />
       </div>
     </div>
   );

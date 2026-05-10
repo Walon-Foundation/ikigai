@@ -12,7 +12,7 @@ export default function SignUpPage() {
             Join thousands of youth discovering their purpose
           </p>
         </div>
-        <SignUp />
+        <SignUp fallbackRedirectUrl="/onboarding" />
       </div>
     </div>
   );
