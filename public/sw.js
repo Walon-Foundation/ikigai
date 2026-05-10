@@ -1,11 +1,18 @@
-const CACHE_NAME = "ikigai-v1";
-const STATIC_ASSETS = ["/", "/dashboard", "/journey", "/mentorship", "/journal", "/settings"];
+const CACHE_NAME = "ikigai-static-v1";
+
+// Only cache true static assets — never HTML pages or authenticated routes
+const STATIC_ASSETS = [
+  "/icon-192x192.png",
+  "/icon-512x512.png",
+  "/manifest.webmanifest",
+];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
   );
-  self.skipWaiting();
+  // Do NOT skipWaiting — let the SW activate on the next navigation
+  // so it never takes control of a page mid-session and confuses the router
 });
 
 self.addEventListener("activate", (event) => {
@@ -14,19 +21,26 @@ self.addEventListener("activate", (event) => {
       Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
     )
   );
-  self.clients.claim();
+  // Do NOT clients.claim() — avoids intercepting pages that are already loaded
 });
 
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
+
   const url = new URL(event.request.url);
+
+  // Never intercept navigation requests — let Next.js handle all HTML pages
+  if (event.request.mode === "navigate") return;
+
+  // Only serve from cache for same-origin static assets
   if (url.origin !== self.location.origin) return;
 
-  event.respondWith(
-    caches.match(event.request).then(
-      (cached) => cached ?? fetch(event.request).catch(() => caches.match("/"))
-    )
-  );
+  // Cache-first for known static assets; network-only for everything else
+  if (STATIC_ASSETS.includes(url.pathname)) {
+    event.respondWith(
+      caches.match(event.request).then((cached) => cached ?? fetch(event.request))
+    );
+  }
 });
 
 self.addEventListener("push", (event) => {
