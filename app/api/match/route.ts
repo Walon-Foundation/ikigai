@@ -1,9 +1,8 @@
 import { auth } from "@clerk/nextjs/server";
-import { eq } from "drizzle-orm";
+import { and, eq, isNotNull } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { db } from "@/db/db";
 import { users } from "@/db/schema";
-import { MOCK_MENTORS } from "@/lib/mock-data";
 
 function calcMatchScore(userTags: string[], mentorTags: string[]): number {
   if (!userTags.length && !mentorTags.length) return 50;
@@ -36,18 +35,7 @@ export async function GET() {
       interestTags: users.interestTags,
     })
     .from(users)
-    .where(eq(users.role, "mentor"))
-    .then((rows) => rows.filter((r) => r.interestTags));
-
-  if (verifiedMentors.length === 0) {
-    // Fall back to mock data when no verified mentors exist in DB
-    const scored = MOCK_MENTORS.map((m) => ({
-      ...m,
-      matchScore: calcMatchScore(myTags, m.interestTags),
-    }));
-    scored.sort((a, b) => b.matchScore - a.matchScore);
-    return NextResponse.json({ matches: scored.slice(0, 5) });
-  }
+    .where(and(eq(users.role, "mentor"), isNotNull(users.verifiedAt)));
 
   const scored = verifiedMentors.map((m) => ({
     ...m,

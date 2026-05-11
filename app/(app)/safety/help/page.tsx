@@ -1,5 +1,5 @@
 import { Heart, MessageCircle, Phone } from "lucide-react";
-import { SAFETY_RESOURCES } from "@/lib/mock-data";
+import { SAFETY_RESOURCES } from "@/lib/constants";
 
 export default function CrisisHelpPage() {
   return (

@@ -2,7 +2,7 @@
 
 import { ArrowRight, Check, ChevronLeft, Loader2 } from "lucide-react";
 import { useState, useTransition } from "react";
-import { INTEREST_TAGS, QUIZ_QUESTIONS } from "@/lib/mock-data";
+import { INTEREST_TAGS, QUIZ_QUESTIONS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { completeOnboarding } from "./actions";
 

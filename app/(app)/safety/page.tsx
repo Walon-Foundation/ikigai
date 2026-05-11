@@ -11,7 +11,7 @@ import {
 import Link from "next/link";
 import { useEffect, useState, useTransition } from "react";
 import { PageHeader } from "@/components/page-header";
-import { SAFETY_RESOURCES } from "@/lib/mock-data";
+import { SAFETY_RESOURCES } from "@/lib/constants";
 import { awardSafetyMilestone, submitSafetyReport } from "./actions";
 
 export default function SafetyPage() {
