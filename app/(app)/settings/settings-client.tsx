@@ -1,9 +1,20 @@
 "use client";
 
 import { useClerk } from "@clerk/nextjs";
-import { Bell, ChevronRight, Lock, LogOut, Monitor, User } from "lucide-react";
+import {
+  Bell,
+  ChevronRight,
+  Download,
+  Lock,
+  LogOut,
+  Monitor,
+  Share,
+  Smartphone,
+  User,
+} from "lucide-react";
 import { useState } from "react";
 import { PageHeader } from "@/components/page-header";
+import { usePwaInstall } from "@/lib/use-pwa-install";
 import { cn } from "@/lib/utils";
 
 type DbUser = {
@@ -21,6 +32,7 @@ export function SettingsClient({ user }: { user: DbUser }) {
   const [pushEnabled, setPushEnabled] = useState(false);
   const [journalPrivacy, setJournalPrivacy] = useState(true);
   const { signOut } = useClerk();
+  const { prompt, isIOS, isInstalled, install } = usePwaInstall();
 
   const initials = (user.displayName ?? "U")
     .split(" ")
@@ -126,6 +138,51 @@ export function SettingsClient({ user }: { user: DbUser }) {
             Edit interests →
           </button>
         </div>
+
+        {/* Install app */}
+        {!isInstalled && (
+          <div className="mb-4 rounded-2xl border border-border bg-card p-5">
+            <div className="flex items-center gap-3">
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary">
+                <Smartphone className="size-5 text-primary-foreground" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-foreground">
+                  Install Ikigai
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Add to your home screen for offline access
+                </p>
+              </div>
+            </div>
+            <div className="mt-4">
+              {isIOS ? (
+                <p className="text-sm text-muted-foreground">
+                  Tap{" "}
+                  <Share className="mb-0.5 inline size-3.5 text-foreground" />{" "}
+                  in your browser, then tap{" "}
+                  <strong className="text-foreground">
+                    Add to Home Screen
+                  </strong>
+                  .
+                </p>
+              ) : prompt ? (
+                <button
+                  type="button"
+                  onClick={install}
+                  className="flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground"
+                >
+                  <Download className="size-4" />
+                  Install App
+                </button>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Open this page in Chrome or Safari to install.
+                </p>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Sign out */}
         <button

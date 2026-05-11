@@ -2,60 +2,31 @@
 
 import { Download, Share, X } from "lucide-react";
 import { useEffect, useState } from "react";
-
-interface BeforeInstallPromptEvent extends Event {
-  prompt(): Promise<void>;
-  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
-}
+import { usePwaInstall } from "@/lib/use-pwa-install";
 
 export function PwaInstallPrompt() {
-  const [deferredPrompt, setDeferredPrompt] =
-    useState<BeforeInstallPromptEvent | null>(null);
-  const [isIOS, setIsIOS] = useState(false);
+  const { prompt, isIOS, isInstalled, install } = usePwaInstall();
   const [showBanner, setShowBanner] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    // Already installed
-    if (window.matchMedia("(display-mode: standalone)").matches) return;
-
-    // Already dismissed
     if (localStorage.getItem("pwa-prompt-dismissed")) return;
-
-    const ios = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    setIsIOS(ios);
-
-    if (ios) {
-      setShowBanner(true);
-      return;
-    }
-
-    const handler = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
-      setShowBanner(true);
-    };
-    window.addEventListener("beforeinstallprompt", handler);
-    return () => window.removeEventListener("beforeinstallprompt", handler);
-  }, []);
+    if (isInstalled) return;
+    if (prompt || isIOS) setShowBanner(true);
+  }, [prompt, isIOS, isInstalled]);
 
   function dismiss() {
     localStorage.setItem("pwa-prompt-dismissed", "1");
+    setDismissed(true);
     setShowBanner(false);
   }
 
-  async function install() {
-    if (!deferredPrompt) return;
-    await deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === "accepted") {
-      localStorage.setItem("pwa-prompt-dismissed", "1");
-    }
+  async function handleInstall() {
+    await install();
     setShowBanner(false);
   }
 
-  if (!showBanner) return null;
+  if (!showBanner || dismissed) return null;
 
   return (
     <div className="fixed bottom-20 left-4 right-4 z-50 rounded-2xl border border-primary-muted/30 bg-card shadow-lg lg:bottom-6 lg:left-auto lg:right-6 lg:w-80">
@@ -64,9 +35,7 @@ export function PwaInstallPrompt() {
           <Download className="size-5 text-primary-foreground" />
         </div>
         <div className="flex-1">
-          <p className="text-sm font-semibold text-foreground">
-            Install Ikigai
-          </p>
+          <p className="text-sm font-semibold text-foreground">Install Ikigai</p>
           {isIOS ? (
             <p className="mt-0.5 text-xs text-muted-foreground">
               Tap <Share className="mb-0.5 inline size-3" /> then{" "}
@@ -80,7 +49,7 @@ export function PwaInstallPrompt() {
           {!isIOS && (
             <button
               type="button"
-              onClick={install}
+              onClick={handleInstall}
               className="mt-2 rounded-full bg-primary px-4 py-1.5 text-xs font-semibold text-primary-foreground"
             >
               Install App
