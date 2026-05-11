@@ -1,14 +1,9 @@
 "use client";
 
+import { useUser } from "@clerk/nextjs";
+import { BookOpen, LayoutDashboard, TreePine, Users } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useUser } from "@clerk/nextjs";
-import {
-  LayoutDashboard,
-  TreePine,
-  Users,
-  BookOpen,
-} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
@@ -46,7 +41,7 @@ export function AppNav() {
                 "flex flex-col items-center gap-0.5 rounded-xl px-3 py-2 transition-colors",
                 isActive
                   ? "text-primary"
-                  : "text-muted-foreground hover:text-foreground"
+                  : "text-muted-foreground hover:text-foreground",
               )}
             >
               <item.icon
@@ -62,7 +57,7 @@ export function AppNav() {
           href="/settings"
           className={cn(
             "flex flex-col items-center gap-0.5 rounded-xl px-3 py-2 transition-colors",
-            isProfileActive ? "text-primary" : "text-muted-foreground"
+            isProfileActive ? "text-primary" : "text-muted-foreground",
           )}
         >
           <div
@@ -70,7 +65,7 @@ export function AppNav() {
               "flex size-6 items-center justify-center rounded-full text-[11px] font-bold leading-none",
               isProfileActive
                 ? "bg-primary text-primary-foreground"
-                : "bg-primary-muted/50 text-primary"
+                : "bg-primary-muted/50 text-primary",
             )}
           >
             {initials}

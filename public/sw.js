@@ -9,7 +9,7 @@ const STATIC_ASSETS = [
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS)),
   );
   // Do NOT skipWaiting — let the SW activate on the next navigation
   // so it never takes control of a page mid-session and confuses the router
@@ -17,9 +17,13 @@ self.addEventListener("install", (event) => {
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
-    )
+    caches
+      .keys()
+      .then((keys) =>
+        Promise.all(
+          keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)),
+        ),
+      ),
   );
   // Do NOT clients.claim() — avoids intercepting pages that are already loaded
 });
@@ -38,7 +42,9 @@ self.addEventListener("fetch", (event) => {
   // Cache-first for known static assets; network-only for everything else
   if (STATIC_ASSETS.includes(url.pathname)) {
     event.respondWith(
-      caches.match(event.request).then((cached) => cached ?? fetch(event.request))
+      caches
+        .match(event.request)
+        .then((cached) => cached ?? fetch(event.request)),
     );
   }
 });
@@ -53,7 +59,7 @@ self.addEventListener("push", (event) => {
       badge: "/icon-192x192.png",
       vibrate: [100, 50, 100],
       data: { url: data.url ?? "/dashboard" },
-    })
+    }),
   );
 });
 
@@ -67,6 +73,6 @@ self.addEventListener("notificationclick", (event) => {
         const existing = wins.find((w) => w.url.includes(target));
         if (existing) return existing.focus();
         return clients.openWindow(target);
-      })
+      }),
   );
 });

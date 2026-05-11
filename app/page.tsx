@@ -1,17 +1,17 @@
-import Link from "next/link";
-import { redirect } from "next/navigation";
 import { auth } from "@clerk/nextjs/server";
 import {
   ArrowRight,
+  BookOpen,
+  ChevronRight,
+  MapPin,
+  Shield,
+  Sparkles,
+  Star,
   TreePine,
   Users,
-  BookOpen,
-  Shield,
-  Star,
-  MapPin,
-  ChevronRight,
-  Sparkles,
 } from "lucide-react";
+import Link from "next/link";
+import { redirect } from "next/navigation";
 
 export default async function Home() {
   const { userId } = await auth();
@@ -104,8 +104,8 @@ function Hero() {
 
           {/* Headline */}
           <h1 className="font-display mb-6 text-5xl font-black leading-[1.05] tracking-tight text-foreground sm:text-6xl md:text-7xl">
-            Find your reason to{" "}
-            <span className="text-primary">wake up</span> every morning.
+            Find your reason to <span className="text-primary">wake up</span>{" "}
+            every morning.
           </h1>
 
           {/* Value prop */}
@@ -136,12 +136,11 @@ function Hero() {
           <div className="mt-14 flex flex-wrap gap-3">
             <div className="flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm text-muted-foreground shadow-sm">
               <div className="flex">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Star
-                    key={i}
-                    className="size-3.5 fill-accent text-accent"
-                  />
-                ))}
+                <Star className="size-3.5 fill-accent text-accent" />
+                <Star className="size-3.5 fill-accent text-accent" />
+                <Star className="size-3.5 fill-accent text-accent" />
+                <Star className="size-3.5 fill-accent text-accent" />
+                <Star className="size-3.5 fill-accent text-accent" />
               </div>
               <span>Trusted by youth across Freetown</span>
             </div>
@@ -370,11 +369,7 @@ function ForWho() {
   ];
 
   return (
-    <section
-      id="for-mentors"
-      id-also="schools"
-      className="bg-background py-28"
-    >
+    <section id="for-mentors" id-also="schools" className="bg-background py-28">
       <div className="mx-auto max-w-7xl px-6">
         <div className="mb-16 max-w-2xl">
           <div className="mb-4 text-sm font-semibold uppercase tracking-widest text-primary">

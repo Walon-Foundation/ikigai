@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useTransition } from "react";
 import { ArrowRight, Check, ChevronLeft, Loader2 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { useState, useTransition } from "react";
 import { INTEREST_TAGS, QUIZ_QUESTIONS } from "@/lib/mock-data";
+import { cn } from "@/lib/utils";
 import { completeOnboarding } from "./actions";
 
 type Role = "mentee" | "mentor" | "club_lead";
@@ -40,7 +40,7 @@ export default function OnboardingPage() {
 
   function toggleTag(tag: string) {
     setSelectedTags((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag],
     );
   }
 
@@ -48,7 +48,8 @@ export default function OnboardingPage() {
     setQuizAnswers((prev) => ({ ...prev, [questionId]: idx }));
   }
 
-  const quizComplete = Object.keys(quizAnswers).length === QUIZ_QUESTIONS.length;
+  const quizComplete =
+    Object.keys(quizAnswers).length === QUIZ_QUESTIONS.length;
 
   return (
     <div className="min-h-screen bg-background">
@@ -87,12 +88,13 @@ export default function OnboardingPage() {
               {ROLES.map((r) => (
                 <button
                   key={r.value}
+                  type="button"
                   onClick={() => setRole(r.value)}
                   className={cn(
                     "flex w-full items-start gap-4 rounded-2xl border-2 p-6 text-left transition-all",
                     role === r.value
                       ? "border-primary bg-primary-muted/20"
-                      : "border-border bg-card hover:border-primary/40"
+                      : "border-border bg-card hover:border-primary/40",
                   )}
                 >
                   <span className="text-3xl">{r.emoji}</span>
@@ -113,6 +115,7 @@ export default function OnboardingPage() {
               ))}
             </div>
             <button
+              type="button"
               onClick={() => setStep(2)}
               disabled={!role}
               className="mt-8 inline-flex w-full items-center justify-center gap-2 rounded-full bg-primary px-8 py-4 font-semibold text-primary-foreground transition-colors hover:bg-primary-light disabled:opacity-40"
@@ -126,6 +129,7 @@ export default function OnboardingPage() {
         {step === 2 && (
           <div>
             <button
+              type="button"
               onClick={() => setStep(1)}
               className="mb-6 flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
             >
@@ -142,12 +146,13 @@ export default function OnboardingPage() {
               {INTEREST_TAGS.map((tag) => (
                 <button
                   key={tag}
+                  type="button"
                   onClick={() => toggleTag(tag)}
                   className={cn(
                     "rounded-full border px-4 py-2 text-sm font-medium transition-all",
                     selectedTags.includes(tag)
                       ? "border-primary bg-primary text-primary-foreground"
-                      : "border-border bg-card text-foreground hover:border-primary"
+                      : "border-border bg-card text-foreground hover:border-primary",
                   )}
                 >
                   {tag}
@@ -156,9 +161,11 @@ export default function OnboardingPage() {
             </div>
             <p className="mt-4 text-sm text-muted-foreground">
               {selectedTags.length} selected
-              {selectedTags.length < 3 && ` (${3 - selectedTags.length} more needed)`}
+              {selectedTags.length < 3 &&
+                ` (${3 - selectedTags.length} more needed)`}
             </p>
             <button
+              type="button"
               onClick={() => setStep(3)}
               disabled={selectedTags.length < 3}
               className="mt-8 inline-flex w-full items-center justify-center gap-2 rounded-full bg-primary px-8 py-4 font-semibold text-primary-foreground transition-colors hover:bg-primary-light disabled:opacity-40"
@@ -172,6 +179,7 @@ export default function OnboardingPage() {
         {step === 3 && (
           <div>
             <button
+              type="button"
               onClick={() => setStep(2)}
               className="mb-6 flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
             >
@@ -192,13 +200,14 @@ export default function OnboardingPage() {
                   <div className="space-y-2">
                     {q.options.map((opt, oi) => (
                       <button
-                        key={oi}
+                        key={`${q.id}-${oi}`}
+                        type="button"
                         onClick={() => selectAnswer(q.id, oi)}
                         className={cn(
                           "flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left text-sm transition-all",
                           quizAnswers[q.id] === oi
                             ? "border-primary bg-primary-muted/20 text-foreground"
-                            : "border-border bg-card text-muted-foreground hover:border-primary/40"
+                            : "border-border bg-card text-muted-foreground hover:border-primary/40",
                         )}
                       >
                         <span
@@ -206,7 +215,7 @@ export default function OnboardingPage() {
                             "flex size-5 shrink-0 items-center justify-center rounded-full border text-xs font-bold",
                             quizAnswers[q.id] === oi
                               ? "border-primary bg-primary text-primary-foreground"
-                              : "border-border"
+                              : "border-border",
                           )}
                         >
                           {quizAnswers[q.id] === oi ? (
@@ -223,6 +232,7 @@ export default function OnboardingPage() {
               ))}
             </div>
             <button
+              type="button"
               onClick={() => setStep(4)}
               disabled={!quizComplete}
               className="mt-8 inline-flex w-full items-center justify-center gap-2 rounded-full bg-primary px-8 py-4 font-semibold text-primary-foreground transition-colors hover:bg-primary-light disabled:opacity-40"
@@ -258,7 +268,13 @@ export default function OnboardingPage() {
                 ].map((m) => (
                   <li key={m} className="flex items-center gap-2 text-sm">
                     <Check className="size-4 text-primary" />
-                    <span className={m.includes("✓") ? "text-foreground" : "text-muted-foreground"}>
+                    <span
+                      className={
+                        m.includes("✓")
+                          ? "text-foreground"
+                          : "text-muted-foreground"
+                      }
+                    >
                       {m.replace(" ✓", "")}
                     </span>
                   </li>
@@ -266,18 +282,25 @@ export default function OnboardingPage() {
               </ul>
             </div>
             <button
+              type="button"
               onClick={() =>
+                role &&
                 startTransition(() =>
-                  completeOnboarding({ role: role!, interestTags: selectedTags })
+                  completeOnboarding({
+                    role,
+                    interestTags: selectedTags,
+                  }),
                 )
               }
-              disabled={isPending}
+              disabled={isPending || !role}
               className="inline-flex items-center gap-2 rounded-full bg-primary px-10 py-4 text-base font-semibold text-primary-foreground transition-colors hover:bg-primary-light disabled:opacity-60"
             >
               {isPending ? (
                 <Loader2 className="size-4 animate-spin" />
               ) : (
-                <>Go to My Dashboard <ArrowRight className="size-4" /></>
+                <>
+                  Go to My Dashboard <ArrowRight className="size-4" />
+                </>
               )}
             </button>
           </div>

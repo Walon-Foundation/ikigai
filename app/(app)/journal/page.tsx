@@ -1,8 +1,8 @@
+import { desc, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
-import { getDbUser } from "@/lib/db-user";
 import { db } from "@/db/db";
 import { journalEntries } from "@/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { getDbUser } from "@/lib/db-user";
 import { JournalClient } from "./journal-client";
 
 type Visibility = "private" | "mentor_only" | "community";

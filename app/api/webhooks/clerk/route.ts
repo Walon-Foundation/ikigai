@@ -1,8 +1,7 @@
-import { Webhook } from "svix";
 import { headers } from "next/headers";
+import { Webhook } from "svix";
 import { db } from "@/db/db";
 import { users } from "@/db/schema";
-import { eq } from "drizzle-orm";
 
 type ClerkUserCreatedEvent = {
   type: "user.created";
@@ -21,7 +20,10 @@ type ClerkEvent = ClerkUserCreatedEvent;
 export async function POST(request: Request) {
   const secret = process.env.CLERK_WEBHOOK_SECRET;
   if (!secret) {
-    return Response.json({ error: "Webhook secret not configured" }, { status: 500 });
+    return Response.json(
+      { error: "Webhook secret not configured" },
+      { status: 500 },
+    );
   }
 
   const headersList = await headers();
@@ -48,18 +50,33 @@ export async function POST(request: Request) {
   }
 
   if (event.type === "user.created") {
-    const { id: clerkId, email_addresses, primary_email_address_id, first_name, last_name } = event.data;
+    const {
+      id: clerkId,
+      email_addresses,
+      primary_email_address_id,
+      first_name,
+      last_name,
+    } = event.data;
 
-    const primaryEmail = email_addresses.find(
-      (e) => e.id === primary_email_address_id
-    )?.email_address ?? email_addresses[0]?.email_address ?? null;
+    const primaryEmail =
+      email_addresses.find((e) => e.id === primary_email_address_id)
+        ?.email_address ??
+      email_addresses[0]?.email_address ??
+      null;
 
     const displayName =
       [first_name, last_name].filter(Boolean).join(" ") || "User";
 
     await db
       .insert(users)
-      .values({ clerkId, email: primaryEmail, displayName, role: "mentee", growthLevel: 1, interestTags: [] })
+      .values({
+        clerkId,
+        email: primaryEmail,
+        displayName,
+        role: "mentee",
+        growthLevel: 1,
+        interestTags: [],
+      })
       .onConflictDoNothing({ target: users.clerkId });
   }
 

@@ -1,10 +1,10 @@
 "use server";
 
 import { auth } from "@clerk/nextjs/server";
+import { count, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db/db";
-import { journalEntries, users, milestones } from "@/db/schema";
-import { eq, count } from "drizzle-orm";
+import { journalEntries, milestones, users } from "@/db/schema";
 
 export async function saveJournalEntry(data: {
   content: string;

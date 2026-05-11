@@ -1,10 +1,10 @@
 "use server";
 
 import { auth, currentUser } from "@clerk/nextjs/server";
+import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { db } from "@/db/db";
-import { users, milestones } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { milestones, users } from "@/db/schema";
 
 export async function completeOnboarding(data: {
   role: "mentee" | "mentor" | "club_lead";
@@ -33,7 +33,8 @@ export async function completeOnboarding(data: {
     const clerkUser = await currentUser();
     const displayName =
       clerkUser?.fullName ??
-      ([clerkUser?.firstName, clerkUser?.lastName].filter(Boolean).join(" ") || "User");
+      ([clerkUser?.firstName, clerkUser?.lastName].filter(Boolean).join(" ") ||
+        "User");
 
     const [newUser] = await db
       .insert(users)
@@ -46,7 +47,9 @@ export async function completeOnboarding(data: {
       })
       .returning();
 
-    await db.insert(milestones).values({ userId: newUser.id, type: "purpose_quiz" });
+    await db
+      .insert(milestones)
+      .values({ userId: newUser.id, type: "purpose_quiz" });
   }
 
   redirect("/dashboard");

@@ -1,16 +1,16 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useUser, useClerk } from "@clerk/nextjs";
+import { useClerk, useUser } from "@clerk/nextjs";
 import {
+  BookOpen,
   LayoutDashboard,
+  LogOut,
+  Settings,
   TreePine,
   Users,
-  BookOpen,
-  Settings,
-  LogOut,
 } from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
@@ -41,7 +41,9 @@ export function AppSidebar() {
     <aside className="hidden lg:flex h-screen w-64 flex-col border-r border-border bg-card sticky top-0">
       {/* Brand */}
       <div className="flex h-16 items-center gap-2 border-b border-border px-6">
-        <span className="font-display text-xl font-black text-primary">Ikigai</span>
+        <span className="font-display text-xl font-black text-primary">
+          Ikigai
+        </span>
         <span className="text-lg">🌱</span>
       </div>
 
@@ -74,7 +76,7 @@ export function AppSidebar() {
                   "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                   isActive
                     ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
                 )}
               >
                 <item.icon
@@ -90,6 +92,7 @@ export function AppSidebar() {
       {/* Sign out */}
       <div className="border-t border-border p-3">
         <button
+          type="button"
           onClick={() => signOut({ redirectUrl: "/" })}
           className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
         >

@@ -1,12 +1,16 @@
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
-import { getOrCreateDbUser } from "@/lib/db-user";
 import { AppNav } from "@/components/app-nav";
 import { AppSidebar } from "@/components/app-sidebar";
-import { PwaInstallPrompt } from "@/components/pwa-install-prompt";
 import { LiteModeInit } from "@/components/lite-mode-init";
+import { PwaInstallPrompt } from "@/components/pwa-install-prompt";
+import { getOrCreateDbUser } from "@/lib/db-user";
 
-export default async function AppLayout({ children }: { children: React.ReactNode }) {
+export default async function AppLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const { userId } = await auth();
   if (!userId) redirect("/sign-in");
 

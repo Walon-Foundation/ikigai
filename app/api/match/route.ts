@@ -1,8 +1,8 @@
-import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
+import { eq } from "drizzle-orm";
+import { NextResponse } from "next/server";
 import { db } from "@/db/db";
 import { users } from "@/db/schema";
-import { eq, isNotNull } from "drizzle-orm";
 import { MOCK_MENTORS } from "@/lib/mock-data";
 
 function calcMatchScore(userTags: string[], mentorTags: string[]): number {
@@ -17,7 +17,8 @@ function calcMatchScore(userTags: string[], mentorTags: string[]): number {
 
 export async function GET() {
   const { userId } = await auth();
-  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!userId)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const [me] = await db
     .select({ id: users.id, interestTags: users.interestTags })

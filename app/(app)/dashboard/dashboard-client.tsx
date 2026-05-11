@@ -1,15 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { BookOpen, ChevronRight, MessageCircle, TreePine } from "lucide-react";
 import Link from "next/link";
-import {
-  TreePine,
-  BookOpen,
-  MessageCircle,
-  ChevronRight,
-} from "lucide-react";
-import { cn } from "@/lib/utils";
+import { useState } from "react";
 import { PageHeader } from "@/components/page-header";
+import { cn } from "@/lib/utils";
 
 type Role = "mentee" | "mentor" | "club_lead";
 const ROLE_LABELS: Record<Role, string> = {
@@ -18,7 +13,11 @@ const ROLE_LABELS: Record<Role, string> = {
   club_lead: "Club Lead",
 };
 
-type Mentor = { displayName: string | null; bio: string | null; interestTags: string[] | null } | null;
+type Mentor = {
+  displayName: string | null;
+  bio: string | null;
+  interestTags: string[] | null;
+} | null;
 type Mentorship = {
   id: string;
   status: string | null;
@@ -30,53 +29,68 @@ type Mentorship = {
 type Props = {
   user: { displayName: string; role: string; growthLevel: number };
   activeMentorship: Mentorship;
-  latestEntry: { content: string; createdAt: string; visibility: string } | null;
+  latestEntry: {
+    content: string;
+    createdAt: string;
+    visibility: string;
+  } | null;
   milestoneCount: number;
 };
 
-export function DashboardClient({ user, activeMentorship, latestEntry, milestoneCount }: Props) {
+export function DashboardClient({
+  user,
+  activeMentorship,
+  latestEntry,
+  milestoneCount,
+}: Props) {
   const [role, setRole] = useState<Role>(
-    (user.role as Role) in ROLE_LABELS ? (user.role as Role) : "mentee"
+    (user.role as Role) in ROLE_LABELS ? (user.role as Role) : "mentee",
   );
 
   return (
     <>
       <PageHeader showGreeting />
       <div className="mx-auto max-w-2xl px-4 py-6">
-      {/* Role Switcher */}
-      <div className="mb-6 flex rounded-xl border border-border bg-muted p-1">
-        {(Object.keys(ROLE_LABELS) as Role[]).map((r) => (
-          <button
-            key={r}
-            onClick={() => setRole(r)}
-            className={cn(
-              "flex-1 rounded-lg py-2 text-xs font-semibold transition-all",
-              role === r
-                ? "bg-card text-foreground shadow-sm"
-                : "text-muted-foreground"
-            )}
-          >
-            {ROLE_LABELS[r]}
-          </button>
-        ))}
-      </div>
+        {/* Role Switcher */}
+        <div className="mb-6 flex rounded-xl border border-border bg-muted p-1">
+          {(Object.keys(ROLE_LABELS) as Role[]).map((r) => (
+            <button
+              key={r}
+              type="button"
+              onClick={() => setRole(r)}
+              className={cn(
+                "flex-1 rounded-lg py-2 text-xs font-semibold transition-all",
+                role === r
+                  ? "bg-card text-foreground shadow-sm"
+                  : "text-muted-foreground",
+              )}
+            >
+              {ROLE_LABELS[r]}
+            </button>
+          ))}
+        </div>
 
-      {role === "mentee" && (
-        <MenteeView
-          user={user}
-          activeMentorship={activeMentorship}
-          latestEntry={latestEntry}
-          milestoneCount={milestoneCount}
-        />
-      )}
-      {role === "mentor" && <MentorView />}
-      {role === "club_lead" && <ClubLeadView />}
-    </div>
+        {role === "mentee" && (
+          <MenteeView
+            user={user}
+            activeMentorship={activeMentorship}
+            latestEntry={latestEntry}
+            milestoneCount={milestoneCount}
+          />
+        )}
+        {role === "mentor" && <MentorView />}
+        {role === "club_lead" && <ClubLeadView />}
+      </div>
     </>
   );
 }
 
-function MenteeView({ user, activeMentorship, latestEntry, milestoneCount }: Omit<Props, "user"> & { user: Props["user"] }) {
+function MenteeView({
+  user,
+  activeMentorship,
+  latestEntry,
+  milestoneCount,
+}: Omit<Props, "user"> & { user: Props["user"] }) {
   const nextLevelMilestones = 6;
 
   return (
@@ -95,12 +109,16 @@ function MenteeView({ user, activeMentorship, latestEntry, milestoneCount }: Omi
         <div className="mt-4">
           <div className="mb-1 flex justify-between text-xs text-primary-muted">
             <span>Progress to Advocate</span>
-            <span>{milestoneCount} / {nextLevelMilestones} milestones</span>
+            <span>
+              {milestoneCount} / {nextLevelMilestones} milestones
+            </span>
           </div>
           <div className="h-2 w-full rounded-full bg-primary-muted/30">
             <div
               className="h-2 rounded-full bg-primary-foreground transition-all"
-              style={{ width: `${Math.min((milestoneCount / nextLevelMilestones) * 100, 100)}%` }}
+              style={{
+                width: `${Math.min((milestoneCount / nextLevelMilestones) * 100, 100)}%`,
+              }}
             />
           </div>
         </div>
@@ -189,8 +207,18 @@ function MenteeView({ user, activeMentorship, latestEntry, milestoneCount }: Omi
         </p>
         <div className="space-y-3">
           {[
-            { href: "/pad-her-power", icon: "💚", title: "Pad Her Power", color: "bg-earth" },
-            { href: "/safety", icon: "🛡️", title: "Safety Awareness", color: "bg-primary" },
+            {
+              href: "/pad-her-power",
+              icon: "💚",
+              title: "Pad Her Power",
+              color: "bg-earth",
+            },
+            {
+              href: "/safety",
+              icon: "🛡️",
+              title: "Safety Awareness",
+              color: "bg-primary",
+            },
           ].map((mod) => (
             <Link
               key={mod.title}
@@ -199,7 +227,9 @@ function MenteeView({ user, activeMentorship, latestEntry, milestoneCount }: Omi
             >
               <span className="text-2xl">{mod.icon}</span>
               <div className="flex-1">
-                <p className="text-sm font-semibold text-foreground">{mod.title}</p>
+                <p className="text-sm font-semibold text-foreground">
+                  {mod.title}
+                </p>
               </div>
               <ChevronRight className="size-4 text-muted-foreground" />
             </Link>
@@ -235,7 +265,9 @@ function MenteeView({ user, activeMentorship, latestEntry, milestoneCount }: Omi
                 {latestEntry.visibility.replace("_", " ")}
               </span>
             </div>
-            <p className="line-clamp-2 text-sm text-foreground">{latestEntry.content}</p>
+            <p className="line-clamp-2 text-sm text-foreground">
+              {latestEntry.content}
+            </p>
           </Link>
         </div>
       )}
@@ -248,7 +280,9 @@ function MentorView() {
     <div className="space-y-4">
       <div className="rounded-2xl bg-primary p-5 text-primary-foreground">
         <p className="font-display text-2xl font-black">Mentor Dashboard</p>
-        <p className="mt-1 text-sm text-primary-muted">Keep up the great work</p>
+        <p className="mt-1 text-sm text-primary-muted">
+          Keep up the great work
+        </p>
       </div>
       <div>
         <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">

@@ -102,7 +102,8 @@ export const MOCK_CHAT_MESSAGES = [
     id: "c4",
     senderId: "u1",
     senderName: "Aminata Koroma",
-    content: "Thank you! I will work on that. Should I share the code with you?",
+    content:
+      "Thank you! I will work on that. Should I share the code with you?",
     timestamp: "2026-05-06T09:25:00Z",
     isMine: true,
   },
@@ -219,8 +220,7 @@ export const MOCK_REPORTS = [
     reporterId: "u5",
     reportedId: "m3",
     type: "concern",
-    notes:
-      "Mentor seemed disengaged and cancelled 3 sessions without notice.",
+    notes: "Mentor seemed disengaged and cancelled 3 sessions without notice.",
     resolvedAt: "2026-05-03",
     createdAt: "2026-04-28",
     reporter: { displayName: "Mariama Turay" },
