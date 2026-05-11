@@ -1,36 +1,52 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Ikigai
 
-## Getting Started
+A purpose and mentorship platform for youth in Sierra Leone. Ikigai connects young people with verified mentors, supports journaling and self-discovery, and provides community safety tools — built as a progressive web app optimised for low-bandwidth environments.
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## What it does
+
+- **Mentorship** — AI-matched mentor connections with in-app messaging
+- **Journal** — private and mentor-visible journal entries with offline support
+- **Pad Her Power** — resource map and safety information for girls and young women
+- **School Clubs** — club leads can register and manage school ikigai clubs
+- **Growth Tree** — milestone-based visual progress tracker
+- **Admin panel** — separate subdomain (`admin.*`) for platform management
+
+## Tech stack
+
+| Layer | Technology |
+|---|---|
+| Framework | Next.js 16 (App Router) |
+| Language | TypeScript |
+| Auth | Clerk v7 |
+| Database | Neon Postgres (serverless) |
+| ORM | Drizzle ORM |
+| Styling | Tailwind CSS v4 |
+| PWA | Service worker + Web App Manifest |
+| Linting | Biome |
+
+## Project structure
+
+```
+app/
+  (app)/          — authenticated user-facing pages
+  admin/          — admin panel (subdomain-routed)
+  api/            — API routes
+  onboarding/     — new-user onboarding flow
+components/       — shared UI components
+db/
+  schema.ts       — Drizzle table definitions
+  migrations/     — generated SQL migrations
+lib/              — shared utilities
+scripts/          — one-off admin scripts
+public/           — static assets, icons, SW
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## License
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Proprietary — see [LICENSE](./LICENSE). All rights reserved.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Setup
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+See [SETUP.md](./SETUP.md) for local development instructions.
