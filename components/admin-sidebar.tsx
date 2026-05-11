@@ -1,16 +1,18 @@
 "use client";
 
+import { useClerk } from "@clerk/nextjs";
+import {
+  AlertTriangle,
+  BarChart3,
+  Bell,
+  LayoutDashboard,
+  LogOut,
+  School,
+  UserCheck,
+  Users,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  LayoutDashboard,
-  Users,
-  UserCheck,
-  School,
-  AlertTriangle,
-  Bell,
-  BarChart3,
-} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
@@ -23,13 +25,22 @@ const NAV_ITEMS = [
   { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
 ];
 
-export function AdminSidebar() {
+export function AdminSidebar({
+  displayName,
+  email,
+}: {
+  displayName?: string | null;
+  email?: string | null;
+}) {
   const pathname = usePathname();
+  const { signOut } = useClerk();
 
   return (
     <aside className="flex h-screen w-60 flex-col border-r border-border bg-card">
       <div className="flex h-16 items-center gap-2 border-b border-border px-5">
-        <span className="font-display text-lg font-black text-primary">Ikigai</span>
+        <span className="font-display text-lg font-black text-primary">
+          Ikigai
+        </span>
         <span className="rounded-full bg-primary/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary">
           Admin
         </span>
@@ -48,7 +59,7 @@ export function AdminSidebar() {
                   "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                   isActive
                     ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
                 )}
               >
                 <item.icon className="size-4" />
@@ -60,7 +71,22 @@ export function AdminSidebar() {
       </nav>
 
       <div className="border-t border-border p-4">
-        <p className="text-xs text-muted-foreground">Admin Panel · Ikigai Digital</p>
+        <div className="mb-3 min-w-0">
+          <p className="truncate text-sm font-medium text-foreground">
+            {displayName ?? "Admin"}
+          </p>
+          {email && (
+            <p className="truncate text-xs text-muted-foreground">{email}</p>
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={() => signOut({ redirectUrl: "/sign-in" })}
+          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        >
+          <LogOut className="size-4" />
+          Sign out
+        </button>
       </div>
     </aside>
   );

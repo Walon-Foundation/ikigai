@@ -1,16 +1,16 @@
-import Link from "next/link";
+import { and, count, desc, eq, isNotNull, isNull } from "drizzle-orm";
 import {
-  Users,
-  UserCheck,
-  School,
-  AlertTriangle,
   Activity,
-  TrendingUp,
+  AlertTriangle,
   ChevronRight,
+  School,
+  TrendingUp,
+  UserCheck,
+  Users,
 } from "lucide-react";
+import Link from "next/link";
 import { db } from "@/db/db";
-import { users, mentorships, schools, safetyReports } from "@/db/schema";
-import { count, eq, isNull, isNotNull, and, desc } from "drizzle-orm";
+import { mentorships, safetyReports, schools, users } from "@/db/schema";
 
 export default async function AdminDashboardPage() {
   const [
@@ -26,15 +26,47 @@ export default async function AdminDashboardPage() {
     recentUsers,
   ] = await Promise.all([
     db.select({ total: count() }).from(users),
-    db.select({ menteeCount: count() }).from(users).where(eq(users.role, "mentee")),
-    db.select({ mentorCount: count() }).from(users).where(eq(users.role, "mentor")),
-    db.select({ clubLeadCount: count() }).from(users).where(eq(users.role, "club_lead")),
-    db.select({ activeMentorships: count() }).from(mentorships).where(eq(mentorships.status, "active")),
-    db.select({ pendingMentors: count() }).from(users).where(and(eq(users.role, "mentor"), isNull(users.verifiedAt))),
-    db.select({ pendingSchools: count() }).from(schools).where(isNull(schools.verifiedAt)),
-    db.select({ openReports: count() }).from(safetyReports).where(isNull(safetyReports.resolvedAt)),
-    db.select({ schoolsEstablished: count() }).from(schools).where(isNotNull(schools.verifiedAt)),
-    db.select({ displayName: users.displayName, createdAt: users.createdAt }).from(users).orderBy(desc(users.createdAt)).limit(5),
+    db
+      .select({ menteeCount: count() })
+      .from(users)
+      .where(eq(users.role, "mentee")),
+    db
+      .select({ mentorCount: count() })
+      .from(users)
+      .where(eq(users.role, "mentor")),
+    db
+      .select({ clubLeadCount: count() })
+      .from(users)
+      .where(eq(users.role, "club_lead")),
+    db
+      .select({ activeMentorships: count() })
+      .from(mentorships)
+      .where(eq(mentorships.status, "active")),
+    db
+      .select({ pendingMentors: count() })
+      .from(users)
+      .where(and(eq(users.role, "mentor"), isNull(users.verifiedAt))),
+    db
+      .select({ pendingSchools: count() })
+      .from(schools)
+      .where(isNull(schools.verifiedAt)),
+    db
+      .select({ openReports: count() })
+      .from(safetyReports)
+      .where(isNull(safetyReports.resolvedAt)),
+    db
+      .select({ schoolsEstablished: count() })
+      .from(schools)
+      .where(isNotNull(schools.verifiedAt)),
+    db
+      .select({
+        id: users.id,
+        displayName: users.displayName,
+        createdAt: users.createdAt,
+      })
+      .from(users)
+      .orderBy(desc(users.createdAt))
+      .limit(5),
   ]);
 
   const stats = {
@@ -138,7 +170,10 @@ export default async function AdminDashboardPage() {
       <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {KPI_CARDS.map((card) => {
           const inner = (
-            <div className="rounded-xl border border-border bg-card p-5 hover:border-primary/30 transition-colors">
+            <div
+              key={card.label}
+              className="rounded-xl border border-border bg-card p-5 hover:border-primary/30 transition-colors"
+            >
               <div className="flex items-center justify-between">
                 <div className={`rounded-lg p-2 ${card.bg}`}>
                   <card.icon className={`size-5 ${card.color}`} />
@@ -147,7 +182,9 @@ export default async function AdminDashboardPage() {
                   <ChevronRight className="size-4 text-muted-foreground" />
                 )}
               </div>
-              <p className={`mt-3 font-display text-3xl font-black ${card.color}`}>
+              <p
+                className={`mt-3 font-display text-3xl font-black ${card.color}`}
+              >
                 {card.value}
               </p>
               <p className="mt-0.5 text-sm font-semibold text-foreground">
@@ -178,8 +215,8 @@ export default async function AdminDashboardPage() {
             {recentUsers.length === 0 ? (
               <p className="text-sm text-muted-foreground">No users yet.</p>
             ) : (
-              recentUsers.map((u, i) => (
-                <div key={i} className="flex items-start gap-3">
+              recentUsers.map((u) => (
+                <div key={u.id} className="flex items-start gap-3">
                   <div className="mt-1.5 size-2 shrink-0 rounded-full bg-primary" />
                   <div>
                     <p className="text-sm text-foreground">
@@ -202,9 +239,24 @@ export default async function AdminDashboardPage() {
           </h2>
           <div className="space-y-3">
             {[
-              { href: "/admin/mentors", label: "Mentor Verification", count: stats.pendingMentors, urgent: false },
-              { href: "/admin/schools", label: "School Vetting", count: stats.pendingSchools, urgent: false },
-              { href: "/admin/reports", label: "Safety Reports", count: stats.openReports, urgent: true },
+              {
+                href: "/admin/mentors",
+                label: "Mentor Verification",
+                count: stats.pendingMentors,
+                urgent: false,
+              },
+              {
+                href: "/admin/schools",
+                label: "School Vetting",
+                count: stats.pendingSchools,
+                urgent: false,
+              },
+              {
+                href: "/admin/reports",
+                label: "Safety Reports",
+                count: stats.openReports,
+                urgent: true,
+              },
             ].map((item) => (
               <Link
                 key={item.href}

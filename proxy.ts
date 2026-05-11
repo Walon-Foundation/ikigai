@@ -11,7 +11,7 @@ const isProtectedRoute = createRouteMatcher([
   "/safety(.*)",
   "/school(.*)",
   "/onboarding(.*)",
-  "/admin(.*)",
+  "/admin((?!/sign-in).*)",
 ]);
 
 export default clerkMiddleware(async (auth, request) => {
@@ -29,7 +29,10 @@ export default clerkMiddleware(async (auth, request) => {
 
     // Rewrite all non-admin-prefixed paths to /admin/*
     // Includes /sign-in → /admin/sign-in (so admin gets its own sign-in page)
-    if (!pathname.startsWith("/admin") && !pathname.startsWith("/sso-callback")) {
+    if (
+      !pathname.startsWith("/admin") &&
+      !pathname.startsWith("/sso-callback")
+    ) {
       const url = request.nextUrl.clone();
       url.pathname = pathname === "/" ? "/admin" : `/admin${pathname}`;
       return NextResponse.rewrite(url);

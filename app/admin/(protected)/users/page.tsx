@@ -1,7 +1,7 @@
+import { eq } from "drizzle-orm";
 import Link from "next/link";
 import { db } from "@/db/db";
-import { users, schools } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { schools, users } from "@/db/schema";
 import { cn } from "@/lib/utils";
 
 const ROLE_LABELS: Record<string, string> = {
@@ -70,7 +70,7 @@ export default async function AdminUsersPage({
               "rounded-full px-4 py-2 text-sm font-medium transition-colors capitalize",
               filter === f
                 ? "bg-primary text-primary-foreground"
-                : "border border-border text-muted-foreground hover:text-foreground"
+                : "border border-border text-muted-foreground hover:text-foreground",
             )}
           >
             {f === "all" ? "All Users" : f.replace("_", " ")}
@@ -107,7 +107,10 @@ export default async function AdminUsersPage({
             <tbody>
               {rows.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-sm text-muted-foreground">
+                  <td
+                    colSpan={6}
+                    className="px-4 py-8 text-center text-sm text-muted-foreground"
+                  >
                     No users found.
                   </td>
                 </tr>
@@ -123,7 +126,7 @@ export default async function AdminUsersPage({
                       key={user.id}
                       className={cn(
                         "border-b border-border last:border-0",
-                        i % 2 === 0 ? "" : "bg-muted/20"
+                        i % 2 === 0 ? "" : "bg-muted/20",
                       )}
                     >
                       <td className="px-4 py-3">
@@ -136,7 +139,9 @@ export default async function AdminUsersPage({
                               {user.displayName ?? "—"}
                             </span>
                             {user.email && (
-                              <p className="text-xs text-muted-foreground">{user.email}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {user.email}
+                              </p>
                             )}
                           </div>
                         </div>
@@ -159,7 +164,8 @@ export default async function AdminUsersPage({
                         <span
                           className={cn(
                             "rounded-full px-2 py-0.5 text-xs font-medium capitalize",
-                            STATUS_STYLES[status] ?? "bg-muted text-muted-foreground"
+                            STATUS_STYLES[status] ??
+                              "bg-muted text-muted-foreground",
                           )}
                         >
                           {status}

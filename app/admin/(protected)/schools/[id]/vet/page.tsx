@@ -1,9 +1,9 @@
-import Link from "next/link";
+import { eq } from "drizzle-orm";
 import { ChevronLeft } from "lucide-react";
+import Link from "next/link";
+import { notFound } from "next/navigation";
 import { db } from "@/db/db";
 import { schools, users } from "@/db/schema";
-import { eq } from "drizzle-orm";
-import { notFound } from "next/navigation";
 import { VetActions } from "./vet-actions";
 
 export default async function VetSchoolPage({
@@ -62,7 +62,9 @@ export default async function VetSchoolPage({
           {clubLeadName && (
             <div className="flex justify-between">
               <span className="text-muted-foreground">Submitted by</span>
-              <span className="font-medium text-foreground">{clubLeadName}</span>
+              <span className="font-medium text-foreground">
+                {clubLeadName}
+              </span>
             </div>
           )}
           <div className="flex justify-between">

@@ -1,6 +1,6 @@
+import { desc } from "drizzle-orm";
 import { db } from "@/db/db";
 import { pushNotifications } from "@/db/schema";
-import { desc } from "drizzle-orm";
 import { NotificationsClient } from "./notifications-client";
 
 export default async function AdminNotificationsPage() {

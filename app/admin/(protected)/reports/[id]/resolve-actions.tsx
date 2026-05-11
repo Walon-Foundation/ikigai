@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import { Check } from "lucide-react";
+import { useState } from "react";
 
 export function ResolveActions({
   reportId,
@@ -44,6 +44,7 @@ export function ResolveActions({
 
       {!resolved ? (
         <button
+          type="button"
           onClick={handleResolve}
           disabled={loading}
           className="flex w-full items-center justify-center gap-2 rounded-full bg-primary py-4 font-semibold text-primary-foreground hover:bg-primary-light transition-colors disabled:opacity-50"

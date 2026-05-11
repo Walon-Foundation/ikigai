@@ -1,8 +1,8 @@
+import { and, eq, isNotNull, isNull } from "drizzle-orm";
+import { ChevronRight, Clock } from "lucide-react";
 import Link from "next/link";
-import { Clock, ChevronRight } from "lucide-react";
 import { db } from "@/db/db";
 import { users } from "@/db/schema";
-import { eq, isNull, isNotNull, and } from "drizzle-orm";
 
 export default async function AdminMentorsPage() {
   const [pending, verified] = await Promise.all([
@@ -62,7 +62,10 @@ export default async function AdminMentorsPage() {
                 className="flex items-center gap-4 rounded-xl border border-border bg-card p-5 hover:border-primary/40 transition-colors"
               >
                 <div className="flex size-12 items-center justify-center rounded-full bg-primary/10 font-display font-bold text-primary">
-                  {(mentor.displayName ?? "?").split(" ").map((n) => n[0]).join("")}
+                  {(mentor.displayName ?? "?")
+                    .split(" ")
+                    .map((n) => n[0])
+                    .join("")}
                 </div>
                 <div className="flex-1">
                   <p className="font-semibold text-foreground">
@@ -110,7 +113,10 @@ export default async function AdminMentorsPage() {
                 className="flex items-center gap-4 rounded-xl border border-border bg-card p-5"
               >
                 <div className="flex size-12 items-center justify-center rounded-full bg-primary/10 font-display font-bold text-primary">
-                  {(mentor.displayName ?? "?").split(" ").map((n) => n[0]).join("")}
+                  {(mentor.displayName ?? "?")
+                    .split(" ")
+                    .map((n) => n[0])
+                    .join("")}
                 </div>
                 <div className="flex-1">
                   <p className="font-semibold text-foreground">

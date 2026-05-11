@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Check, X } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 export function VerifyActions({
   mentorId,
@@ -12,7 +12,9 @@ export function VerifyActions({
   mentorName: string;
 }) {
   const router = useRouter();
-  const [decision, setDecision] = useState<"approved" | "rejected" | null>(null);
+  const [decision, setDecision] = useState<"approved" | "rejected" | null>(
+    null,
+  );
   const [loading, setLoading] = useState(false);
 
   async function handleDecision(action: "approved" | "rejected") {
@@ -51,6 +53,7 @@ export function VerifyActions({
             : "They have been notified by email."}
         </p>
         <button
+          type="button"
           onClick={() => router.push("/admin/mentors")}
           className="mt-8 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground"
         >
@@ -63,6 +66,7 @@ export function VerifyActions({
   return (
     <div className="flex gap-4">
       <button
+        type="button"
         onClick={() => handleDecision("approved")}
         disabled={loading}
         className="flex flex-1 items-center justify-center gap-2 rounded-full bg-primary py-4 font-semibold text-primary-foreground hover:bg-primary-light transition-colors disabled:opacity-50"
@@ -71,6 +75,7 @@ export function VerifyActions({
         Approve Mentor
       </button>
       <button
+        type="button"
         onClick={() => handleDecision("rejected")}
         disabled={loading}
         className="flex flex-1 items-center justify-center gap-2 rounded-full border border-destructive py-4 font-semibold text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50"

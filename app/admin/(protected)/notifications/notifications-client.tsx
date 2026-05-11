@@ -1,7 +1,7 @@
 "use client";
 
+import { Bell, Send } from "lucide-react";
 import { useState } from "react";
-import { Send, Bell } from "lucide-react";
 
 const AUDIENCES = [
   { value: "all", label: "All Users" },
@@ -45,10 +45,14 @@ export function NotificationsClient({ history }: { history: NotifHistory[] }) {
 
         <div className="space-y-4">
           <div>
-            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            <label
+              htmlFor="notif-title"
+              className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+            >
               Title
             </label>
             <input
+              id="notif-title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Notification title"
@@ -57,10 +61,14 @@ export function NotificationsClient({ history }: { history: NotifHistory[] }) {
           </div>
 
           <div>
-            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            <label
+              htmlFor="notif-body"
+              className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+            >
               Message
             </label>
             <textarea
+              id="notif-body"
               value={body}
               onChange={(e) => setBody(e.target.value)}
               placeholder="Notification body text..."
@@ -70,10 +78,14 @@ export function NotificationsClient({ history }: { history: NotifHistory[] }) {
           </div>
 
           <div>
-            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            <label
+              htmlFor="notif-audience"
+              className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+            >
               Audience
             </label>
             <select
+              id="notif-audience"
               value={audience}
               onChange={(e) => setAudience(e.target.value)}
               className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none focus:border-primary"
@@ -106,6 +118,7 @@ export function NotificationsClient({ history }: { history: NotifHistory[] }) {
           )}
 
           <button
+            type="button"
             onClick={handleSend}
             disabled={!title.trim() || !body.trim()}
             className="flex w-full items-center justify-center gap-2 rounded-full bg-primary py-3 font-semibold text-primary-foreground hover:bg-primary-light disabled:opacity-40 transition-colors"
@@ -145,7 +158,9 @@ export function NotificationsClient({ history }: { history: NotifHistory[] }) {
                 </p>
                 <div className="mt-2 flex items-center gap-2 text-[10px] text-muted-foreground">
                   {notif.sentAt && (
-                    <span>{new Date(notif.sentAt).toLocaleDateString("en-GB")}</span>
+                    <span>
+                      {new Date(notif.sentAt).toLocaleDateString("en-GB")}
+                    </span>
                   )}
                 </div>
               </div>

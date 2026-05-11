@@ -1,10 +1,9 @@
-import Link from "next/link";
+import { aliasedTable, eq } from "drizzle-orm";
 import { ChevronLeft } from "lucide-react";
+import Link from "next/link";
+import { notFound } from "next/navigation";
 import { db } from "@/db/db";
 import { safetyReports, users } from "@/db/schema";
-import { eq } from "drizzle-orm";
-import { aliasedTable } from "drizzle-orm";
-import { notFound } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { ResolveActions } from "./resolve-actions";
 
@@ -57,7 +56,7 @@ export default async function AdminReportDetailPage({
             "rounded-full px-3 py-1 text-xs font-bold capitalize",
             isResolved
               ? "bg-primary/10 text-primary"
-              : "bg-destructive/10 text-destructive"
+              : "bg-destructive/10 text-destructive",
           )}
         >
           {isResolved ? "Resolved" : "Open"}
@@ -92,7 +91,7 @@ export default async function AdminReportDetailPage({
                 "rounded-full px-2.5 py-1 text-xs font-semibold capitalize",
                 report.type === "inappropriate"
                   ? "bg-destructive/10 text-destructive"
-                  : "bg-accent/10 text-accent"
+                  : "bg-accent/10 text-accent",
               )}
             >
               {report.type}

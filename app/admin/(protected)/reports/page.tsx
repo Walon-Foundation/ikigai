@@ -1,9 +1,8 @@
-import Link from "next/link";
+import { aliasedTable, desc, eq } from "drizzle-orm";
 import { AlertTriangle, CheckCircle, ChevronRight } from "lucide-react";
+import Link from "next/link";
 import { db } from "@/db/db";
 import { safetyReports, users } from "@/db/schema";
-import { eq, isNull, isNotNull, desc } from "drizzle-orm";
-import { aliasedTable } from "drizzle-orm";
 import { cn } from "@/lib/utils";
 
 const TYPE_STYLES: Record<string, string> = {
@@ -74,7 +73,8 @@ export default async function AdminReportsPage() {
                     <span
                       className={cn(
                         "rounded-full px-2 py-0.5 text-xs font-semibold capitalize",
-                        TYPE_STYLES[report.type ?? ""] ?? "bg-muted text-muted-foreground"
+                        TYPE_STYLES[report.type ?? ""] ??
+                          "bg-muted text-muted-foreground",
                       )}
                     >
                       {report.type}

@@ -1,8 +1,8 @@
+import { count, eq, isNotNull, isNull } from "drizzle-orm";
+import { CheckCircle, ChevronRight } from "lucide-react";
 import Link from "next/link";
-import { Clock, ChevronRight, CheckCircle } from "lucide-react";
 import { db } from "@/db/db";
 import { schools, users } from "@/db/schema";
-import { eq, isNull, isNotNull, count } from "drizzle-orm";
 
 export default async function AdminSchoolsPage() {
   const [pending, active] = await Promise.all([
@@ -36,9 +36,11 @@ export default async function AdminSchoolsPage() {
         .from(users)
         .where(eq(users.schoolId, school.id));
       return { schoolId: school.id, count: Number(memberCount) };
-    })
+    }),
   );
-  const countMap = Object.fromEntries(memberCounts.map((m) => [m.schoolId, m.count]));
+  const countMap = Object.fromEntries(
+    memberCounts.map((m) => [m.schoolId, m.count]),
+  );
 
   return (
     <div>
@@ -80,7 +82,9 @@ export default async function AdminSchoolsPage() {
                   <p className="font-semibold text-foreground">{school.name}</p>
                   <p className="text-sm text-muted-foreground capitalize">
                     {school.region?.replace("_", " ") ?? "—"}
-                    {school.clubLeadName ? ` · Submitted by ${school.clubLeadName}` : ""}
+                    {school.clubLeadName
+                      ? ` · Submitted by ${school.clubLeadName}`
+                      : ""}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -115,7 +119,8 @@ export default async function AdminSchoolsPage() {
                 <div className="flex-1">
                   <p className="font-semibold text-foreground">{school.name}</p>
                   <p className="text-sm capitalize text-muted-foreground">
-                    {school.region?.replace("_", " ") ?? "—"} · {countMap[school.id] ?? 0} members
+                    {school.region?.replace("_", " ") ?? "—"} ·{" "}
+                    {countMap[school.id] ?? 0} members
                   </p>
                 </div>
                 <span className="flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">

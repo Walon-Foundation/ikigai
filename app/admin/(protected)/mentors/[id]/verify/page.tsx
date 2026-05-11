@@ -1,9 +1,9 @@
+import { and, eq } from "drizzle-orm";
+import { Check, ChevronLeft, CreditCard, FileText } from "lucide-react";
 import Link from "next/link";
-import { ChevronLeft, FileText, CreditCard, Check } from "lucide-react";
+import { notFound } from "next/navigation";
 import { db } from "@/db/db";
 import { users } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
-import { notFound } from "next/navigation";
 import { VerifyActions } from "./verify-actions";
 
 export default async function VerifyMentorPage({
@@ -39,13 +39,18 @@ export default async function VerifyMentorPage({
       <div className="mb-6 rounded-xl border border-border bg-card p-6">
         <div className="mb-4 flex items-center gap-4">
           <div className="flex size-14 items-center justify-center rounded-full bg-primary/10 font-display text-lg font-bold text-primary">
-            {(mentor.displayName ?? "?").split(" ").map((n) => n[0]).join("")}
+            {(mentor.displayName ?? "?")
+              .split(" ")
+              .map((n) => n[0])
+              .join("")}
           </div>
           <div>
             <h2 className="font-display text-xl font-bold text-foreground">
               {mentor.displayName ?? "Unknown"}
             </h2>
-            <p className="text-sm text-muted-foreground">{mentor.email ?? "—"}</p>
+            <p className="text-sm text-muted-foreground">
+              {mentor.email ?? "—"}
+            </p>
           </div>
         </div>
 
@@ -53,7 +58,9 @@ export default async function VerifyMentorPage({
           <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Bio
           </p>
-          <p className="text-sm text-foreground">{mentor.bio ?? "No bio provided."}</p>
+          <p className="text-sm text-foreground">
+            {mentor.bio ?? "No bio provided."}
+          </p>
         </div>
 
         {mentor.interestTags && mentor.interestTags.length > 0 && (
