@@ -1,15 +1,16 @@
-import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
+import { asc, eq, or } from "drizzle-orm";
+import { type NextRequest, NextResponse } from "next/server";
 import { db } from "@/db/db";
-import { messages, users } from "@/db/schema";
-import { eq, asc } from "drizzle-orm";
+import { mentorships, messages, users } from "@/db/schema";
 
 export async function GET(
   _request: NextRequest,
-  { params }: { params: Promise<{ mentorshipId: string }> }
+  { params }: { params: Promise<{ mentorshipId: string }> },
 ) {
   const { userId } = await auth();
-  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!userId)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { mentorshipId } = await params;
 
@@ -18,6 +19,22 @@ export async function GET(
     .from(users)
     .where(eq(users.clerkId, userId))
     .limit(1);
+  if (!myUser)
+    return NextResponse.json({ error: "User not found" }, { status: 404 });
+
+  const [membership] = await db
+    .select({ id: mentorships.id })
+    .from(mentorships)
+    .where(
+      eq(mentorships.id, mentorshipId) &&
+        or(
+          eq(mentorships.menteeId, myUser.id),
+          eq(mentorships.mentorId, myUser.id),
+        ),
+    )
+    .limit(1);
+  if (!membership)
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const rows = await db
     .select({
@@ -39,6 +56,6 @@ export async function GET(
       senderName: m.senderName ?? "User",
       timestamp: m.createdAt?.toISOString() ?? new Date().toISOString(),
       isMine: m.senderId === myUser?.id,
-    }))
+    })),
   );
 }
