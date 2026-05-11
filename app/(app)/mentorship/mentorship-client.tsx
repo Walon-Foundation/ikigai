@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { Loader2, MessageCircle, Star, Users } from "lucide-react";
 import Link from "next/link";
-import { MessageCircle, Star, Users } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
 import { PageHeader } from "@/components/page-header";
+import { cn } from "@/lib/utils";
+import { connectWithMentor } from "./actions";
 
 type MentorUser = {
   id: string;
@@ -27,107 +29,127 @@ type Props = {
   suggestedMentors: MentorUser[];
 };
 
-export function MentorshipClient({ activeMentorships, suggestedMentors }: Props) {
+export function MentorshipClient({
+  activeMentorships,
+  suggestedMentors,
+}: Props) {
   const [showMatches, setShowMatches] = useState(false);
 
   return (
     <>
       <PageHeader title="Match" />
       <div className="mx-auto max-w-2xl px-4 py-6">
-      {/* Active Mentorships */}
-      {activeMentorships.length > 0 && (
-        <div className="mb-6">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Active Mentorship
-          </p>
-          {activeMentorships.map((m) => (
-            <Link
-              key={m.id}
-              href={`/mentorship/${m.id}`}
-              className="flex items-center gap-4 rounded-2xl border border-border bg-card p-5 hover:border-primary/40"
-            >
-              <div className="flex size-14 items-center justify-center rounded-full bg-primary-muted/30 font-display text-lg font-bold text-primary">
-                {m.mentor?.displayName
-                  ?.split(" ")
-                  .map((n) => n[0])
-                  .slice(0, 2)
-                  .join("") ?? "M"}
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <p className="font-semibold text-foreground">
-                    {m.mentor?.displayName ?? "Mentor"}
+        {/* Active Mentorships */}
+        {activeMentorships.length > 0 && (
+          <div className="mb-6">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Active Mentorship
+            </p>
+            {activeMentorships.map((m) => (
+              <Link
+                key={m.id}
+                href={`/mentorship/${m.id}`}
+                className="flex items-center gap-4 rounded-2xl border border-border bg-card p-5 hover:border-primary/40"
+              >
+                <div className="flex size-14 items-center justify-center rounded-full bg-primary-muted/30 font-display text-lg font-bold text-primary">
+                  {m.mentor?.displayName
+                    ?.split(" ")
+                    .map((n) => n[0])
+                    .slice(0, 2)
+                    .join("") ?? "M"}
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <p className="font-semibold text-foreground">
+                      {m.mentor?.displayName ?? "Mentor"}
+                    </p>
+                    <span className="rounded-full bg-primary-muted/20 px-2 py-0.5 text-[10px] font-semibold uppercase text-primary">
+                      {m.status}
+                    </span>
+                  </div>
+                  <p className="mt-0.5 text-sm text-muted-foreground">
+                    {m.mentor?.bio ?? m.mentor?.interestTags?.join(", ")}
                   </p>
-                  <span className="rounded-full bg-primary-muted/20 px-2 py-0.5 text-[10px] font-semibold uppercase text-primary">
-                    {m.status}
-                  </span>
+                  <div className="mt-2 flex items-center gap-3 text-xs text-muted-foreground">
+                    {m.matchScore && (
+                      <>
+                        <div className="flex items-center gap-1">
+                          <Star className="size-3 fill-accent text-accent" />
+                          <span>{m.matchScore}% match</span>
+                        </div>
+                        <span>·</span>
+                      </>
+                    )}
+                    {m.lastActivityAt && (
+                      <span>
+                        Last active{" "}
+                        {new Date(m.lastActivityAt).toLocaleDateString()}
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <p className="mt-0.5 text-sm text-muted-foreground">
-                  {m.mentor?.bio ?? m.mentor?.interestTags?.join(", ")}
-                </p>
-                <div className="mt-2 flex items-center gap-3 text-xs text-muted-foreground">
-                  {m.matchScore && (
-                    <>
-                      <div className="flex items-center gap-1">
-                        <Star className="size-3 fill-accent text-accent" />
-                        <span>{m.matchScore}% match</span>
-                      </div>
-                      <span>·</span>
-                    </>
-                  )}
-                  {m.lastActivityAt && (
-                    <span>Last active {new Date(m.lastActivityAt).toLocaleDateString()}</span>
-                  )}
-                </div>
-              </div>
-              <MessageCircle className="size-5 text-muted-foreground" />
-            </Link>
-          ))}
-        </div>
-      )}
-
-      {/* Vibe-Match */}
-      <div className="rounded-2xl border border-border bg-card p-5">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="font-semibold text-foreground">Vibe-Match</p>
-            <p className="text-sm text-muted-foreground">Find your perfect mentor</p>
-          </div>
-          <Users className="size-6 text-primary" />
-        </div>
-
-        {!showMatches ? (
-          <button
-            onClick={() => setShowMatches(true)}
-            className="mt-4 w-full rounded-full bg-primary py-3 text-sm font-semibold text-primary-foreground hover:bg-primary-light"
-          >
-            Find a Mentor
-          </button>
-        ) : suggestedMentors.length === 0 ? (
-          <div className="mt-4 rounded-xl bg-muted px-4 py-6 text-center text-sm text-muted-foreground">
-            No mentors available yet. Check back soon.
-          </div>
-        ) : (
-          <div className="mt-4 space-y-3">
-            {suggestedMentors.map((mentor) => (
-              <MentorCard key={mentor.id} mentor={mentor} />
+                <MessageCircle className="size-5 text-muted-foreground" />
+              </Link>
             ))}
           </div>
         )}
+
+        {/* Vibe-Match */}
+        <div className="rounded-2xl border border-border bg-card p-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-semibold text-foreground">Vibe-Match</p>
+              <p className="text-sm text-muted-foreground">
+                Find your perfect mentor
+              </p>
+            </div>
+            <Users className="size-6 text-primary" />
+          </div>
+
+          {!showMatches ? (
+            <button
+              type="button"
+              onClick={() => setShowMatches(true)}
+              className="mt-4 w-full rounded-full bg-primary py-3 text-sm font-semibold text-primary-foreground hover:bg-primary-light"
+            >
+              Find a Mentor
+            </button>
+          ) : suggestedMentors.length === 0 ? (
+            <div className="mt-4 rounded-xl bg-muted px-4 py-6 text-center text-sm text-muted-foreground">
+              No mentors available yet. Check back soon.
+            </div>
+          ) : (
+            <div className="mt-4 space-y-3">
+              {suggestedMentors.map((mentor) => (
+                <MentorCard key={mentor.id} mentor={mentor} />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
-    </div>
     </>
   );
 }
 
 function MentorCard({ mentor }: { mentor: MentorUser }) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
   const [connected, setConnected] = useState(false);
 
-  const initials = mentor.displayName
-    ?.split(" ")
-    .map((n) => n[0])
-    .slice(0, 2)
-    .join("") ?? "M";
+  const initials =
+    mentor.displayName
+      ?.split(" ")
+      .map((n) => n[0])
+      .slice(0, 2)
+      .join("") ?? "M";
+
+  function handleConnect() {
+    startTransition(async () => {
+      const { mentorshipId } = await connectWithMentor(mentor.id);
+      setConnected(true);
+      router.push(`/mentorship/${mentorshipId}`);
+    });
+  }
 
   return (
     <div className="rounded-xl border border-border p-4">
@@ -137,7 +159,9 @@ function MentorCard({ mentor }: { mentor: MentorUser }) {
         </div>
         <div className="flex-1">
           <div className="flex items-center justify-between">
-            <p className="font-semibold text-foreground">{mentor.displayName}</p>
+            <p className="font-semibold text-foreground">
+              {mentor.displayName}
+            </p>
             {mentor.matchScore && (
               <div className="flex items-center gap-1 text-xs font-semibold text-primary">
                 <Star className="size-3 fill-accent text-accent" />
@@ -159,16 +183,18 @@ function MentorCard({ mentor }: { mentor: MentorUser }) {
         </div>
       </div>
       <button
-        onClick={() => setConnected(true)}
-        disabled={connected}
+        type="button"
+        onClick={handleConnect}
+        disabled={connected || isPending}
         className={cn(
-          "mt-3 w-full rounded-full py-2 text-sm font-semibold transition-colors",
+          "mt-3 w-full rounded-full py-2 text-sm font-semibold transition-colors flex items-center justify-center gap-2",
           connected
             ? "bg-muted text-muted-foreground cursor-default"
-            : "bg-primary text-primary-foreground hover:bg-primary-light"
+            : "bg-primary text-primary-foreground hover:bg-primary-light disabled:opacity-60",
         )}
       >
-        {connected ? "Request Sent ✓" : "Connect"}
+        {isPending && <Loader2 className="size-4 animate-spin" />}
+        {connected ? "Connected ✓" : isPending ? "Connecting…" : "Connect"}
       </button>
     </div>
   );

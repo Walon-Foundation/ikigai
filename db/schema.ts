@@ -1,6 +1,21 @@
-import {pgTable, uuid, text, integer, timestamp, jsonb, pgEnum, boolean  } from "drizzle-orm/pg-core"
+import {
+  boolean,
+  integer,
+  jsonb,
+  pgEnum,
+  pgTable,
+  text,
+  timestamp,
+  unique,
+  uuid,
+} from "drizzle-orm/pg-core";
 
-export const roleEnum = pgEnum("role", ["mentee", "mentor", "club_lead", "admin"])
+export const roleEnum = pgEnum("role", [
+  "mentee",
+  "mentor",
+  "club_lead",
+  "admin",
+]);
 
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -13,7 +28,7 @@ export const users = pgTable("users", {
   schoolId: uuid("school_id").references(() => schools.id),
   growthLevel: integer("growth_level").default(1), // 1=Explorer, 2=Advocate, 3=Mentor
   verifiedAt: timestamp("verified_at"),
-  pushSubscription: jsonb("push_subscription"),    // Web Push subscription object
+  pushSubscription: jsonb("push_subscription"), // Web Push subscription object
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -40,23 +55,28 @@ export const journalEntries = pgTable("journal_entries", {
 export const schools = pgTable("schools", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),
-  region: text("region"),                  // 'freetown' | 'western_rural'
+  region: text("region"), // 'freetown' | 'western_rural'
   clubLeadId: uuid("club_lead_id"),
   verifiedAt: timestamp("verified_at"),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
-export const milestones = pgTable("milestones", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id").references(() => users.id),
-  type: text("type"),                      // 'purpose_quiz' | 'pad_her_power' | 'safety_module'
-  completedAt: timestamp("completed_at").defaultNow(),
-});
+export const milestones = pgTable(
+  "milestones",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").references(() => users.id),
+    type: text("type"), // 'purpose_quiz' | 'pad_her_power' | 'safety_module'
+    completedAt: timestamp("completed_at").defaultNow(),
+  },
+  (t) => [unique().on(t.userId, t.type)],
+);
 
 export const safetyReports = pgTable("safety_reports", {
   id: uuid("id").primaryKey().defaultRandom(),
   reporterId: uuid("reporter_id").references(() => users.id),
   reportedId: uuid("reported_id").references(() => users.id),
-  type: text("type"),                      // 'inappropriate' | 'concern'
+  type: text("type"), // 'inappropriate' | 'concern'
   notes: text("notes"),
   resolvedAt: timestamp("resolved_at"),
   createdAt: timestamp("created_at").defaultNow(),
@@ -67,7 +87,7 @@ export const pushNotifications = pgTable("push_notifications", {
   userId: uuid("user_id").references(() => users.id),
   title: text("title").notNull(),
   body: text("body").notNull(),
-  type: text("type"),                      // 'nudge' | 'match' | 'milestone' | 'broadcast'
+  type: text("type"), // 'nudge' | 'match' | 'milestone' | 'broadcast'
   sentAt: timestamp("sent_at").defaultNow(),
 });
 

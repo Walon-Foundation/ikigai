@@ -1,11 +1,11 @@
-import Link from "next/link";
-import { Users, MapPin, CheckCircle, Clock } from "lucide-react";
-import { PageHeader } from "@/components/page-header";
-import { getDbUser } from "@/lib/db-user";
-import { db } from "@/db/db";
-import { schools, users } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { CheckCircle, Clock, MapPin, Users } from "lucide-react";
 import { redirect } from "next/navigation";
+import { PageHeader } from "@/components/page-header";
+import { db } from "@/db/db";
+import { milestones, schools, users } from "@/db/schema";
+import { getDbUser } from "@/lib/db-user";
+import { RegisterSchoolForm } from "./register-form";
 
 export default async function SchoolPage() {
   const user = await getDbUser();
@@ -16,16 +16,38 @@ export default async function SchoolPage() {
       <>
         <PageHeader title="School" />
         <div className="mx-auto max-w-2xl px-4 py-6">
-          <div className="rounded-2xl border border-border bg-card p-8 text-center">
-            <p className="text-lg font-semibold text-foreground">Not in a school yet</p>
-            <p className="mt-2 text-sm text-muted-foreground">
-              You haven&apos;t been added to a school club. Ask your club lead to add you.
-            </p>
-          </div>
+          {user.role === "club_lead" ? (
+            <div className="rounded-2xl border border-border bg-card p-6">
+              <h2 className="mb-1 font-display text-xl font-black text-foreground">
+                Register Your School
+              </h2>
+              <p className="mb-6 text-sm text-muted-foreground">
+                Submit your school for admin review. Once approved, your club
+                will be live.
+              </p>
+              <RegisterSchoolForm />
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-border bg-card p-8 text-center">
+              <p className="text-lg font-semibold text-foreground">
+                Not in a school yet
+              </p>
+              <p className="mt-2 text-sm text-muted-foreground">
+                You haven&apos;t been added to a school club. Ask your club lead
+                to add you.
+              </p>
+            </div>
+          )}
         </div>
       </>
     );
   }
+
+  // Award school_join milestone for existing school members
+  await db
+    .insert(milestones)
+    .values({ userId: user.id, type: "school_join" })
+    .onConflictDoNothing();
 
   const [school] = await db
     .select()
@@ -60,7 +82,9 @@ export default async function SchoolPage() {
               {school.region && (
                 <div className="mt-2 flex items-center gap-2 text-sm text-primary-muted">
                   <MapPin className="size-3.5" />
-                  <span className="capitalize">{school.region.replace("_", " ")}</span>
+                  <span className="capitalize">
+                    {school.region.replace("_", " ")}
+                  </span>
                 </div>
               )}
             </div>
@@ -116,7 +140,10 @@ export default async function SchoolPage() {
                   className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3"
                 >
                   <div className="flex size-9 items-center justify-center rounded-full bg-primary-muted/30 font-display text-xs font-bold text-primary">
-                    {(member.displayName ?? "?").split(" ").map((n) => n[0]).join("")}
+                    {(member.displayName ?? "?")
+                      .split(" ")
+                      .map((n) => n[0])
+                      .join("")}
                   </div>
                   <div className="flex-1">
                     <p className="text-sm font-semibold text-foreground">

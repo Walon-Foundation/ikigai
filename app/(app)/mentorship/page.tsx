@@ -1,8 +1,8 @@
+import { and, eq, ne } from "drizzle-orm";
 import { redirect } from "next/navigation";
-import { getDbUser } from "@/lib/db-user";
 import { db } from "@/db/db";
-import { users, mentorships } from "@/db/schema";
-import { eq, ne, and } from "drizzle-orm";
+import { mentorships, users } from "@/db/schema";
+import { getDbUser } from "@/lib/db-user";
 import { MentorshipClient } from "./mentorship-client";
 
 export default async function MentorshipPage() {
@@ -25,7 +25,12 @@ export default async function MentorshipPage() {
       let mentor = null;
       if (m.mentorId) {
         const [mentorUser] = await db
-          .select({ id: users.id, displayName: users.displayName, bio: users.bio, interestTags: users.interestTags })
+          .select({
+            id: users.id,
+            displayName: users.displayName,
+            bio: users.bio,
+            interestTags: users.interestTags,
+          })
           .from(users)
           .where(eq(users.id, m.mentorId))
           .limit(1);
@@ -38,7 +43,7 @@ export default async function MentorshipPage() {
         lastActivityAt: m.lastActivityAt?.toISOString() ?? null,
         mentor,
       };
-    })
+    }),
   );
 
   const connectedMentorIds = mentorshipRows
@@ -46,7 +51,12 @@ export default async function MentorshipPage() {
     .filter((id): id is string => !!id);
 
   const allMentors = await db
-    .select({ id: users.id, displayName: users.displayName, bio: users.bio, interestTags: users.interestTags })
+    .select({
+      id: users.id,
+      displayName: users.displayName,
+      bio: users.bio,
+      interestTags: users.interestTags,
+    })
     .from(users)
     .where(and(eq(users.role, "mentor"), ne(users.id, user.id)))
     .limit(10);
