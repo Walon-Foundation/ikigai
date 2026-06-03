@@ -60,16 +60,28 @@ export default clerkMiddleware(async (auth, request) => {
   }
 
   // --- ikigai.app (marketing) ---
-  // Allow: /, /sso-callback, /api/, and Next.js internals
-  if (
-    pathname !== "/" &&
-    !pathname.startsWith("/sso-callback") &&
-    !pathname.startsWith("/api/")
-  ) {
+  // Block PWA-only paths — redirect them to the app subdomain
+  const appHost = process.env.APP_HOSTNAME ?? "app.ikigai.app";
+  const PWA_PATHS = [
+    "/dashboard",
+    "/journal",
+    "/journey",
+    "/mentorship",
+    "/pad-her-power",
+    "/safety",
+    "/school",
+    "/settings",
+    "/onboarding",
+    "/sign-in",
+    "/sign-up",
+    "/install",
+  ];
+  if (PWA_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
     const url = request.nextUrl.clone();
-    url.pathname = "/";
+    url.hostname = appHost;
     return NextResponse.redirect(url);
   }
+  // All other paths (/, /how-it-works, /about, /contact, /privacy, /terms, /api/) pass through
   return NextResponse.next();
 });
 
