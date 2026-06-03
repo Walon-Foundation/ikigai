@@ -41,7 +41,7 @@ export default async function AdminLayout({
               Sign in with admin account
             </a>
             <a
-              href="/dashboard"
+              href={`https://${process.env.NEXT_PUBLIC_APP_HOSTNAME ?? "app.ikigai.app"}/dashboard`}
               className="inline-block rounded-full border border-border px-6 py-2.5 text-sm font-semibold text-muted-foreground hover:text-foreground"
             >
               Go to app
