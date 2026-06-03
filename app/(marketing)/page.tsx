@@ -1,4 +1,3 @@
-import { auth } from "@clerk/nextjs/server";
 import {
   ArrowRight,
   BookOpen,
@@ -12,13 +11,9 @@ import {
   Users,
 } from "lucide-react";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { GrowthTree } from "@/components/growth-tree";
 
 export default async function Home() {
-  const { userId } = await auth();
-  if (userId) redirect("/dashboard");
-
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
