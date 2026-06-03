@@ -35,7 +35,9 @@ export function PwaInstallPrompt() {
           <Download className="size-5 text-primary-foreground" />
         </div>
         <div className="flex-1">
-          <p className="text-sm font-semibold text-foreground">Install Ikigai</p>
+          <p className="text-sm font-semibold text-foreground">
+            Install Ikigai
+          </p>
           {isIOS ? (
             <p className="mt-0.5 text-xs text-muted-foreground">
               Tap <Share className="mb-0.5 inline size-3" /> then{" "}
