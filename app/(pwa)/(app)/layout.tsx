@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { AppNav } from "@/components/app-nav";
 import { AppSidebar } from "@/components/app-sidebar";
 import { LiteModeInit } from "@/components/lite-mode-init";
-import { PwaInstallPrompt } from "@/components/pwa-install-prompt";
+import { PwaGate } from "@/components/pwa-gate";
 import { getOrCreateDbUser } from "@/lib/db-user";
 
 export default async function AppLayout({
@@ -22,15 +22,12 @@ export default async function AppLayout({
   return (
     <div className="min-h-screen bg-background lg:flex">
       <LiteModeInit />
-      {/* Desktop sidebar — hidden on mobile */}
+      <PwaGate />
       <AppSidebar />
-      {/* Content area */}
       <div className="flex-1 min-w-0 pb-16 lg:pb-0 lg:overflow-y-auto">
         {children}
       </div>
-      {/* Mobile bottom nav — hidden on desktop */}
       <AppNav />
-      <PwaInstallPrompt />
     </div>
   );
 }

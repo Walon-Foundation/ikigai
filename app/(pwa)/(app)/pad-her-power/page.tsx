@@ -2,8 +2,8 @@ import { Heart, MapPin } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { db } from "@/db/db";
 import { milestones } from "@/db/schema";
-import { getDbUser } from "@/lib/db-user";
 import { PAD_HER_POWER_RESOURCES } from "@/lib/constants";
+import { getDbUser } from "@/lib/db-user";
 import { ResourceMapClient } from "./resource-map-client";
 
 const CATEGORIES = [
