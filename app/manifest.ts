@@ -7,6 +7,7 @@ export default function manifest(): MetadataRoute.Manifest {
     description:
       "Connecting young women in Sierra Leone with mentors and purpose.",
     start_url: "/dashboard",
+    scope: "/",
     display: "standalone",
     orientation: "portrait",
     background_color: "#FAFAF7",
