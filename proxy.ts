@@ -15,33 +15,62 @@ const isProtectedRoute = createRouteMatcher([
 ]);
 
 export default clerkMiddleware(async (auth, request) => {
-  const hostname = request.headers.get("host") ?? "";
-  const isAdminSubdomain = hostname.startsWith("admin.");
+  const rawHost = request.headers.get("host") ?? "";
+  const hostname = rawHost.split(":")[0]; // strip port
+  const isAdminSubdomain =
+    hostname === (process.env.ADMIN_HOSTNAME ?? "admin.ikigai.app");
+  const isAppSubdomain =
+    hostname === (process.env.APP_HOSTNAME ?? "app.ikigai.app");
   const pathname = request.nextUrl.pathname;
 
+  // --- admin.ikigai.app ---
   if (isAdminSubdomain) {
-    // Block sign-up on admin subdomain — redirect to sign-in
     if (pathname.startsWith("/sign-up")) {
       const url = request.nextUrl.clone();
       url.pathname = "/sign-in";
       return NextResponse.redirect(url);
     }
-
-    // Rewrite all non-admin-prefixed paths to /admin/*
-    // Includes /sign-in → /admin/sign-in (so admin gets its own sign-in page)
     if (
       !pathname.startsWith("/admin") &&
-      !pathname.startsWith("/sso-callback")
+      !pathname.startsWith("/sso-callback") &&
+      !pathname.startsWith("/api/")
     ) {
       const url = request.nextUrl.clone();
       url.pathname = pathname === "/" ? "/admin" : `/admin${pathname}`;
       return NextResponse.rewrite(url);
     }
+    if (isProtectedRoute(request)) {
+      await auth.protect();
+    }
+    return NextResponse.next();
   }
 
-  if (isProtectedRoute(request)) {
-    await auth.protect();
+  // --- app.ikigai.app ---
+  if (isAppSubdomain) {
+    if (pathname.startsWith("/admin")) {
+      const url = request.nextUrl.clone();
+      const adminHost = process.env.ADMIN_HOSTNAME ?? "admin.ikigai.app";
+      url.hostname = adminHost;
+      return NextResponse.redirect(url);
+    }
+    if (isProtectedRoute(request)) {
+      await auth.protect();
+    }
+    return NextResponse.next();
   }
+
+  // --- ikigai.app (marketing) ---
+  // Allow: /, /sso-callback, /api/, and Next.js internals
+  if (
+    pathname !== "/" &&
+    !pathname.startsWith("/sso-callback") &&
+    !pathname.startsWith("/api/")
+  ) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/";
+    return NextResponse.redirect(url);
+  }
+  return NextResponse.next();
 });
 
 export const config = {
