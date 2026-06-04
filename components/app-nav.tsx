@@ -1,36 +1,61 @@
 "use client";
 
-import { useUser } from "@clerk/nextjs";
-import { BookOpen, LayoutDashboard, TreePine, Users } from "lucide-react";
+import {
+  BookOpen,
+  Calendar,
+  CreditCard,
+  Heart,
+  LayoutDashboard,
+  MessageCircle,
+  Star,
+  TreePine,
+  Users,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
-const NAV_ITEMS = [
+type NavItem = { href: string; label: string; icon: React.ElementType };
+
+const MENTEE_NAV: NavItem[] = [
   { href: "/dashboard", label: "Home", icon: LayoutDashboard },
   { href: "/journey", label: "Journey", icon: TreePine },
   { href: "/mentorship", label: "Match", icon: Users },
   { href: "/journal", label: "Journal", icon: BookOpen },
 ];
 
-export function AppNav() {
+const MENTOR_NAV: NavItem[] = [
+  { href: "/dashboard", label: "Home", icon: LayoutDashboard },
+  { href: "/mentor-portal", label: "Mentees", icon: Users },
+  { href: "/mentorship", label: "Messages", icon: MessageCircle },
+  { href: "/activities", label: "Activities", icon: Calendar },
+];
+
+const PARENT_NAV: NavItem[] = [
+  { href: "/dashboard", label: "Home", icon: LayoutDashboard },
+  { href: "/parent-portal", label: "My Child", icon: Heart },
+  { href: "/parent-portal/mentors", label: "Mentors", icon: Star },
+  { href: "/parent-portal/payments", label: "Payments", icon: CreditCard },
+];
+
+function navItemsForRole(role: string | null): NavItem[] {
+  if (role === "mentor") return MENTOR_NAV;
+  if (role === "parent") return PARENT_NAV;
+  return MENTEE_NAV;
+}
+
+export function AppNav({ role }: { role: string | null }) {
   const pathname = usePathname();
-  const { user } = useUser();
-
-  const initials = (user?.fullName ?? user?.firstName ?? "?")
-    .split(" ")
-    .map((n) => n[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
-
+  const items = navItemsForRole(role);
   const isProfileActive =
     pathname === "/settings" || pathname.startsWith("/settings/");
+
+  const roleLabel = role === "mentor" ? "M" : role === "parent" ? "P" : "U";
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-card lg:hidden">
       <div className="flex h-16 items-center justify-around px-2">
-        {NAV_ITEMS.map((item) => {
+        {items.map((item) => {
           const isActive =
             pathname === item.href || pathname.startsWith(`${item.href}/`);
           return (
@@ -51,8 +76,6 @@ export function AppNav() {
             </Link>
           );
         })}
-
-        {/* Profile tab — shows user avatar */}
         <Link
           href="/settings"
           className={cn(
@@ -68,7 +91,7 @@ export function AppNav() {
                 : "bg-primary-muted/50 text-primary",
             )}
           >
-            {initials}
+            {roleLabel}
           </div>
           <span className="text-[10px] font-medium">Profile</span>
         </Link>
