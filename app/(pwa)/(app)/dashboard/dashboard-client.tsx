@@ -50,21 +50,21 @@ type ParentData = {
 
 type Props =
   | {
-      role: "mentee";
+      userRole: "mentee";
       user: { displayName: string; growthLevel: number };
       menteeData: MenteeData;
       mentorData?: never;
       parentData?: never;
     }
   | {
-      role: "mentor";
+      userRole: "mentor";
       user: { displayName: string; growthLevel: number };
       mentorData: MentorData;
       menteeData?: never;
       parentData?: never;
     }
   | {
-      role: "parent";
+      userRole: "parent";
       user: { displayName: string; growthLevel: number };
       parentData: ParentData;
       menteeData?: never;
@@ -72,9 +72,9 @@ type Props =
     };
 
 export function DashboardClient(props: Props) {
-  if (props.role === "mentor")
+  if (props.userRole === "mentor")
     return <MentorView user={props.user} data={props.mentorData} />;
-  if (props.role === "parent")
+  if (props.userRole === "parent")
     return <ParentView user={props.user} data={props.parentData} />;
   return <MenteeView user={props.user} data={props.menteeData} />;
 }

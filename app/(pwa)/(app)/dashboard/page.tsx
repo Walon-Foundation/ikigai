@@ -52,7 +52,7 @@ export default async function DashboardPage() {
 
     return (
       <DashboardClient
-        role="mentee"
+        userRole="mentee"
         user={{
           displayName: user.displayName ?? "User",
           growthLevel: user.growthLevel ?? 1,
@@ -97,7 +97,7 @@ export default async function DashboardPage() {
 
     return (
       <DashboardClient
-        role="mentor"
+        userRole="mentor"
         user={{
           displayName: user.displayName ?? "Mentor",
           growthLevel: 1,
@@ -121,7 +121,7 @@ export default async function DashboardPage() {
 
   return (
     <DashboardClient
-      role="parent"
+      userRole="parent"
       user={{
         displayName: user.displayName ?? "Parent",
         growthLevel: 1,
