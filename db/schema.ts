@@ -14,6 +14,7 @@ export const roleEnum = pgEnum("role", [
   "mentee",
   "mentor",
   "club_lead",
+  "parent",
   "admin",
 ]);
 
@@ -29,6 +30,7 @@ export const users = pgTable("users", {
   growthLevel: integer("growth_level").default(1), // 1=Explorer, 2=Advocate, 3=Mentor
   verifiedAt: timestamp("verified_at"),
   pushSubscription: jsonb("push_subscription"), // Web Push subscription object
+  onboardingData: jsonb("onboarding_data"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
