@@ -45,6 +45,12 @@ export function Footer() {
               >
                 Contact
               </Link>
+              <Link
+                href="/pricing"
+                className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+              >
+                Pricing
+              </Link>
             </div>
           </div>
 
