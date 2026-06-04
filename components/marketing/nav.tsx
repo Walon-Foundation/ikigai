@@ -32,9 +32,6 @@ export function Nav() {
             <span className="font-display text-2xl font-black tracking-tight text-foreground">
               Ikigai
             </span>
-            <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-primary-muted">
-              Digital
-            </span>
           </Link>
 
           {/* Desktop nav */}

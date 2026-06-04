@@ -81,7 +81,7 @@ export default function TermsPage() {
                   Limitation of Liability
                 </h2>
                 <p className="leading-relaxed">
-                  Ikigai Digital provides the platform on an "as is" basis. We
+                  Ikigai provides the platform on an "as is" basis. We
                   do not guarantee that the service will be uninterrupted or
                   error-free. To the maximum extent permitted by law, Ikigai
                   Digital shall not be liable for any indirect, incidental, or

@@ -30,7 +30,7 @@ export default function AboutPage() {
         <section className="bg-primary pb-24 pt-40">
           <div className="mx-auto max-w-4xl px-6">
             <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-primary-muted">
-              About Ikigai Digital
+              About Ikigai
             </p>
             <h1 className="font-display mb-8 text-5xl font-black leading-[1.05] text-primary-foreground sm:text-6xl">
               Our Vision
@@ -58,7 +58,7 @@ export default function AboutPage() {
                   Where We Are
                 </p>
                 <p className="text-lg leading-relaxed text-primary-foreground/80">
-                  Ikigai Digital is based in Sierra Leone, building technology
+                  Ikigai is based in Sierra Leone, building technology
                   for African youth. We serve youth, mentors, parents, schools,
                   and organisations across Freetown and Western Rural Area.
                 </p>
@@ -111,7 +111,7 @@ export default function AboutPage() {
               </h2>
               <div className="space-y-4 text-base leading-relaxed text-muted-foreground">
                 <p>
-                  Ikigai Digital combines artificial intelligence, mentorship,
+                  Ikigai combines artificial intelligence, mentorship,
                   self-discovery, structured learning, wellness tools, and
                   community engagement into a single ecosystem designed for
                   African youth.

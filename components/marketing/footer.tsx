@@ -11,9 +11,6 @@ export function Footer() {
               <span className="font-display text-2xl font-black tracking-tight text-foreground">
                 Ikigai
               </span>
-              <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-primary-muted">
-                Digital
-              </span>
             </div>
             <p className="text-sm leading-relaxed text-muted-foreground">
               Empowering youth to discover purpose, build confidence, and
@@ -77,7 +74,7 @@ export function Footer() {
         </div>
 
         <div className="mt-12 border-t border-border pt-6 text-xs text-muted-foreground">
-          © {new Date().getFullYear()} Ikigai Digital. All rights reserved.
+          © {new Date().getFullYear()} Ikigai. All rights reserved.
         </div>
       </div>
     </footer>
