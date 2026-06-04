@@ -11,6 +11,9 @@ const isProtectedRoute = createRouteMatcher([
   "/safety(.*)",
   "/school(.*)",
   "/onboarding(.*)",
+  "/mentor-portal(.*)",
+  "/parent-portal(.*)",
+  "/activities(.*)",
   "/admin((?!/sign-in).*)",
 ]);
 
@@ -72,6 +75,9 @@ export default clerkMiddleware(async (auth, request) => {
     "/school",
     "/settings",
     "/onboarding",
+    "/mentor-portal",
+    "/parent-portal",
+    "/activities",
     "/sign-in",
     "/sign-up",
     "/install",
