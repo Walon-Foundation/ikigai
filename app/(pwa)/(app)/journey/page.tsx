@@ -36,7 +36,6 @@ const ALL_MILESTONE_TYPES = [
   { type: "safety_module", label: "Complete the Safety Module" },
   { type: "mentor_connect", label: "Connect with a mentor" },
   { type: "pad_her_power", label: "Complete Pad Her Power module" },
-  { type: "school_join", label: "Join a school club" },
 ];
 
 export default async function JourneyPage() {
