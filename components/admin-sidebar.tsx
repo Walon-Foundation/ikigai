@@ -5,11 +5,14 @@ import {
   AlertTriangle,
   BarChart3,
   Bell,
+  CalendarDays,
   LayoutDashboard,
   LogOut,
   School,
+  ShieldAlert,
   UserCheck,
   Users,
+  Users2,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -19,6 +22,9 @@ const NAV_ITEMS = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/mentors", label: "Mentors", icon: UserCheck },
+  { href: "/admin/guardians", label: "Guardians", icon: Users2 },
+  { href: "/admin/safeguarding", label: "Safeguarding", icon: ShieldAlert },
+  { href: "/admin/events", label: "Events", icon: CalendarDays },
   { href: "/admin/schools", label: "Schools", icon: School },
   { href: "/admin/reports", label: "Reports", icon: AlertTriangle },
   { href: "/admin/notifications", label: "Notifications", icon: Bell },

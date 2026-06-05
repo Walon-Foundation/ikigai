@@ -1,9 +1,19 @@
-import { count, eq, gte, isNotNull, isNull } from "drizzle-orm";
+import { count, eq, gte, isNotNull, isNull, sql } from "drizzle-orm";
 import { db } from "@/db/db";
-import { journalEntries, safetyReports, users } from "@/db/schema";
+import {
+  eventAttendance,
+  journalEntries,
+  mentorships,
+  messages,
+  safetyReports,
+  satisfactionSurveys,
+  tasks,
+  users,
+} from "@/db/schema";
 
 export default async function AdminAnalyticsPage() {
   const fourWeeksAgo = new Date(Date.now() - 28 * 24 * 60 * 60 * 1000);
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
   const [
     [{ total }],
@@ -13,6 +23,13 @@ export default async function AdminAnalyticsPage() {
     [{ openReports }],
     userTagRows,
     recentEntries,
+    activeJournalUsers,
+    activeMessageUsers,
+    mentorsWithActive,
+    [taskTotals],
+    [attendanceTotals],
+    [messagesRecent],
+    [satisfaction],
   ] = await Promise.all([
     db.select({ total: count() }).from(users),
     db
@@ -39,12 +56,115 @@ export default async function AdminAnalyticsPage() {
       .select({ createdAt: journalEntries.createdAt })
       .from(journalEntries)
       .where(gte(journalEntries.createdAt, fourWeeksAgo)),
+    // Active users = distinct authors of journals/messages in last 30 days
+    db
+      .selectDistinct({ userId: journalEntries.userId })
+      .from(journalEntries)
+      .where(gte(journalEntries.createdAt, thirtyDaysAgo)),
+    db
+      .selectDistinct({ userId: messages.senderId })
+      .from(messages)
+      .where(gte(messages.createdAt, thirtyDaysAgo)),
+    // Mentor retention = mentors holding at least one active mentorship
+    db
+      .selectDistinct({ mentorId: mentorships.mentorId })
+      .from(mentorships)
+      .where(eq(mentorships.status, "active")),
+    // Task completion
+    db
+      .select({
+        total: count(),
+        completed: sql<number>`count(*) filter (where ${tasks.status} = 'completed')`,
+        failed: sql<number>`count(*) filter (where ${tasks.status} = 'failed')`,
+      })
+      .from(tasks),
+    // Event attendance
+    db
+      .select({
+        total: count(),
+        attended: sql<number>`count(*) filter (where ${eventAttendance.status} = 'attended')`,
+      })
+      .from(eventAttendance),
+    // Session frequency = messages in last 28 days
+    db
+      .select({ total: count() })
+      .from(messages)
+      .where(gte(messages.createdAt, fourWeeksAgo)),
+    // Satisfaction
+    db
+      .select({
+        avg: sql<number>`coalesce(avg(${satisfactionSurveys.score}), 0)`,
+        responses: count(),
+      })
+      .from(satisfactionSurveys),
   ]);
 
   const totalUsers = Number(total);
   const mentees = Number(menteeCount);
   const mentors = Number(mentorCount);
   const clubLeads = Number(clubLeadCount);
+
+  // --- Spec metrics --------------------------------------------------------
+  const activeSet = new Set<string>();
+  for (const r of activeJournalUsers) if (r.userId) activeSet.add(r.userId);
+  for (const r of activeMessageUsers) if (r.userId) activeSet.add(r.userId);
+  const activeUsers = activeSet.size;
+
+  const retainedMentors = mentorsWithActive.filter((m) => m.mentorId).length;
+  const mentorRetention =
+    mentors > 0 ? Math.round((retainedMentors / mentors) * 100) : 0;
+
+  const tasksCompleted = Number(taskTotals?.completed ?? 0);
+  const tasksFailed = Number(taskTotals?.failed ?? 0);
+  const resolvedTasks = tasksCompleted + tasksFailed;
+  const completionRate =
+    resolvedTasks > 0 ? Math.round((tasksCompleted / resolvedTasks) * 100) : 0;
+
+  const attendanceTotal = Number(attendanceTotals?.total ?? 0);
+  const attended = Number(attendanceTotals?.attended ?? 0);
+  const attendanceRate =
+    attendanceTotal > 0 ? Math.round((attended / attendanceTotal) * 100) : 0;
+
+  const sessionsPerWeek =
+    Math.round((Number(messagesRecent?.total ?? 0) / 4) * 10) / 10;
+  const avgSatisfaction = Math.round(Number(satisfaction?.avg ?? 0) * 10) / 10;
+  const satisfactionResponses = Number(satisfaction?.responses ?? 0);
+
+  const metrics = [
+    {
+      label: "Active Users",
+      value: String(activeUsers),
+      sub: "Posted in last 30 days",
+    },
+    {
+      label: "Mentor Retention",
+      value: `${mentorRetention}%`,
+      sub: `${retainedMentors} of ${mentors} mentors active`,
+    },
+    {
+      label: "Task Completion",
+      value: `${completionRate}%`,
+      sub: `${tasksCompleted} done · ${tasksFailed} failed`,
+    },
+    {
+      label: "Event Attendance",
+      value: `${attendanceRate}%`,
+      sub: `${attended} of ${attendanceTotal} attended`,
+    },
+    {
+      label: "Session Frequency",
+      value: String(sessionsPerWeek),
+      sub: "Avg messages / week",
+    },
+    {
+      label: "User Satisfaction",
+      value: satisfactionResponses > 0 ? `${avgSatisfaction}/5` : "—",
+      sub:
+        satisfactionResponses > 0
+          ? `${satisfactionResponses} responses`
+          : "No responses yet",
+    },
+  ];
 
   // Interest tag counts — aggregate in JS
   const tagCounts: Record<string, number> = {};
@@ -100,7 +220,25 @@ export default async function AdminAnalyticsPage() {
         </p>
       </div>
 
-      {/* KPI Cards */}
+      {/* Spec metrics */}
+      <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+        {metrics.map((m) => (
+          <div
+            key={m.label}
+            className="rounded-xl border border-border bg-card p-5"
+          >
+            <p className="font-display text-2xl font-black text-primary">
+              {m.value}
+            </p>
+            <p className="mt-0.5 text-sm font-semibold text-foreground">
+              {m.label}
+            </p>
+            <p className="mt-0.5 text-xs text-muted-foreground">{m.sub}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Headline cards */}
       <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard
           label="Total Users"
