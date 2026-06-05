@@ -8,6 +8,7 @@ const ROLE_LABELS: Record<string, string> = {
   mentee: "Mentee",
   mentor: "Mentor",
   club_lead: "Club Lead",
+  parent: "Parent / Guardian",
   admin: "Admin",
 };
 
@@ -18,7 +19,13 @@ const STATUS_STYLES: Record<string, string> = {
   suspended: "bg-destructive/10 text-destructive",
 };
 
-type RoleFilter = "all" | "mentee" | "mentor" | "club_lead" | "admin";
+type RoleFilter =
+  | "all"
+  | "mentee"
+  | "mentor"
+  | "club_lead"
+  | "parent"
+  | "admin";
 
 export default async function AdminUsersPage({
   searchParams,
@@ -30,7 +37,10 @@ export default async function AdminUsersPage({
 
   const where =
     filter !== "all"
-      ? eq(users.role, filter as "mentee" | "mentor" | "club_lead" | "admin")
+      ? eq(
+          users.role,
+          filter as "mentee" | "mentor" | "club_lead" | "parent" | "admin",
+        )
       : undefined;
 
   const rows = await db
@@ -62,7 +72,9 @@ export default async function AdminUsersPage({
 
       {/* Filters */}
       <div className="mb-6 flex flex-wrap gap-2">
-        {(["all", "mentee", "mentor", "club_lead"] as RoleFilter[]).map((f) => (
+        {(
+          ["all", "mentee", "mentor", "parent", "club_lead"] as RoleFilter[]
+        ).map((f) => (
           <Link
             key={f}
             href={f === "all" ? "/admin/users" : `/admin/users?role=${f}`}
@@ -130,12 +142,15 @@ export default async function AdminUsersPage({
                       )}
                     >
                       <td className="px-4 py-3">
-                        <div className="flex items-center gap-3">
+                        <Link
+                          href={`/admin/users/${user.id}`}
+                          className="flex items-center gap-3 group"
+                        >
                           <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 font-display text-xs font-bold text-primary">
                             {initials}
                           </div>
                           <div>
-                            <span className="font-medium text-foreground">
+                            <span className="font-medium text-foreground group-hover:text-primary">
                               {user.displayName ?? "—"}
                             </span>
                             {user.email && (
@@ -144,7 +159,7 @@ export default async function AdminUsersPage({
                               </p>
                             )}
                           </div>
-                        </div>
+                        </Link>
                       </td>
                       <td className="px-4 py-3 text-muted-foreground capitalize">
                         {ROLE_LABELS[user.role] ?? user.role}
