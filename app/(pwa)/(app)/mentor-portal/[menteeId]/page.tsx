@@ -1,10 +1,12 @@
-import { eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { ChevronLeft, MessageCircle } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { db } from "@/db/db";
-import { mentorships, milestones, users } from "@/db/schema";
+import { growthTrees, mentorships, tasks, users } from "@/db/schema";
 import { getDbUser } from "@/lib/db-user";
+import { stageName } from "@/lib/growth";
+import { MenteeTasks, type TaskItem } from "./mentee-tasks";
 
 export default async function MenteeDetailPage({
   params,
@@ -16,28 +18,54 @@ export default async function MenteeDetailPage({
   if (!user) redirect("/sign-in");
   if (user.role !== "mentor") redirect("/dashboard");
 
+  // The mentor may only view a mentee they have an active mentorship with.
+  const [mentorship] = await db
+    .select({ id: mentorships.id, status: mentorships.status })
+    .from(mentorships)
+    .where(
+      and(
+        eq(mentorships.menteeId, menteeId),
+        eq(mentorships.mentorId, user.id),
+        eq(mentorships.status, "active"),
+      ),
+    )
+    .limit(1);
+  if (!mentorship) redirect("/mentor-portal");
+
   const [mentee] = await db
     .select({
       displayName: users.displayName,
-      growthLevel: users.growthLevel,
       interestTags: users.interestTags,
     })
     .from(users)
     .where(eq(users.id, menteeId))
     .limit(1);
-
   if (!mentee) redirect("/mentor-portal");
 
-  const milestoneRows = await db
-    .select({ type: milestones.type, completedAt: milestones.completedAt })
-    .from(milestones)
-    .where(eq(milestones.userId, menteeId));
-
-  const [mentorship] = await db
-    .select({ id: mentorships.id, status: mentorships.status })
-    .from(mentorships)
-    .where(eq(mentorships.menteeId, menteeId))
+  const [tree] = await db
+    .select()
+    .from(growthTrees)
+    .where(eq(growthTrees.userId, menteeId))
     .limit(1);
+
+  const taskRows = await db
+    .select()
+    .from(tasks)
+    .where(eq(tasks.mentorshipId, mentorship.id))
+    .orderBy(desc(tasks.createdAt));
+
+  const taskItems: TaskItem[] = taskRows.map((t) => ({
+    id: t.id,
+    title: t.title,
+    description: t.description,
+    status: t.status,
+    growthPoints: t.growthPoints,
+    createdAt: t.createdAt?.toISOString() ?? null,
+  }));
+
+  const health = tree?.health ?? 100;
+  const stage = tree?.stage ?? 1;
+  const completed = taskItems.filter((t) => t.status === "completed").length;
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-6">
@@ -60,44 +88,52 @@ export default async function MenteeDetailPage({
           {mentee.displayName ?? "Mentee"}
         </p>
         <p className="text-sm text-primary-muted">
-          Level {mentee.growthLevel ?? 1} · {milestoneRows.length} milestones
+          {stageName(stage)} · {completed} task
+          {completed !== 1 ? "s" : ""} completed
         </p>
+        {mentee.interestTags && mentee.interestTags.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {mentee.interestTags.map((tag) => (
+              <span
+                key={tag}
+                className="rounded-full bg-primary-muted/20 px-2 py-0.5 text-[11px] font-medium text-primary-foreground"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="space-y-4">
         <div className="rounded-2xl border border-border bg-card p-5">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Milestones
+          <div className="mb-2 flex items-center justify-between text-sm">
+            <span className="font-semibold text-foreground">Tree health</span>
+            <span className="text-muted-foreground">{health}%</span>
+          </div>
+          <div className="h-3 w-full rounded-full bg-muted">
+            <div
+              className={`h-3 rounded-full transition-all ${
+                health < 50 ? "bg-earth" : "bg-primary"
+              }`}
+              style={{ width: `${health}%` }}
+            />
+          </div>
+          <p className="mt-2 text-xs text-muted-foreground">
+            {health < 50
+              ? "Their tree is wilting. Completing tasks brings it back to life."
+              : "Completing tasks grows the tree; failed tasks make it wilt."}
           </p>
-          {milestoneRows.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No milestones yet.</p>
-          ) : (
-            <div className="space-y-2">
-              {milestoneRows.map((m) => (
-                <div key={m.type} className="flex items-center gap-3 text-sm">
-                  <span className="size-2 rounded-full bg-primary" />
-                  <span className="flex-1 capitalize text-foreground">
-                    {m.type?.replace(/_/g, " ")}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    {m.completedAt
-                      ? new Date(m.completedAt).toLocaleDateString("en-GB")
-                      : ""}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
 
-        {mentorship && (
-          <Link
-            href={`/mentorship/${mentorship.id}`}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground"
-          >
-            <MessageCircle className="size-4" /> Open Chat
-          </Link>
-        )}
+        <MenteeTasks mentorshipId={mentorship.id} initialTasks={taskItems} />
+
+        <Link
+          href={`/mentorship/${mentorship.id}`}
+          className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground"
+        >
+          <MessageCircle className="size-4" /> Open Chat
+        </Link>
       </div>
     </div>
   );
