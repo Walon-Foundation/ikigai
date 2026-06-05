@@ -1,13 +1,12 @@
 import { and, eq, ne } from "drizzle-orm";
-import { redirect } from "next/navigation";
 import { db } from "@/db/db";
 import { mentorships, users } from "@/db/schema";
-import { getDbUser } from "@/lib/db-user";
+import { requireRole } from "@/lib/db-user";
+import { matchScore } from "@/lib/match";
 import { MentorshipClient } from "./mentorship-client";
 
 export default async function MentorshipPage() {
-  const user = await getDbUser();
-  if (!user) redirect("/sign-in");
+  const user = await requireRole(["mentee", "mentor"]);
 
   const mentorshipRows = await db
     .select({
@@ -20,7 +19,7 @@ export default async function MentorshipPage() {
     .from(mentorships)
     .where(eq(mentorships.menteeId, user.id));
 
-  const activeMentorships = await Promise.all(
+  const myMentorships = await Promise.all(
     mentorshipRows.map(async (m) => {
       let mentor = null;
       if (m.mentorId) {
@@ -59,15 +58,20 @@ export default async function MentorshipPage() {
     })
     .from(users)
     .where(and(eq(users.role, "mentor"), ne(users.id, user.id)))
-    .limit(10);
+    .limit(20);
 
+  // Real similarity score per mentor, best matches first.
   const suggestedMentors = allMentors
     .filter((m) => !connectedMentorIds.includes(m.id))
-    .map((m) => ({ ...m, matchScore: 85 }));
+    .map((m) => ({
+      ...m,
+      matchScore: matchScore(user.interestTags, m.interestTags),
+    }))
+    .sort((a, b) => b.matchScore - a.matchScore);
 
   return (
     <MentorshipClient
-      activeMentorships={activeMentorships}
+      myMentorships={myMentorships}
       suggestedMentors={suggestedMentors}
     />
   );
