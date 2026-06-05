@@ -1,48 +1,185 @@
-import { CreditCard, Star } from "lucide-react";
+import { and, eq } from "drizzle-orm";
+import { Clock, CreditCard, Star } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { GrowthTree } from "@/components/growth-tree";
 import { PageHeader } from "@/components/page-header";
+import { db } from "@/db/db";
+import {
+  growthTrees,
+  mentorships,
+  milestones,
+  tasks,
+  users,
+} from "@/db/schema";
 import { getDbUser } from "@/lib/db-user";
+import { stageName } from "@/lib/growth";
+import { acceptedChildForParent, latestLinkForParent } from "@/lib/guardian";
 
 export default async function ParentPortalPage() {
   const user = await getDbUser();
   if (!user) redirect("/sign-in");
   if (user.role !== "parent") redirect("/dashboard");
 
-  const data = (user.onboardingData as Record<string, unknown> | null) ?? {};
-  const childLinked = !!(data.childLinked as boolean | null);
-  const inviteCode = (data.inviteCode as string | null) ?? null;
-  const childEmail = (data.childEmail as string | null) ?? null;
+  const [link, child] = await Promise.all([
+    latestLinkForParent(user.id),
+    acceptedChildForParent(user.id),
+  ]);
+
+  // Not yet consented — show status only, never the child's data.
+  if (!child) {
+    return (
+      <>
+        <PageHeader title="My Child" />
+        <div className="mx-auto max-w-2xl px-4 py-6">
+          <div className="rounded-2xl border border-border bg-card p-6">
+            {link?.status === "pending" ? (
+              <div>
+                <p className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+                  <Clock className="size-4 text-earth" /> Waiting for consent
+                </p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  We&apos;ve sent a request to{" "}
+                  <span className="font-semibold">{link.childEmail}</span>. You
+                  will see their growth and progress once they accept.
+                </p>
+                {link.inviteCode && (
+                  <div className="mt-4">
+                    <p className="mb-2 text-xs text-muted-foreground">
+                      Or share this invite code:
+                    </p>
+                    <div className="rounded-xl bg-muted px-4 py-3 font-mono text-lg font-bold tracking-widest text-foreground">
+                      {link.inviteCode}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-center">
+                <p className="mb-3 text-sm text-muted-foreground">
+                  No child linked yet.
+                </p>
+                <Link
+                  href="/onboarding/parent/link"
+                  className="inline-flex rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground"
+                >
+                  Link child&apos;s account
+                </Link>
+              </div>
+            )}
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // Consented — load the child's tree, mentor, milestones, completed tasks.
+  const [treeRows, milestoneRows, activeMentorshipRows] = await Promise.all([
+    db
+      .select()
+      .from(growthTrees)
+      .where(eq(growthTrees.userId, child.id))
+      .limit(1),
+    db
+      .select({ id: milestones.id })
+      .from(milestones)
+      .where(eq(milestones.userId, child.id)),
+    db
+      .select({ id: mentorships.id, mentorId: mentorships.mentorId })
+      .from(mentorships)
+      .where(
+        and(
+          eq(mentorships.menteeId, child.id),
+          eq(mentorships.status, "active"),
+        ),
+      )
+      .limit(1),
+  ]);
+
+  const tree = treeRows[0] ?? null;
+  const health = tree?.health ?? 100;
+  const stage = tree?.stage ?? 1;
+
+  let mentorName: string | null = null;
+  let completedTasks = 0;
+  const activeMentorship = activeMentorshipRows[0] ?? null;
+  if (activeMentorship) {
+    if (activeMentorship.mentorId) {
+      const [m] = await db
+        .select({ displayName: users.displayName })
+        .from(users)
+        .where(eq(users.id, activeMentorship.mentorId))
+        .limit(1);
+      mentorName = m?.displayName ?? null;
+    }
+    const done = await db
+      .select({ id: tasks.id })
+      .from(tasks)
+      .where(
+        and(
+          eq(tasks.mentorshipId, activeMentorship.id),
+          eq(tasks.status, "completed"),
+        ),
+      );
+    completedTasks = done.length;
+  }
 
   return (
     <>
       <PageHeader title="My Child" />
       <div className="mx-auto max-w-2xl px-4 py-6">
         <div className="space-y-4">
-          <div className="rounded-2xl border border-border bg-card p-5">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Child Account
+          <div className="rounded-2xl bg-primary p-5 text-primary-foreground">
+            <p className="text-sm text-primary-muted">Following</p>
+            <p className="font-display text-2xl font-black">
+              {child.displayName}
             </p>
-            {childLinked ? (
-              <p className="text-sm text-foreground">
-                ✓ Linked to <span className="font-semibold">{childEmail}</span>
-              </p>
-            ) : inviteCode ? (
-              <div>
-                <p className="mb-2 text-sm text-muted-foreground">
-                  Awaiting your child to join with invite code:
-                </p>
-                <div className="rounded-xl bg-muted px-4 py-3 font-mono text-lg font-bold tracking-widest text-foreground">
-                  {inviteCode}
-                </div>
-              </div>
-            ) : (
-              <Link
-                href="/onboarding/parent/link"
-                className="block rounded-lg bg-primary px-4 py-2.5 text-center text-sm font-semibold text-primary-foreground"
+            <p className="text-sm text-primary-muted">{stageName(stage)}</p>
+          </div>
+
+          <div className="flex flex-col items-center rounded-3xl border border-border bg-card p-6">
+            <GrowthTree
+              completedCount={completedTasks}
+              level={1}
+              health={health}
+            />
+            <p className="mt-2 text-sm text-muted-foreground">
+              {health < 50
+                ? "Their tree is wilting — encourage them to complete their tasks."
+                : "Growing well through completed tasks."}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { label: "Vitality", value: `${health}%` },
+              { label: "Tasks done", value: String(completedTasks) },
+              { label: "Milestones", value: String(milestoneRows.length) },
+            ].map((stat) => (
+              <div
+                key={stat.label}
+                className="rounded-xl border border-border bg-card p-3 text-center"
               >
-                Link child&apos;s account
-              </Link>
+                <p className="font-display text-xl font-bold text-foreground">
+                  {stat.value}
+                </p>
+                <p className="text-[11px] text-muted-foreground">
+                  {stat.label}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          <div className="rounded-2xl border border-border bg-card p-5">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Mentor
+            </p>
+            {mentorName ? (
+              <p className="text-sm text-foreground">{mentorName}</p>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                No mentor matched yet.
+              </p>
             )}
           </div>
 
@@ -52,10 +189,7 @@ export default async function ParentPortalPage() {
               className="flex flex-col items-center gap-2 rounded-2xl border border-border bg-card p-5 hover:border-primary/40"
             >
               <Star className="size-6 text-primary" />
-              <p className="text-sm font-semibold text-foreground">Mentors</p>
-              <p className="text-xs text-muted-foreground">
-                Browse &amp; approve
-              </p>
+              <p className="text-sm font-semibold text-foreground">Mentor</p>
             </Link>
             <Link
               href="/parent-portal/payments"
@@ -63,7 +197,6 @@ export default async function ParentPortalPage() {
             >
               <CreditCard className="size-6 text-primary" />
               <p className="text-sm font-semibold text-foreground">Payments</p>
-              <p className="text-xs text-muted-foreground">Manage billing</p>
             </Link>
           </div>
         </div>

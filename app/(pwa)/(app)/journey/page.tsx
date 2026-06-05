@@ -1,30 +1,30 @@
-import { eq } from "drizzle-orm";
-import { Check, Lock } from "lucide-react";
+import { and, eq } from "drizzle-orm";
+import { Check, Leaf, Lock, Sprout, TreePine } from "lucide-react";
 import { GrowthTree } from "@/components/growth-tree";
 import { PageHeader } from "@/components/page-header";
 import { db } from "@/db/db";
-import { milestones } from "@/db/schema";
-import { getDbUser } from "@/lib/db-user";
+import { growthTrees, mentorships, milestones, tasks } from "@/db/schema";
+import { requireRole } from "@/lib/db-user";
 
 const LEVELS = [
   {
     level: 1,
     name: "Explorer",
-    emoji: "🌱",
+    icon: Sprout,
     desc: "Beginning your ikigai journey",
     required: 3,
   },
   {
     level: 2,
     name: "Advocate",
-    emoji: "🌿",
+    icon: Leaf,
     desc: "Growing your impact in the community",
     required: 6,
   },
   {
     level: 3,
     name: "Mentor",
-    emoji: "🌳",
+    icon: TreePine,
     desc: "Guiding others on their journey",
     required: 10,
   },
@@ -39,10 +39,32 @@ const ALL_MILESTONE_TYPES = [
 ];
 
 export default async function JourneyPage() {
-  const user = await getDbUser();
+  const user = await requireRole(["mentee"]);
   const completedRows = user
     ? await db.select().from(milestones).where(eq(milestones.userId, user.id))
     : [];
+
+  // The plant itself is driven by the task-based growth tree: stage from
+  // completed tasks, vitality from health.
+  const [treeRow] = user
+    ? await db
+        .select()
+        .from(growthTrees)
+        .where(eq(growthTrees.userId, user.id))
+        .limit(1)
+    : [];
+  const treeHealth = treeRow?.health ?? 100;
+
+  const completedTaskRows = user
+    ? await db
+        .select({ id: tasks.id })
+        .from(tasks)
+        .innerJoin(mentorships, eq(tasks.mentorshipId, mentorships.id))
+        .where(
+          and(eq(mentorships.menteeId, user.id), eq(tasks.status, "completed")),
+        )
+    : [];
+  const completedTaskCount = completedTaskRows.length;
 
   const completedTypes = new Set(completedRows.map((m) => m.type));
   const completedMilestones = ALL_MILESTONE_TYPES.filter((m) =>
@@ -62,11 +84,14 @@ export default async function JourneyPage() {
         {/* Tree Visual */}
         <div className="mb-6 flex flex-col items-center rounded-3xl border border-border bg-card p-8">
           <GrowthTree
-            completedCount={completed}
+            completedCount={completedTaskCount}
             level={user?.growthLevel ?? 1}
+            health={treeHealth}
           />
           <p className="mt-3 text-sm text-muted-foreground">
-            {completed} milestone{completed !== 1 ? "s" : ""} completed
+            {treeHealth < 50
+              ? "Your tree is wilting — complete your tasks to bring it back."
+              : `${completedTaskCount} task${completedTaskCount !== 1 ? "s" : ""} completed`}
           </p>
         </div>
 
@@ -110,7 +135,15 @@ export default async function JourneyPage() {
                       : "border-border bg-card opacity-60"
                   }`}
                 >
-                  <span className="text-2xl">{lvl.emoji}</span>
+                  <div
+                    className={`flex size-10 shrink-0 items-center justify-center rounded-xl ${
+                      isActive
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    <lvl.icon className="size-5" />
+                  </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <span className="font-semibold text-foreground">

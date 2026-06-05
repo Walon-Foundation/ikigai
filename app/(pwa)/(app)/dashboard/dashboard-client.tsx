@@ -3,18 +3,33 @@
 import {
   BookOpen,
   ChevronRight,
+  Clock,
+  CreditCard,
+  Heart,
+  ListChecks,
   MessageCircle,
+  Shield,
+  ShieldCheck,
+  Star,
   TreePine,
   Users,
 } from "lucide-react";
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
+import { stageName } from "@/lib/growth";
+import { GuardianConsent, type GuardianRequest } from "./guardian-consent";
 
 type Mentor = {
   displayName: string | null;
   bio: string | null;
   interestTags: string[] | null;
 } | null;
+
+type OpenTask = {
+  id: string;
+  title: string;
+  description: string | null;
+};
 
 type MenteeData = {
   activeMentorship: {
@@ -30,22 +45,27 @@ type MenteeData = {
     visibility: string;
   } | null;
   milestoneCount: number;
+  tree: { health: number; stage: number };
+  tasks: OpenTask[];
+  guardianRequests: GuardianRequest[];
 };
 
 type MentorData = {
-  activeMenteeships: {
+  active: {
     id: string;
-    status: string | null;
-    lastActivityAt: string | null;
     menteeId: string | null;
+    menteeName: string;
+    lastActivityAt: string | null;
   }[];
+  pendingCount: number;
   isVerified: boolean;
 };
 
 type ParentData = {
   childEmail: string | null;
-  childLinked: boolean;
+  status: string | null;
   inviteCode: string | null;
+  child: { displayName: string; health: number; stage: number } | null;
 };
 
 type Props =
@@ -79,6 +99,17 @@ export function DashboardClient(props: Props) {
   return <MenteeView user={props.user} data={props.menteeData} />;
 }
 
+function HealthBar({ health }: { health: number }) {
+  return (
+    <div className="h-2 w-full rounded-full bg-primary-muted/30">
+      <div
+        className={`h-2 rounded-full transition-all ${health < 50 ? "bg-accent" : "bg-primary-foreground"}`}
+        style={{ width: `${Math.max(health, 4)}%` }}
+      />
+    </div>
+  );
+}
+
 function MenteeView({
   user,
   data,
@@ -86,38 +117,33 @@ function MenteeView({
   user: { displayName: string; growthLevel: number };
   data: MenteeData;
 }) {
-  const nextLevelMilestones = 6;
+  const wilting = data.tree.health < 50;
 
   return (
     <>
       <PageHeader showGreeting />
       <div className="mx-auto max-w-2xl px-4 py-6">
         <div className="space-y-4">
+          {data.guardianRequests.length > 0 && (
+            <GuardianConsent requests={data.guardianRequests} />
+          )}
+
           <div className="rounded-2xl bg-primary p-5 text-primary-foreground">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-primary-muted">Growth Level</p>
+                <p className="text-sm text-primary-muted">Your tree</p>
                 <p className="font-display text-2xl font-black">
-                  Explorer — Level {user.growthLevel}
+                  {stageName(data.tree.stage)}
                 </p>
               </div>
               <TreePine className="size-10 text-primary-muted/50" />
             </div>
             <div className="mt-4">
               <div className="mb-1 flex justify-between text-xs text-primary-muted">
-                <span>Progress to Advocate</span>
-                <span>
-                  {data.milestoneCount} / {nextLevelMilestones} milestones
-                </span>
+                <span>{wilting ? "Wilting" : "Vitality"}</span>
+                <span>{data.tree.health}%</span>
               </div>
-              <div className="h-2 w-full rounded-full bg-primary-muted/30">
-                <div
-                  className="h-2 rounded-full bg-primary-foreground transition-all"
-                  style={{
-                    width: `${Math.min((data.milestoneCount / nextLevelMilestones) * 100, 100)}%`,
-                  }}
-                />
-              </div>
+              <HealthBar health={data.tree.health} />
             </div>
             <Link
               href="/journey"
@@ -129,11 +155,16 @@ function MenteeView({
 
           <div className="grid grid-cols-3 gap-3">
             {[
+              { label: "Open tasks", value: String(data.tasks.length) },
               { label: "Milestones", value: String(data.milestoneCount) },
-              { label: "Level", value: String(user.growthLevel) },
               {
                 label: "Mentor",
-                value: data.activeMentorship ? "Active" : "None",
+                value:
+                  data.activeMentorship?.status === "active"
+                    ? "Active"
+                    : data.activeMentorship?.status === "requested"
+                      ? "Pending"
+                      : "None",
               },
             ].map((stat) => (
               <div
@@ -149,6 +180,31 @@ function MenteeView({
               </div>
             ))}
           </div>
+
+          {data.tasks.length > 0 && (
+            <div>
+              <p className="mb-3 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                <ListChecks className="size-3.5" /> Tasks from your mentor
+              </p>
+              <div className="space-y-2">
+                {data.tasks.map((t) => (
+                  <div
+                    key={t.id}
+                    className="rounded-2xl border border-border bg-card p-4"
+                  >
+                    <p className="text-sm font-semibold text-foreground">
+                      {t.title}
+                    </p>
+                    {t.description && (
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        {t.description}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {data.activeMentorship?.mentor ? (
             <div className="rounded-2xl border border-border bg-card p-5">
@@ -171,16 +227,25 @@ function MenteeView({
                     {data.activeMentorship.mentor.interestTags?.join(", ")}
                   </p>
                 </div>
-                <span className="rounded-full bg-primary-muted/20 px-2 py-0.5 text-xs font-medium text-primary">
+                <span className="flex items-center gap-1 rounded-full bg-primary-muted/20 px-2 py-0.5 text-xs font-medium capitalize text-primary">
+                  {data.activeMentorship.status !== "active" && (
+                    <Clock className="size-3" />
+                  )}
                   {data.activeMentorship.status}
                 </span>
               </div>
-              <Link
-                href={`/mentorship/${data.activeMentorship.id}`}
-                className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg border border-primary px-4 py-2.5 text-sm font-semibold text-primary hover:bg-primary/5"
-              >
-                <MessageCircle className="size-4" /> Send a message
-              </Link>
+              {data.activeMentorship.status === "active" ? (
+                <Link
+                  href={`/mentorship/${data.activeMentorship.id}`}
+                  className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg border border-primary px-4 py-2.5 text-sm font-semibold text-primary hover:bg-primary/5"
+                >
+                  <MessageCircle className="size-4" /> Send a message
+                </Link>
+              ) : (
+                <p className="mt-4 text-center text-xs text-muted-foreground">
+                  Waiting for your mentor to accept your request.
+                </p>
+              )}
             </div>
           ) : (
             <div className="rounded-2xl border border-border bg-card p-5">
@@ -205,15 +270,21 @@ function MenteeView({
             </p>
             <div className="space-y-3">
               {[
-                { href: "/pad-her-power", icon: "💚", title: "Pad Her Power" },
-                { href: "/safety", icon: "🛡️", title: "Safety Awareness" },
+                {
+                  href: "/pad-her-power",
+                  icon: Heart,
+                  title: "Pad Her Power",
+                },
+                { href: "/safety", icon: Shield, title: "Safety Awareness" },
               ].map((mod) => (
                 <Link
                   key={mod.title}
                   href={mod.href}
                   className="flex items-center gap-4 rounded-2xl border border-border bg-card p-4 hover:border-primary/40"
                 >
-                  <span className="text-2xl">{mod.icon}</span>
+                  <div className="flex size-10 items-center justify-center rounded-xl bg-primary-muted/20 text-primary">
+                    <mod.icon className="size-5" />
+                  </div>
                   <p className="flex-1 text-sm font-semibold text-foreground">
                     {mod.title}
                   </p>
@@ -245,10 +316,7 @@ function MenteeView({
                   <span>
                     {new Date(data.latestEntry.createdAt).toLocaleDateString(
                       "en-GB",
-                      {
-                        day: "numeric",
-                        month: "long",
-                      },
+                      { day: "numeric", month: "long" },
                     )}
                   </span>
                   <span>·</span>
@@ -284,27 +352,32 @@ function MentorView({
             <p className="font-display text-2xl font-black">
               {user.displayName}
             </p>
-            <p className="mt-1 text-sm text-primary-muted">
-              {data.isVerified
-                ? "✓ Verified Mentor"
-                : "⏳ Application under review — you cannot be matched yet"}
+            <p className="mt-1 flex items-center gap-1.5 text-sm text-primary-muted">
+              {data.isVerified ? (
+                <>
+                  <ShieldCheck className="size-4" /> Verified Mentor
+                </>
+              ) : (
+                <>
+                  <Clock className="size-4" /> Application under review — you
+                  cannot be matched yet
+                </>
+              )}
             </p>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-xl border border-border bg-card p-4 text-center">
               <p className="font-display text-2xl font-bold text-foreground">
-                {data.activeMenteeships.length}
+                {data.active.length}
               </p>
-              <p className="text-xs text-muted-foreground">Active Mentees</p>
+              <p className="text-xs text-muted-foreground">Active mentees</p>
             </div>
             <div className="rounded-xl border border-border bg-card p-4 text-center">
               <p className="font-display text-2xl font-bold text-foreground">
-                0
+                {data.pendingCount}
               </p>
-              <p className="text-xs text-muted-foreground">
-                Sessions this month
-              </p>
+              <p className="text-xs text-muted-foreground">Pending requests</p>
             </div>
           </div>
 
@@ -312,29 +385,35 @@ function MentorView({
             <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               My Mentees
             </p>
-            {data.activeMenteeships.length === 0 ? (
+            {data.active.length === 0 ? (
               <div className="rounded-xl border border-border bg-card p-6 text-center text-sm text-muted-foreground">
                 No active mentees yet.{" "}
-                {!data.isVerified && "Your account is pending verification."}
+                {data.pendingCount > 0
+                  ? "Review your pending requests to get started."
+                  : !data.isVerified
+                    ? "Your account is pending verification."
+                    : ""}
               </div>
             ) : (
               <div className="space-y-3">
-                {data.activeMenteeships.map((m) => (
+                {data.active.map((m) => (
                   <Link
                     key={m.id}
                     href={`/mentor-portal/${m.menteeId}`}
                     className="flex items-center gap-4 rounded-2xl border border-border bg-card p-4 hover:border-primary/40"
                   >
                     <div className="flex size-10 items-center justify-center rounded-full bg-primary-muted/30 font-display text-sm font-bold text-primary">
-                      M
+                      {m.menteeName
+                        .split(" ")
+                        .map((n) => n[0])
+                        .slice(0, 2)
+                        .join("") || "M"}
                     </div>
                     <div className="flex-1">
                       <p className="text-sm font-semibold text-foreground">
-                        Mentee
+                        {m.menteeName}
                       </p>
-                      <p className="text-xs capitalize text-muted-foreground">
-                        {m.status}
-                      </p>
+                      <p className="text-xs text-muted-foreground">Active</p>
                     </div>
                     <ChevronRight className="size-4 text-muted-foreground" />
                   </Link>
@@ -378,12 +457,22 @@ function ParentView({
             <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               My Child
             </p>
-            {data.childLinked ? (
+            {data.child ? (
               <div>
-                <p className="text-sm text-foreground">
-                  ✓ Linked to{" "}
-                  <span className="font-semibold">{data.childEmail}</span>
-                </p>
+                <div className="flex items-center justify-between">
+                  <p className="font-semibold text-foreground">
+                    {data.child.displayName}
+                  </p>
+                  <span className="text-xs text-muted-foreground">
+                    {stageName(data.child.stage)}
+                  </span>
+                </div>
+                <div className="mt-3 h-2 w-full rounded-full bg-muted">
+                  <div
+                    className={`h-2 rounded-full ${data.child.health < 50 ? "bg-accent" : "bg-primary"}`}
+                    style={{ width: `${Math.max(data.child.health, 4)}%` }}
+                  />
+                </div>
                 <Link
                   href="/parent-portal"
                   className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground"
@@ -391,18 +480,25 @@ function ParentView({
                   View progress
                 </Link>
               </div>
-            ) : data.inviteCode ? (
+            ) : data.status === "pending" ? (
               <div>
-                <p className="mb-2 text-sm text-muted-foreground">
-                  Invite sent to{" "}
-                  <span className="font-semibold">{data.childEmail}</span>
+                <p className="mb-2 flex items-center gap-1.5 text-sm text-muted-foreground">
+                  <Clock className="size-4" /> Waiting for{" "}
+                  <span className="font-semibold text-foreground">
+                    {data.childEmail}
+                  </span>{" "}
+                  to accept.
                 </p>
-                <p className="mb-3 text-xs text-muted-foreground">
-                  Share this code with your child to link accounts:
-                </p>
-                <div className="rounded-xl border border-border bg-muted px-4 py-3 font-mono text-lg font-bold tracking-widest text-foreground">
-                  {data.inviteCode}
-                </div>
+                {data.inviteCode && (
+                  <>
+                    <p className="mb-3 text-xs text-muted-foreground">
+                      Share this code with your child to link accounts:
+                    </p>
+                    <div className="rounded-xl border border-border bg-muted px-4 py-3 font-mono text-lg font-bold tracking-widest text-foreground">
+                      {data.inviteCode}
+                    </div>
+                  </>
+                )}
               </div>
             ) : (
               <div>
@@ -422,21 +518,17 @@ function ParentView({
           <div className="grid grid-cols-2 gap-3">
             <Link
               href="/parent-portal/mentors"
-              className="rounded-xl border border-border bg-card p-4 text-center hover:border-primary/40"
+              className="flex flex-col items-center gap-2 rounded-2xl border border-border bg-card p-5 hover:border-primary/40"
             >
-              <p className="text-2xl">🤝</p>
-              <p className="mt-1 text-xs font-semibold text-foreground">
-                Mentors
-              </p>
+              <Star className="size-6 text-primary" />
+              <p className="text-xs font-semibold text-foreground">Mentors</p>
             </Link>
             <Link
               href="/parent-portal/payments"
-              className="rounded-xl border border-border bg-card p-4 text-center hover:border-primary/40"
+              className="flex flex-col items-center gap-2 rounded-2xl border border-border bg-card p-5 hover:border-primary/40"
             >
-              <p className="text-2xl">💳</p>
-              <p className="mt-1 text-xs font-semibold text-foreground">
-                Payments
-              </p>
+              <CreditCard className="size-6 text-primary" />
+              <p className="text-xs font-semibold text-foreground">Payments</p>
             </Link>
           </div>
         </div>
