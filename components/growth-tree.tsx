@@ -5,7 +5,19 @@ import { motion } from "framer-motion";
 type Props = {
   completedCount: number;
   level: number;
+  // 0–100. Below ~50 the plant visibly wilts: leaves desaturate, droop, and
+  // the canopy thins. Recovers when the mentee completes tasks.
+  health?: number;
 };
+
+// Interpolate leaf colour from healthy green toward a dry, faded tone as health
+// falls. Keeps the silhouette but drains the life out of it.
+function leafColors(health: number): { primary: string; accent: string } {
+  if (health >= 75) return { primary: "#2E8B57", accent: "#A8D5B5" };
+  if (health >= 50) return { primary: "#5C8A4A", accent: "#C2CFA0" };
+  if (health >= 25) return { primary: "#8A8A3A", accent: "#CBC089" };
+  return { primary: "#A98B4A", accent: "#D8C79A" };
+}
 
 const TRUNK = "M 120 260 C 118 220 115 180 118 140 C 120 110 122 80 120 50";
 
@@ -67,10 +79,15 @@ function branchCount(completedCount: number): number {
   return 2;
 }
 
-export function GrowthTree({ completedCount, level }: Props) {
+export function GrowthTree({ completedCount, level, health = 100 }: Props) {
   const visibleBranches = branchCount(completedCount);
   const showLeaves = completedCount >= 3;
-  const showSun = completedCount >= 6;
+  const showSun = completedCount >= 6 && health >= 50;
+  const isWilting = health < 50;
+  const { primary: leafPrimary, accent: leafAccent } = leafColors(health);
+  // Wilting droops the canopy and slows the sway; vitality drives leaf opacity.
+  const droop = isWilting ? (50 - health) / 12 : 0;
+  const leafOpacity = 0.5 + (health / 100) * 0.4;
 
   return (
     <div className="flex flex-col items-center">
@@ -106,10 +123,14 @@ export function GrowthTree({ completedCount, level }: Props) {
           opacity="0.6"
         />
 
-        {/* Trunk with idle sway */}
+        {/* Trunk with idle sway — slows and stills as the plant wilts */}
         <motion.g
-          animate={{ rotate: [0, 1, -1, 0] }}
-          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+          animate={{ rotate: isWilting ? [0, 0.4, -0.4, 0] : [0, 1, -1, 0] }}
+          transition={{
+            duration: isWilting ? 7 : 4,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
           style={{ transformOrigin: "120px 260px" }}
         >
           <motion.path
@@ -158,11 +179,11 @@ export function GrowthTree({ completedCount, level }: Props) {
               <motion.circle
                 key={`leaf-${cx}-${cy}`}
                 cx={cx}
-                cy={cy}
+                cy={cy + droop}
                 r={j === 0 ? 7 : 5}
-                fill={j % 2 === 0 ? "#A8D5B5" : "#2E8B57"}
+                fill={j % 2 === 0 ? leafAccent : leafPrimary}
                 initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1, opacity: 0.9 }}
+                animate={{ scale: isWilting ? 0.85 : 1, opacity: leafOpacity }}
                 transition={{
                   type: "spring",
                   delay: 0.8 + i * 0.1 + j * 0.06,
