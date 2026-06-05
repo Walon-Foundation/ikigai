@@ -11,7 +11,7 @@ export default async function AdminLayout({
   const dbUser = await requireAdmin();
 
   return (
-    <div className="dark flex min-h-screen bg-background">
+    <div className="dark flex h-screen overflow-hidden bg-background">
       <AdminSidebar
         displayName={dbUser?.displayName ?? "Admin"}
         email={dbUser?.email ?? ""}

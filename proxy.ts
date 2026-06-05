@@ -82,7 +82,6 @@ export default clerkMiddleware(async (auth, request) => {
 
   const rawAppHost = process.env.APP_HOSTNAME ?? "app.localhost:3000";
   const rawAdminHost = process.env.ADMIN_HOSTNAME ?? "admin.localhost:3000";
-  const marketingUrl = process.env.MARKETING_URL ?? "http://localhost:3000";
 
   const isAdmin = hostname === hostnameOf(rawAdminHost);
   const isApp = hostname === hostnameOf(rawAppHost);
@@ -115,12 +114,16 @@ export default clerkMiddleware(async (auth, request) => {
         return redirectToSignIn({ returnBackUrl: request.url });
       }
 
-      // Signed in → check role against our database.
+      // Signed in but not an admin → render a terminal "not authorized" page
+      // ON this domain via a rewrite (not a redirect). A cross-domain redirect
+      // here can ping-pong with Clerk's session handshake and trigger
+      // ERR_TOO_MANY_REDIRECTS, since the session cookie may live on a
+      // different subdomain. A rewrite renders in place and cannot loop.
       const role = await getUserRole(userId);
       if (role !== "admin") {
-        // Leave the admin subdomain entirely via an absolute URL so the
-        // browser doesn't bounce back here and loop.
-        return NextResponse.redirect(marketingUrl);
+        const denied = url.clone();
+        denied.pathname = "/admin/unauthorized";
+        return NextResponse.rewrite(denied);
       }
     }
 

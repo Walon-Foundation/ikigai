@@ -94,10 +94,11 @@ export async function requireAdmin(): Promise<DbUser> {
     .where(eq(users.clerkId, userId))
     .limit(1);
 
-  // Not an admin → leave the admin area entirely via an absolute marketing URL
-  // so we don't bounce around inside the admin subdomain.
+  // Not an admin → show the terminal "not authorized" page on this domain.
+  // Staying same-domain (vs a cross-domain redirect) avoids ping-ponging with
+  // Clerk's session handshake, which can cause ERR_TOO_MANY_REDIRECTS.
   if (user?.role !== "admin") {
-    redirect(process.env.MARKETING_URL ?? "http://localhost:3000");
+    redirect("/admin/unauthorized");
   }
 
   return user;
