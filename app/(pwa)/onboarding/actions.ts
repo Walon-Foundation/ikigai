@@ -1,10 +1,10 @@
 "use server";
 
 import { auth } from "@clerk/nextjs/server";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { db } from "@/db/db";
-import { milestones, users } from "@/db/schema";
+import { guardianLinks, milestones, users } from "@/db/schema";
 
 type OnboardingData = {
   roleSelected?: boolean;
@@ -233,25 +233,55 @@ export async function saveParentProfile(data: {
 }
 
 export async function saveParentLink(childEmail: string) {
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthenticated");
+  const parent = await getUser();
 
   if (!childEmail) {
-    await patchOnboardingData(userId, { childLinked: false });
+    await patchOnboardingData(parent.clerkId, { childLinked: false });
     redirect("/parent-portal");
   }
 
-  const [child] = await db
-    .select({ id: users.id })
-    .from(users)
-    .where(eq(users.email, childEmail))
+  const data = (parent.onboardingData as OnboardingData | null) ?? {};
+  const relationship = data.parentProfile?.relationship ?? "parent";
+
+  // Don't create a second link to the same email for this parent.
+  const [existing] = await db
+    .select({ id: guardianLinks.id })
+    .from(guardianLinks)
+    .where(
+      and(
+        eq(guardianLinks.parentId, parent.id),
+        eq(guardianLinks.childEmail, childEmail),
+      ),
+    )
     .limit(1);
 
-  if (child) {
-    await patchOnboardingData(userId, { childEmail, childLinked: true });
-  } else {
-    const inviteCode = `IK-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
-    await patchOnboardingData(userId, { childEmail, inviteCode });
+  if (!existing) {
+    const [child] = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.email, childEmail))
+      .limit(1);
+
+    // A request is created in 'pending' state. The child must accept it before
+    // the parent can see anything — consent is the gate.
+    const inviteCode = child
+      ? null
+      : `IK-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+
+    await db.insert(guardianLinks).values({
+      parentId: parent.id,
+      childId: child?.id ?? null,
+      childEmail,
+      inviteCode,
+      relationship,
+      status: "pending",
+    });
+
+    // Onboarding-gate flags only; real status lives in guardianLinks.
+    await patchOnboardingData(parent.clerkId, {
+      childEmail,
+      ...(inviteCode ? { inviteCode } : { childLinked: true }),
+    });
   }
 
   redirect("/parent-portal");

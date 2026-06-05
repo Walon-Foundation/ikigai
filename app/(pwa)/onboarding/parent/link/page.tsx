@@ -40,13 +40,16 @@ export default function ParentLinkPage() {
           <p className="font-semibold text-foreground">How this works</p>
           <ul className="mt-2 space-y-1">
             <li>
-              • If your child already has an account, they will be linked
-              automatically.
+              • If your child already has an account, we send them a request to
+              confirm the link.
             </li>
             <li>
               • If not, you will receive an invite code to share with them.
             </li>
-            <li>• You can start exploring your parent dashboard right away.</li>
+            <li>
+              • You can only see their progress once they accept — their consent
+              comes first.
+            </li>
           </ul>
         </div>
       </div>
