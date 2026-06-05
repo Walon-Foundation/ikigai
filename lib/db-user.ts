@@ -78,3 +78,27 @@ export async function requireRole(
 
   return user;
 }
+
+// Authoritative admin gate for the /admin route group. Do NOT rely on proxy.ts
+// alone: the proxy's role check only runs when the request host matches the
+// admin subdomain, so any other route into these pages would otherwise render
+// with no authorization. Next's own proxy docs say to verify authz inside the
+// route, not just at the edge — so every admin layout/page calls this.
+export async function requireAdmin(): Promise<DbUser> {
+  const { userId } = await auth();
+  if (!userId) redirect("/sign-in");
+
+  const [user] = await db
+    .select()
+    .from(users)
+    .where(eq(users.clerkId, userId))
+    .limit(1);
+
+  // Not an admin → leave the admin area entirely via an absolute marketing URL
+  // so we don't bounce around inside the admin subdomain.
+  if (user?.role !== "admin") {
+    redirect(process.env.MARKETING_URL ?? "http://localhost:3000");
+  }
+
+  return user;
+}

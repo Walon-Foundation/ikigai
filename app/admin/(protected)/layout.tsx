@@ -1,28 +1,14 @@
-import { auth } from "@clerk/nextjs/server";
-import { eq } from "drizzle-orm";
 import { AdminSidebar } from "@/components/admin-sidebar";
-import { db } from "@/db/db";
-import { users } from "@/db/schema";
+import { requireAdmin } from "@/lib/db-user";
 
 export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  // Auth + admin-role gating happens in proxy.ts — reaching here means the
-  // visitor is a signed-in admin. We only fetch the user for the sidebar.
-  const { userId } = await auth();
-
-  const [dbUser] = userId
-    ? await db
-        .select({
-          displayName: users.displayName,
-          email: users.email,
-        })
-        .from(users)
-        .where(eq(users.clerkId, userId))
-        .limit(1)
-    : [];
+  // Authoritative admin gate — not just proxy.ts. A non-admin (or signed-out)
+  // visitor is redirected away before any admin page renders.
+  const dbUser = await requireAdmin();
 
   return (
     <div className="dark flex min-h-screen bg-background">
