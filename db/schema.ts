@@ -38,9 +38,56 @@ export const mentorships = pgTable("mentorships", {
   id: uuid("id").primaryKey().defaultRandom(),
   menteeId: uuid("mentee_id").references(() => users.id),
   mentorId: uuid("mentor_id").references(() => users.id),
-  status: text("status").default("icebreaker"), // 'icebreaker' | 'active' | 'flagged' | 'closed'
-  matchScore: integer("match_score"),
+  status: text("status").default("requested"), // 'requested' | 'active' | 'declined' | 'closed'
+  matchScore: integer("match_score"), // 0–100, interest-tag overlap at request time
   lastActivityAt: timestamp("last_activity_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// A unit of work a mentor assigns inside a mentorship. Completing it grows the
+// mentee's tree; failing it wilts the tree. See lib/growth.ts.
+export const tasks = pgTable("tasks", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  mentorshipId: uuid("mentorship_id").references(() => mentorships.id),
+  title: text("title").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("assigned"), // 'assigned' | 'completed' | 'failed'
+  growthPoints: integer("growth_points").notNull().default(10),
+  dueDate: timestamp("due_date"), // display only — never auto-fails
+  completedAt: timestamp("completed_at"),
+  failedAt: timestamp("failed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// One stateful growth tree per mentee. `stage` (and growthPoints) only ever
+// increase — permanent growth. `health` falls when tasks fail and recovers when
+// tasks complete — the wilt/recover dial.
+export const growthTrees = pgTable("growth_trees", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .notNull()
+    .unique()
+    .references(() => users.id),
+  health: integer("health").notNull().default(100), // 0–100
+  growthPoints: integer("growth_points").notNull().default(0), // cumulative
+  stage: integer("stage").notNull().default(1), // derived from growthPoints
+  updatedAt: timestamp("updated_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Parent ↔ child relationship, gated by the child's in-app consent. The parent
+// sees nothing about the child until status = 'accepted'.
+export const guardianLinks = pgTable("guardian_links", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  parentId: uuid("parent_id")
+    .notNull()
+    .references(() => users.id),
+  childId: uuid("child_id").references(() => users.id), // set once the child exists/claims
+  childEmail: text("child_email"),
+  inviteCode: text("invite_code").unique(), // for the no-account flow
+  relationship: text("relationship").default("parent"), // 'parent' | 'guardian' | 'other'
+  status: text("status").notNull().default("pending"), // 'pending' | 'accepted' | 'declined'
+  respondedAt: timestamp("responded_at"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -89,7 +136,7 @@ export const pushNotifications = pgTable("push_notifications", {
   userId: uuid("user_id").references(() => users.id),
   title: text("title").notNull(),
   body: text("body").notNull(),
-  type: text("type"), // 'nudge' | 'match' | 'milestone' | 'broadcast'
+  type: text("type"), // 'nudge' | 'match' | 'milestone' | 'broadcast' | 'task' | 'guardian'
   sentAt: timestamp("sent_at").defaultNow(),
 });
 
