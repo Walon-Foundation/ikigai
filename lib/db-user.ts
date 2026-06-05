@@ -1,6 +1,7 @@
 import "server-only";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { eq } from "drizzle-orm";
+import { redirect } from "next/navigation";
 import { db } from "@/db/db";
 import { users } from "@/db/schema";
 
@@ -59,4 +60,21 @@ export async function getDbUser(): Promise<DbUser | null> {
     .where(eq(users.clerkId, userId))
     .limit(1);
   return user ?? null;
+}
+
+// Role-scoped surfaces. A signed-in user whose role isn't in `allowed` is
+// redirected to their dashboard — which renders the right view for them.
+// `mentee` covers legacy `club_lead` and pre-onboarding null roles, matching
+// how AppLayout groups them.
+export async function requireRole(
+  allowed: ("mentee" | "mentor" | "parent")[],
+): Promise<DbUser> {
+  const user = await getDbUser();
+  if (!user) redirect("/sign-in");
+
+  const effectiveRole =
+    user.role === "mentor" || user.role === "parent" ? user.role : "mentee";
+  if (!allowed.includes(effectiveRole)) redirect("/dashboard");
+
+  return user;
 }

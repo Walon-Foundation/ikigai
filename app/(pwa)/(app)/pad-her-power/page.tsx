@@ -3,7 +3,7 @@ import { PageHeader } from "@/components/page-header";
 import { db } from "@/db/db";
 import { milestones } from "@/db/schema";
 import { PAD_HER_POWER_RESOURCES } from "@/lib/constants";
-import { getDbUser } from "@/lib/db-user";
+import { requireRole } from "@/lib/db-user";
 import { ResourceMapClient } from "./resource-map-client";
 
 const CATEGORIES = [
@@ -15,13 +15,11 @@ const CATEGORIES = [
 ];
 
 export default async function PadHerPowerPage() {
-  const user = await getDbUser();
-  if (user) {
-    await db
-      .insert(milestones)
-      .values({ userId: user.id, type: "pad_her_power" })
-      .onConflictDoNothing();
-  }
+  const user = await requireRole(["mentee"]);
+  await db
+    .insert(milestones)
+    .values({ userId: user.id, type: "pad_her_power" })
+    .onConflictDoNothing();
   const grouped = CATEGORIES.map((cat) => ({
     category: cat,
     resources: PAD_HER_POWER_RESOURCES.filter((r) => r.category === cat),

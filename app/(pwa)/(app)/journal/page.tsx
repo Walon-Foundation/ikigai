@@ -1,15 +1,13 @@
 import { desc, eq } from "drizzle-orm";
-import { redirect } from "next/navigation";
 import { db } from "@/db/db";
 import { journalEntries } from "@/db/schema";
-import { getDbUser } from "@/lib/db-user";
+import { requireRole } from "@/lib/db-user";
 import { JournalClient } from "./journal-client";
 
 type Visibility = "private" | "mentor_only" | "community";
 
 export default async function JournalPage() {
-  const user = await getDbUser();
-  if (!user) redirect("/sign-in");
+  const user = await requireRole(["mentee"]);
 
   const entries = await db
     .select()
