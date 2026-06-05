@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Loader2 } from "lucide-react";
+import { Check, Loader2, Sprout } from "lucide-react";
 import { useTransition } from "react";
 import { completeMenteeOnboarding } from "../../actions";
 
@@ -9,7 +9,9 @@ export default function MenteeProfilePage() {
 
   return (
     <div className="flex flex-col items-center py-8 text-center">
-      <div className="mb-6 text-7xl">🌱</div>
+      <div className="mb-6 flex size-20 items-center justify-center rounded-full bg-primary-muted/20 text-primary">
+        <Sprout className="size-10" />
+      </div>
       <h2 className="font-display mb-3 text-4xl font-black text-foreground">
         You&apos;re an Explorer!
       </h2>

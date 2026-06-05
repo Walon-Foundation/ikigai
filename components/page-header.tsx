@@ -25,7 +25,7 @@ export function PageHeader({ title, showGreeting = false }: PageHeaderProps) {
             <>
               <p className="text-xs text-muted-foreground">{greeting}</p>
               <h1 className="font-display text-lg font-black text-foreground leading-tight">
-                {firstName} 🌱
+                {firstName}
               </h1>
             </>
           ) : (

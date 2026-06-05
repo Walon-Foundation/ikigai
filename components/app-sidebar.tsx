@@ -7,6 +7,7 @@ import {
   CreditCard,
   Heart,
   LayoutDashboard,
+  Leaf,
   LogOut,
   MessageCircle,
   Shield,
@@ -88,10 +89,10 @@ export function AppSidebar({
   return (
     <aside className="sticky top-0 hidden h-screen w-64 flex-col border-r border-border bg-card lg:flex">
       <div className="flex h-16 items-center gap-2 border-b border-border px-6">
+        <Leaf className="size-5 text-primary" />
         <span className="font-display text-xl font-black text-primary">
           Ikigai
         </span>
-        <span className="text-lg">🌱</span>
       </div>
 
       <div className="border-b border-border px-5 py-4">

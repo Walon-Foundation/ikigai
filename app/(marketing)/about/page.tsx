@@ -58,9 +58,9 @@ export default function AboutPage() {
                   Where We Are
                 </p>
                 <p className="text-lg leading-relaxed text-primary-foreground/80">
-                  Ikigai is based in Sierra Leone, building technology
-                  for African youth. We serve youth, mentors, parents, schools,
-                  and organisations across Freetown and Western Rural Area.
+                  Ikigai is based in Sierra Leone, building technology for
+                  African youth. We serve youth, mentors, parents, schools, and
+                  organisations across Freetown and Western Rural Area.
                 </p>
               </div>
             </div>

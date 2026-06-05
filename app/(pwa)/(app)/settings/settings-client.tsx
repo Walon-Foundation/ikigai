@@ -135,7 +135,7 @@ export function SettingsClient({ user }: { user: DbUser }) {
             type="button"
             className="mt-3 text-xs font-medium text-primary"
           >
-            Edit interests →
+            Edit interests
           </button>
         </div>
 

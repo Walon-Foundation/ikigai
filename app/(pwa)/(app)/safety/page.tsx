@@ -100,7 +100,7 @@ export default function SafetyPage() {
 
           {submitted ? (
             <div className="rounded-xl border border-primary-muted/40 bg-primary-muted/10 p-4 text-center">
-              <p className="font-semibold text-primary">Report submitted ✓</p>
+              <p className="font-semibold text-primary">Report submitted</p>
               <p className="mt-1 text-sm text-muted-foreground">
                 Our team will review your report within 24 hours.
               </p>

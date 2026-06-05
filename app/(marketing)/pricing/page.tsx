@@ -111,9 +111,9 @@ export default function PricingPage() {
                   Choose how you access a mentor.
                 </h2>
                 <p className="mt-4 max-w-2xl text-base leading-relaxed text-muted-foreground">
-                  All plans give you full access to the Ikigai platform —
-                  mentor matching, growth roadmap, journal, and community.
-                  Pricing details are available inside the app.
+                  All plans give you full access to the Ikigai platform — mentor
+                  matching, growth roadmap, journal, and community. Pricing
+                  details are available inside the app.
                 </p>
               </div>
             </SectionReveal>
