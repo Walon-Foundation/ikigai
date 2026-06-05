@@ -7,7 +7,8 @@ import { cn } from "@/lib/utils";
 export function Nav() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
-  const appUrl = `https://${process.env.NEXT_PUBLIC_APP_HOSTNAME ?? "app.ikigai.app"}`;
+  const appHost = process.env.NEXT_PUBLIC_APP_HOSTNAME ?? "app.localhost:3000";
+  const appUrl = `${appHost.includes("localhost") ? "http" : "https"}://${appHost}`;
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 8);

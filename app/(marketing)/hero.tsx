@@ -3,7 +3,8 @@
 import { motion } from "framer-motion";
 import { GrowthTree } from "@/components/growth-tree";
 
-const APP_URL = `https://${process.env.NEXT_PUBLIC_APP_HOSTNAME ?? "app.ikigai.app"}`;
+const _appHost = process.env.NEXT_PUBLIC_APP_HOSTNAME ?? "app.localhost:3000";
+const APP_URL = `${_appHost.includes("localhost") ? "http" : "https"}://${_appHost}`;
 
 export function Hero() {
   return (
@@ -52,7 +53,7 @@ export function Hero() {
                 purpose-driven
                 <span
                   aria-hidden
-                  className="absolute inset-x-0 bottom-1 -z-10 h-[10px] rounded-sm bg-accent/30"
+                  className="absolute inset-x-0 bottom-1 -z-10 h-2.5 rounded-sm bg-accent/30"
                 />
               </span>{" "}
               young people across Africa.

@@ -4,7 +4,8 @@ interface InstallCtaProps {
 }
 
 export function InstallCta({ headline, body }: InstallCtaProps) {
-  const appUrl = `https://${process.env.NEXT_PUBLIC_APP_HOSTNAME ?? "app.ikigai.app"}`;
+  const appHost = process.env.APP_HOSTNAME ?? "app.localhost:3000";
+  const appUrl = `${appHost.includes("localhost") ? "http" : "https"}://${appHost}`;
 
   return (
     <section className="bg-[#1C1C1A] py-24">

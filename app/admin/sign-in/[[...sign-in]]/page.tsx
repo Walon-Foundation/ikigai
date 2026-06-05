@@ -12,7 +12,7 @@ export default function AdminSignInPage() {
             Administrator access only
           </p>
         </div>
-        <SignIn fallbackRedirectUrl="/admin/dashboard" />
+        <SignIn fallbackRedirectUrl="/dashboard" />
       </div>
     </div>
   );
