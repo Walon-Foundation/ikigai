@@ -5,14 +5,27 @@ import { count, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db/db";
 import { journalEntries, milestones, users } from "@/db/schema";
+import {
+  flagsConcern,
+  isJournalVisibility,
+  MAX_JOURNAL_LENGTH,
+} from "@/lib/journal";
 
 export async function saveJournalEntry(data: {
   content: string;
-  visibility: "private" | "mentor_only" | "community";
-  keywordFlag: boolean;
+  visibility: string;
 }) {
   const { userId } = await auth();
   if (!userId) throw new Error("Unauthenticated");
+
+  // Server-side validation: client args reach this function unverified.
+  const content = typeof data.content === "string" ? data.content.trim() : "";
+  if (!content) throw new Error("Entry is empty");
+  if (content.length > MAX_JOURNAL_LENGTH) throw new Error("Entry too long");
+
+  const visibility = isJournalVisibility(data.visibility)
+    ? data.visibility
+    : "private";
 
   const [user] = await db
     .select({ id: users.id })
@@ -23,9 +36,10 @@ export async function saveJournalEntry(data: {
 
   await db.insert(journalEntries).values({
     userId: user.id,
-    content: data.content,
-    visibility: data.visibility,
-    keywordFlag: data.keywordFlag,
+    content,
+    visibility,
+    // Recomputed here — never trust a client-supplied safety flag.
+    keywordFlag: flagsConcern(content),
   });
 
   // Award first_journal milestone if this is their first entry

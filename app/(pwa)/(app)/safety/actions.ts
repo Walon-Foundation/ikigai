@@ -5,12 +5,24 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db/db";
 import { milestones, safetyReports, users } from "@/db/schema";
 
+const REPORT_TYPES = ["inappropriate", "concern"] as const;
+const MAX_REPORT_NOTES = 5_000;
+
 export async function submitSafetyReport(data: {
-  type: "inappropriate" | "concern";
+  type: string;
   notes: string;
 }) {
   const { userId } = await auth();
   if (!userId) throw new Error("Unauthenticated");
+
+  // Client args are unverified — validate before persisting.
+  const type = (REPORT_TYPES as readonly string[]).includes(data.type)
+    ? data.type
+    : "concern";
+  const notes =
+    typeof data.notes === "string"
+      ? data.notes.trim().slice(0, MAX_REPORT_NOTES)
+      : "";
 
   const [user] = await db
     .select({ id: users.id })
@@ -21,8 +33,8 @@ export async function submitSafetyReport(data: {
 
   await db.insert(safetyReports).values({
     reporterId: user.id,
-    type: data.type,
-    notes: data.notes,
+    type,
+    notes,
   });
 }
 

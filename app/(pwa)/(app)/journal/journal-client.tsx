@@ -4,10 +4,11 @@ import { openDB } from "idb";
 import { AlertTriangle, Globe, Lock, Users, WifiOff } from "lucide-react";
 import { useEffect, useState, useTransition } from "react";
 import { PageHeader } from "@/components/page-header";
+import { flagsConcern, type JournalVisibility } from "@/lib/journal";
 import { cn } from "@/lib/utils";
 import { saveJournalEntry } from "./actions";
 
-type Visibility = "private" | "mentor_only" | "community";
+type Visibility = JournalVisibility;
 
 const VISIBILITY_OPTIONS: {
   value: Visibility;
@@ -18,12 +19,6 @@ const VISIBILITY_OPTIONS: {
   { value: "mentor_only", label: "Mentor Only", icon: Users },
   { value: "community", label: "Community", icon: Globe },
 ];
-
-const CONCERN_KEYWORDS = ["hurt myself", "end it", "give up", "no reason to"];
-
-function checkKeywords(text: string): boolean {
-  return CONCERN_KEYWORDS.some((kw) => text.toLowerCase().includes(kw));
-}
 
 type Entry = {
   id: string;
@@ -100,7 +95,6 @@ export function JournalClient({ initialEntries }: { initialEntries: Entry[] }) {
             await saveJournalEntry({
               content: entry.content,
               visibility: entry.visibility,
-              keywordFlag: entry.keywordFlag,
             });
             await clearPendingEntry(entry.id);
           } catch {
@@ -118,13 +112,13 @@ export function JournalClient({ initialEntries }: { initialEntries: Entry[] }) {
 
   function handleContentChange(val: string) {
     setNewContent(val);
-    setShowWarning(checkKeywords(val));
+    setShowWarning(flagsConcern(val));
   }
 
   function handleSave() {
     if (!newContent.trim() || isPending) return;
     const content = newContent.trim();
-    const keywordFlag = checkKeywords(content);
+    const keywordFlag = flagsConcern(content);
 
     const optimistic: Entry = {
       id: `opt-${Date.now()}`,
@@ -141,7 +135,7 @@ export function JournalClient({ initialEntries }: { initialEntries: Entry[] }) {
 
     startTransition(async () => {
       try {
-        await saveJournalEntry({ content, visibility, keywordFlag });
+        await saveJournalEntry({ content, visibility });
         setSaved(true);
         setTimeout(() => setSaved(false), 2000);
       } catch {
@@ -169,7 +163,7 @@ export function JournalClient({ initialEntries }: { initialEntries: Entry[] }) {
         {/* Offline-saved toast */}
         {offlineSaved && (
           <div className="mb-4 rounded-xl bg-accent-pale px-4 py-2.5 text-sm font-medium text-earth">
-            Saved offline ✓ — will sync when connected.
+            Saved offline — will sync when connected.
           </div>
         )}
 
@@ -196,7 +190,7 @@ export function JournalClient({ initialEntries }: { initialEntries: Entry[] }) {
                 <p className="text-xs text-muted-foreground">
                   It sounds like you might be going through something difficult.{" "}
                   <a href="/safety/help" className="underline text-primary">
-                    View crisis resources →
+                    View crisis resources
                   </a>
                 </p>
               </div>
@@ -230,9 +224,9 @@ export function JournalClient({ initialEntries }: { initialEntries: Entry[] }) {
               className="rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-light disabled:opacity-40"
             >
               {saved
-                ? "Saved ✓"
+                ? "Saved"
                 : offlineSaved
-                  ? "Saved offline ✓"
+                  ? "Saved offline"
                   : isPending
                     ? "Saving…"
                     : "Save Entry"}
