@@ -147,3 +147,46 @@ export const messages = pgTable("messages", {
   content: text("content").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
+
+// Events / activities organised on the platform. Created and managed by admins.
+export const events = pgTable("events", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  title: text("title").notNull(),
+  description: text("description"),
+  location: text("location"),
+  region: text("region"), // 'freetown' | 'western_rural'
+  startsAt: timestamp("starts_at").notNull(),
+  endsAt: timestamp("ends_at"),
+  capacity: integer("capacity"), // null = unlimited
+  createdBy: uuid("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// One row per user signed up to an event. `status` tracks attendance so admins
+// can report event-attendance rates.
+export const eventAttendance = pgTable(
+  "event_attendance",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    eventId: uuid("event_id")
+      .notNull()
+      .references(() => events.id),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id),
+    status: text("status").notNull().default("registered"), // 'registered' | 'attended' | 'no_show'
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (t) => [unique().on(t.eventId, t.userId)],
+);
+
+// Lightweight satisfaction survey responses (1–5). Feeds the satisfaction KPI
+// on the admin analytics page.
+export const satisfactionSurveys = pgTable("satisfaction_surveys", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").references(() => users.id),
+  score: integer("score").notNull(), // 1–5
+  comment: text("comment"),
+  context: text("context").default("general"), // 'general' | 'mentorship' | 'event'
+  createdAt: timestamp("created_at").defaultNow(),
+});
