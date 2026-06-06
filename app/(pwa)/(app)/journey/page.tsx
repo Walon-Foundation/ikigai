@@ -1,222 +1,156 @@
 import { and, eq } from "drizzle-orm";
-import { Check, Leaf, Lock, Sprout, TreePine } from "lucide-react";
+import { Check, Lock } from "lucide-react";
 import { GrowthTree } from "@/components/growth-tree";
 import { PageHeader } from "@/components/page-header";
 import { db } from "@/db/db";
-import { growthTrees, mentorships, milestones, tasks } from "@/db/schema";
+import { growthTrees, mentorships, tasks } from "@/db/schema";
 import { requireRole } from "@/lib/db-user";
-
-const LEVELS = [
-  {
-    level: 1,
-    name: "Explorer",
-    icon: Sprout,
-    desc: "Beginning your ikigai journey",
-    required: 3,
-  },
-  {
-    level: 2,
-    name: "Advocate",
-    icon: Leaf,
-    desc: "Growing your impact in the community",
-    required: 6,
-  },
-  {
-    level: 3,
-    name: "Mentor",
-    icon: TreePine,
-    desc: "Guiding others on their journey",
-    required: 10,
-  },
-];
-
-const ALL_MILESTONE_TYPES = [
-  { type: "purpose_quiz", label: "Complete the Purpose Quiz" },
-  { type: "first_journal", label: "Write your first journal entry" },
-  { type: "safety_module", label: "Complete the Safety Module" },
-  { type: "mentor_connect", label: "Connect with a mentor" },
-  { type: "pad_her_power", label: "Complete Pad Her Power module" },
-];
+import { getMenteeProgress } from "@/lib/progress";
 
 export default async function JourneyPage() {
   const user = await requireRole(["mentee"]);
-  const completedRows = user
-    ? await db.select().from(milestones).where(eq(milestones.userId, user.id))
-    : [];
 
-  // The plant itself is driven by the task-based growth tree: stage from
-  // completed tasks, vitality from health.
-  const [treeRow] = user
-    ? await db
-        .select()
-        .from(growthTrees)
-        .where(eq(growthTrees.userId, user.id))
-        .limit(1)
-    : [];
+  const [progress, [treeRow], completedTaskRows] = await Promise.all([
+    getMenteeProgress(user),
+    db
+      .select({ health: growthTrees.health })
+      .from(growthTrees)
+      .where(eq(growthTrees.userId, user.id))
+      .limit(1),
+    db
+      .select({ id: tasks.id })
+      .from(tasks)
+      .innerJoin(mentorships, eq(tasks.mentorshipId, mentorships.id))
+      .where(
+        and(eq(mentorships.menteeId, user.id), eq(tasks.status, "completed")),
+      ),
+  ]);
+
   const treeHealth = treeRow?.health ?? 100;
-
-  const completedTaskRows = user
-    ? await db
-        .select({ id: tasks.id })
-        .from(tasks)
-        .innerJoin(mentorships, eq(tasks.mentorshipId, mentorships.id))
-        .where(
-          and(eq(mentorships.menteeId, user.id), eq(tasks.status, "completed")),
-        )
-    : [];
   const completedTaskCount = completedTaskRows.length;
-
-  const completedTypes = new Set(completedRows.map((m) => m.type));
-  const completedMilestones = ALL_MILESTONE_TYPES.filter((m) =>
-    completedTypes.has(m.type),
-  );
-  const incompleteMilestones = ALL_MILESTONE_TYPES.filter(
-    (m) => !completedTypes.has(m.type),
-  );
-  const completed = completedMilestones.length;
-  const nextLevelRequired = 6;
-  const progress = Math.min((completed / nextLevelRequired) * 100, 100);
+  const earnedBadges = progress.phases.filter((p) => p.complete);
 
   return (
     <>
       <PageHeader title="Journey" />
       <div className="mx-auto max-w-2xl px-4 py-6">
-        {/* Tree Visual */}
+        {/* Tree + stage */}
         <div className="mb-6 flex flex-col items-center rounded-3xl border border-border bg-card p-8">
           <GrowthTree
             completedCount={completedTaskCount}
-            level={user?.growthLevel ?? 1}
+            level={progress.stage}
             health={treeHealth}
           />
-          <p className="mt-3 text-sm text-muted-foreground">
-            {treeHealth < 50
-              ? "Your tree is wilting — complete your tasks to bring it back."
-              : `${completedTaskCount} task${completedTaskCount !== 1 ? "s" : ""} completed`}
+          <p className="mt-3 font-display text-lg font-bold text-foreground">
+            {progress.stageName} stage
+          </p>
+          <p className="text-sm text-muted-foreground">
+            {progress.currentPhase.name}
           </p>
         </div>
 
-        {/* Progress */}
+        {/* Overall completion */}
         <div className="mb-6 rounded-2xl border border-border bg-card p-5">
           <div className="mb-2 flex items-center justify-between text-sm">
             <span className="font-semibold text-foreground">
-              Progress to Advocate
+              Roadmap completion
             </span>
             <span className="text-muted-foreground">
-              {completed}/{nextLevelRequired} milestones
+              {progress.completedSteps}/{progress.totalSteps} steps ·{" "}
+              {progress.percent}%
             </span>
           </div>
           <div className="h-3 w-full rounded-full bg-muted">
             <div
               className="h-3 rounded-full bg-primary transition-all"
-              style={{ width: `${progress}%` }}
+              style={{ width: `${progress.percent}%` }}
             />
           </div>
-          <p className="mt-2 text-xs text-muted-foreground">
-            Complete {Math.max(0, nextLevelRequired - completed)} more
-            milestones to reach Advocate level
-          </p>
         </div>
 
-        {/* Level Path */}
-        <div className="mb-6">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Your Path
-          </p>
-          <div className="space-y-3">
-            {LEVELS.map((lvl) => {
-              const isActive = lvl.level === (user?.growthLevel ?? 1);
-              const isLocked = lvl.level > (user?.growthLevel ?? 1);
-              return (
-                <div
-                  key={lvl.level}
-                  className={`flex items-center gap-4 rounded-xl border p-4 ${
-                    isActive
-                      ? "border-primary bg-primary-muted/10"
-                      : "border-border bg-card opacity-60"
-                  }`}
+        {/* Earned badges */}
+        {earnedBadges.length > 0 && (
+          <div className="mb-6">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Achievements
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {earnedBadges.map((p) => (
+                <span
+                  key={p.key}
+                  className="flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1.5 text-sm font-semibold text-primary"
                 >
-                  <div
-                    className={`flex size-10 shrink-0 items-center justify-center rounded-xl ${
-                      isActive
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted text-muted-foreground"
-                    }`}
-                  >
-                    <lvl.icon className="size-5" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-foreground">
-                        {lvl.name}
-                      </span>
-                      {isActive && (
-                        <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground">
-                          Current
-                        </span>
-                      )}
-                      {isLocked && (
-                        <Lock className="size-3.5 text-muted-foreground" />
-                      )}
-                    </div>
-                    <p className="text-xs text-muted-foreground">{lvl.desc}</p>
-                  </div>
-                  <span className="text-xs text-muted-foreground">
-                    {lvl.required} milestones
-                  </span>
-                </div>
-              );
-            })}
+                  <Check className="size-3.5" />
+                  {p.name}
+                </span>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* Milestones */}
-        <div>
-          <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Milestones
-          </p>
-          <div className="space-y-2">
-            {completedMilestones.map((m) => {
-              const row = completedRows.find((r) => r.type === m.type);
-              return (
-                <div
-                  key={m.type}
-                  className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3"
-                >
-                  <div className="flex size-7 items-center justify-center rounded-full bg-primary">
-                    <Check className="size-4 text-primary-foreground" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-foreground">
-                      {m.label}
-                    </p>
-                    {row?.completedAt && (
-                      <p className="text-xs text-muted-foreground">
-                        Completed{" "}
-                        {new Date(row.completedAt).toLocaleDateString("en-GB", {
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric",
-                        })}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-            {incompleteMilestones.map((m) => (
+        {/* The four phases */}
+        <div className="space-y-4">
+          {progress.phases.map((phase, i) => {
+            const isCurrent = phase.key === progress.currentPhase.key;
+            const started = i === 0 || progress.phases[i - 1].complete;
+            return (
               <div
-                key={m.type}
-                className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 opacity-60"
+                key={phase.key}
+                className={`rounded-2xl border p-5 ${
+                  isCurrent
+                    ? "border-primary bg-primary-muted/10"
+                    : "border-border bg-card"
+                } ${started ? "" : "opacity-60"}`}
               >
-                <div className="flex size-7 items-center justify-center rounded-full border-2 border-dashed border-border">
-                  <Lock className="size-3.5 text-muted-foreground" />
+                <div className="mb-1 flex items-center gap-2">
+                  <span className="font-display text-base font-black text-foreground">
+                    {phase.name}
+                  </span>
+                  {phase.complete && (
+                    <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground">
+                      Complete
+                    </span>
+                  )}
+                  {isCurrent && !phase.complete && (
+                    <span className="rounded-full bg-accent px-2 py-0.5 text-[10px] font-bold text-accent-foreground">
+                      In progress
+                    </span>
+                  )}
                 </div>
-                <p className="flex-1 text-sm font-medium text-muted-foreground">
-                  {m.label}
+                <p className="mb-3 text-xs text-muted-foreground">
+                  {phase.blurb}
                 </p>
+                <div className="space-y-2">
+                  {phase.steps.map((step) => (
+                    <div key={step.key} className="flex items-center gap-3">
+                      <div
+                        className={`flex size-6 shrink-0 items-center justify-center rounded-full ${
+                          step.complete
+                            ? "bg-primary"
+                            : "border-2 border-dashed border-border"
+                        }`}
+                      >
+                        {step.complete ? (
+                          <Check className="size-3.5 text-primary-foreground" />
+                        ) : (
+                          <Lock className="size-3 text-muted-foreground" />
+                        )}
+                      </div>
+                      <span
+                        className={`text-sm ${
+                          step.complete
+                            ? "text-foreground"
+                            : "text-muted-foreground"
+                        }`}
+                      >
+                        {step.label}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            ))}
-          </div>
+            );
+          })}
         </div>
       </div>
     </>
