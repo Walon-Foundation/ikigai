@@ -1,10 +1,10 @@
 "use server";
 
 import { auth } from "@clerk/nextjs/server";
-import { and, eq } from "drizzle-orm";
+import { and, count, eq } from "drizzle-orm";
 import { db } from "@/db/db";
 import { mentorships, users } from "@/db/schema";
-import { matchScore } from "@/lib/match";
+import { MENTOR_CAPACITY, matchScore } from "@/lib/match";
 
 // A mentee requests a mentor. Creates a 'requested' mentorship the mentor must
 // accept before chat or tasks unlock. The match score is computed from the
@@ -32,6 +32,17 @@ export async function requestMentor(mentorId: string) {
     .where(and(eq(users.id, mentorId), eq(users.role, "mentor")))
     .limit(1);
   if (!mentor) throw new Error("Mentor not found");
+
+  // Respect mentor capacity (PRD: 2 active mentees per mentor).
+  const [{ activeCount }] = await db
+    .select({ activeCount: count() })
+    .from(mentorships)
+    .where(
+      and(eq(mentorships.mentorId, mentorId), eq(mentorships.status, "active")),
+    );
+  if (Number(activeCount) >= MENTOR_CAPACITY) {
+    throw new Error("This mentor is at full capacity");
+  }
 
   const existing = await db
     .select({ id: mentorships.id })
