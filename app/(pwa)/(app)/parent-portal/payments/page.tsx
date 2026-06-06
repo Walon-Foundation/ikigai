@@ -1,29 +1,156 @@
-import { CreditCard } from "lucide-react";
+import { count, desc, eq } from "drizzle-orm";
+import { CreditCard, FileText } from "lucide-react";
 import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/page-header";
+import { db } from "@/db/db";
+import { invoices, paymentPlans, payments } from "@/db/schema";
 import { getDbUser } from "@/lib/db-user";
+import { PayWidget } from "./payments-client";
+
+type OnboardingData = { parentProfile?: { phone?: string } } | null;
+
+const DEFAULT_PLANS = [
+  {
+    name: "Monthly Mentorship",
+    kind: "subscription" as const,
+    amount: 5000,
+    interval: "monthly" as const,
+  },
+  {
+    name: "10-Session Package",
+    kind: "package" as const,
+    amount: 40000,
+    interval: null,
+  },
+  {
+    name: "Scholarship Sponsorship",
+    kind: "scholarship" as const,
+    amount: 25000,
+    interval: null,
+  },
+];
+
+function money(amount: number): string {
+  return `Le ${(amount / 100).toLocaleString()}`;
+}
 
 export default async function ParentPaymentsPage() {
   const user = await getDbUser();
   if (!user) redirect("/sign-in");
   if (user.role !== "parent") redirect("/dashboard");
 
+  const defaultPhone =
+    (user.onboardingData as OnboardingData)?.parentProfile?.phone ?? "";
+
+  // Seed default plans once.
+  const [{ planCount }] = await db
+    .select({ planCount: count() })
+    .from(paymentPlans);
+  if (Number(planCount) === 0) {
+    await db.insert(paymentPlans).values(DEFAULT_PLANS);
+  }
+
+  const [plans, history] = await Promise.all([
+    db.select().from(paymentPlans).where(eq(paymentPlans.active, true)),
+    db
+      .select({
+        id: payments.id,
+        amount: payments.amount,
+        status: payments.status,
+        createdAt: payments.createdAt,
+        invoiceNumber: invoices.number,
+      })
+      .from(payments)
+      .leftJoin(invoices, eq(invoices.paymentId, payments.id))
+      .where(eq(payments.payerId, user.id))
+      .orderBy(desc(payments.createdAt)),
+  ]);
+
   return (
     <>
       <PageHeader title="Payments" />
-      <div className="mx-auto max-w-2xl px-4 py-6">
-        <div className="flex flex-col items-center rounded-2xl border border-border bg-card p-8 text-center">
-          <div className="flex size-12 items-center justify-center rounded-2xl bg-primary-muted/20 text-primary">
-            <CreditCard className="size-6" />
+      <div className="mx-auto max-w-2xl space-y-6 px-4 py-6">
+        <div>
+          <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Plans
+          </p>
+          <div className="space-y-3">
+            {plans.map((p) => (
+              <div
+                key={p.id}
+                className="rounded-2xl border border-border bg-card p-5"
+              >
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <CreditCard className="size-4 text-primary" />
+                      <p className="font-semibold text-foreground">{p.name}</p>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      {money(p.amount)}
+                      {p.interval ? ` / ${p.interval}` : " one-time"} ·{" "}
+                      <span className="capitalize">{p.kind}</span>
+                    </p>
+                  </div>
+                  <PayWidget planId={p.id} defaultPhone={defaultPhone} />
+                </div>
+              </div>
+            ))}
           </div>
-          <p className="mt-4 text-sm font-semibold text-foreground">
-            Payments are coming soon
-          </p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Pay for your child&apos;s mentorship with Orange Money or Africell
-            Money. Subscriptions and one-time packages will appear here.
-          </p>
         </div>
+
+        <div>
+          <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            History
+          </p>
+          {history.length === 0 ? (
+            <p className="rounded-2xl border border-border bg-card p-5 text-sm text-muted-foreground">
+              No payments yet.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {history.map((h) => (
+                <div
+                  key={h.id}
+                  className="flex items-center justify-between rounded-2xl border border-border bg-card p-4 text-sm"
+                >
+                  <div>
+                    <p className="font-medium text-foreground">
+                      {money(h.amount)}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {h.createdAt
+                        ? new Date(h.createdAt).toLocaleDateString("en-GB")
+                        : ""}
+                      {h.invoiceNumber && (
+                        <span className="ml-2 inline-flex items-center gap-1">
+                          <FileText className="size-3" />
+                          {h.invoiceNumber}
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                  <span
+                    className={`rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${
+                      h.status === "paid"
+                        ? "bg-primary/10 text-primary"
+                        : h.status === "failed"
+                          ? "bg-destructive/10 text-destructive"
+                          : "bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    {h.status}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <p className="text-center text-xs text-muted-foreground">
+          Mobile money payments are processed by Monime. In development a stub
+          gateway settles instantly.
+        </p>
       </div>
     </>
   );
