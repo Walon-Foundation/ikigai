@@ -96,9 +96,38 @@ export const journalEntries = pgTable("journal_entries", {
   userId: uuid("user_id").references(() => users.id),
   content: text("content").notNull(),
   visibility: text("visibility").default("private"), // 'private' | 'mentor_only' | 'community'
+  entryType: text("entry_type").default("free"), // 'reflection' | 'gratitude' | 'goal' | 'free'
+  promptKey: text("prompt_key"), // which prompt this entry answered, if any
   keywordFlag: boolean("keyword_flag").default(false), // v1: client-side keyword match only
   syncedAt: timestamp("synced_at"),
   createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Mentor feedback on a (shared) journal entry — part of the growth archive.
+export const journalFeedback = pgTable("journal_feedback", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  entryId: uuid("entry_id")
+    .notNull()
+    .references(() => journalEntries.id),
+  mentorId: uuid("mentor_id")
+    .notNull()
+    .references(() => users.id),
+  comment: text("comment").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Goal tracking (PRD §15).
+export const goals = pgTable("goals", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id),
+  title: text("title").notNull(),
+  detail: text("detail"),
+  targetDate: timestamp("target_date"),
+  status: text("status").notNull().default("open"), // 'open' | 'done'
+  createdAt: timestamp("created_at").defaultNow(),
+  completedAt: timestamp("completed_at"),
 });
 
 export const schools = pgTable("schools", {
@@ -142,11 +171,77 @@ export const pushNotifications = pgTable("push_notifications", {
 
 export const messages = pgTable("messages", {
   id: uuid("id").primaryKey().defaultRandom(),
+  // A message belongs to either a 1:1 mentorship or a group.
   mentorshipId: uuid("mentorship_id").references(() => mentorships.id),
+  groupId: uuid("group_id").references(() => groups.id),
   senderId: uuid("sender_id").references(() => users.id),
   content: text("content").notNull(),
+  attachmentUrl: text("attachment_url"), // requires a storage provider
+  attachmentType: text("attachment_type"), // 'voice' | 'file' | 'image'
+  keywordFlag: boolean("keyword_flag").default(false), // safeguarding heuristic
   createdAt: timestamp("created_at").defaultNow(),
 });
+
+// Payment plans (PRD §20): mentor subscriptions, one-time packages,
+// scholarship sponsorships. Seeded by admins.
+export const paymentPlans = pgTable("payment_plans", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  kind: text("kind").notNull(), // 'subscription' | 'package' | 'scholarship'
+  amount: integer("amount").notNull(), // minor units (e.g. cents/leones)
+  interval: text("interval"), // 'monthly' | null for one-time
+  active: boolean("active").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// A payment attempt/record. `provider` is 'stub' until Monime is wired.
+export const payments = pgTable("payments", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  payerId: uuid("payer_id")
+    .notNull()
+    .references(() => users.id),
+  planId: uuid("plan_id").references(() => paymentPlans.id),
+  menteeId: uuid("mentee_id").references(() => users.id),
+  amount: integer("amount").notNull(),
+  status: text("status").notNull().default("pending"), // 'pending'|'paid'|'failed'|'refunded'
+  provider: text("provider").notNull().default("stub"), // 'monime' | 'stub'
+  providerRef: text("provider_ref"),
+  createdAt: timestamp("created_at").defaultNow(),
+  paidAt: timestamp("paid_at"),
+});
+
+export const invoices = pgTable("invoices", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  paymentId: uuid("payment_id")
+    .notNull()
+    .references(() => payments.id),
+  number: text("number").notNull(),
+  issuedAt: timestamp("issued_at").defaultNow(),
+});
+
+// Group discussions (PRD §14). Any signed-in member can post.
+export const groups = pgTable("groups", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  description: text("description"),
+  createdBy: uuid("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const groupMembers = pgTable(
+  "group_members",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    groupId: uuid("group_id")
+      .notNull()
+      .references(() => groups.id),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id),
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (t) => [unique().on(t.groupId, t.userId)],
+);
 
 // Events / activities organised on the platform. Created and managed by admins.
 export const events = pgTable("events", {
@@ -158,6 +253,10 @@ export const events = pgTable("events", {
   startsAt: timestamp("starts_at").notNull(),
   endsAt: timestamp("ends_at"),
   capacity: integer("capacity"), // null = unlimited
+  // 'workshop'|'training'|'networking'|'wellness'|'camp'|'picnic'
+  type: text("type").default("workshop"),
+  // Roadmap completion % required to register (e.g. Picnic = 50). 0 = open.
+  unlockAtPercent: integer("unlock_at_percent").default(0),
   createdBy: uuid("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -175,6 +274,8 @@ export const eventAttendance = pgTable(
       .notNull()
       .references(() => users.id),
     status: text("status").notNull().default("registered"), // 'registered' | 'attended' | 'no_show'
+    rsvpAt: timestamp("rsvp_at").defaultNow(),
+    checkedInAt: timestamp("checked_in_at"),
     createdAt: timestamp("created_at").defaultNow(),
   },
   (t) => [unique().on(t.eventId, t.userId)],
@@ -190,3 +291,42 @@ export const satisfactionSurveys = pgTable("satisfaction_surveys", {
   context: text("context").default("general"), // 'general' | 'mentorship' | 'event'
   createdAt: timestamp("created_at").defaultNow(),
 });
+
+// Verified in-person meetings for a mentorship (PRD §18). Three required:
+// 1 Introduction, 2 Progress Review, 3 Graduation. Verified by GPS, QR or photo.
+export const meetingVerifications = pgTable(
+  "meeting_verifications",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    mentorshipId: uuid("mentorship_id")
+      .notNull()
+      .references(() => mentorships.id),
+    meetingNumber: integer("meeting_number").notNull(), // 1 | 2 | 3
+    method: text("method").notNull(), // 'gps' | 'qr' | 'photo'
+    lat: text("lat"),
+    lng: text("lng"),
+    photoUrl: text("photo_url"),
+    verifiedAt: timestamp("verified_at").defaultNow(),
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (t) => [unique().on(t.mentorshipId, t.meetingNumber)],
+);
+
+// Mentee/parent reviews of a mentor — powers marketplace ratings + testimonials.
+// One review per author per mentor.
+export const mentorReviews = pgTable(
+  "mentor_reviews",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    mentorId: uuid("mentor_id")
+      .notNull()
+      .references(() => users.id),
+    authorId: uuid("author_id")
+      .notNull()
+      .references(() => users.id),
+    rating: integer("rating").notNull(), // 1–5
+    comment: text("comment"),
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (t) => [unique().on(t.mentorId, t.authorId)],
+);
