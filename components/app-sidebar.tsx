@@ -10,8 +10,11 @@ import {
   Leaf,
   LogOut,
   MessageCircle,
+  MessagesSquare,
+  Search,
   Shield,
   Star,
+  Target,
   TreePine,
   Users,
   Zap,
@@ -25,12 +28,16 @@ type NavItem = { href: string; label: string; icon: React.ElementType };
 const MENTEE_NAV: NavItem[] = [
   { href: "/dashboard", label: "Home", icon: LayoutDashboard },
   { href: "/journey", label: "Journey", icon: TreePine },
+  { href: "/mentors", label: "Find a Mentor", icon: Search },
   { href: "/mentorship", label: "Match", icon: Users },
+  { href: "/groups", label: "Groups", icon: MessageCircle },
   { href: "/journal", label: "Journal", icon: BookOpen },
   { href: "/settings", label: "Settings", icon: Star },
 ];
 
 const MENTEE_MODULES: NavItem[] = [
+  { href: "/purpose-book", label: "Purpose Book", icon: BookOpen },
+  { href: "/goals", label: "Goals", icon: Target },
   { href: "/pad-her-power", label: "Pad Her Power", icon: Zap },
   { href: "/safety", label: "Safety", icon: Shield },
 ];
@@ -39,6 +46,7 @@ const MENTOR_NAV: NavItem[] = [
   { href: "/dashboard", label: "Home", icon: LayoutDashboard },
   { href: "/mentor-portal", label: "My Mentees", icon: Users },
   { href: "/mentorship", label: "Messages", icon: MessageCircle },
+  { href: "/groups", label: "Groups", icon: MessagesSquare },
   { href: "/activities", label: "Activities", icon: Calendar },
   { href: "/settings", label: "Settings", icon: Star },
 ];
