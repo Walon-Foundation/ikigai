@@ -24,6 +24,7 @@
     "idb": "^8.0.3",
     "leaflet": "^1.9.4",
     "lucide-react": "^1.14.0",
+    "monime-package": "^1.1.7",
     "next": "16.2.5",
     "radix-ui": "^1.4.3",
     "react": "19.2.4",

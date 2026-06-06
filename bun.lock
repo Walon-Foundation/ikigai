@@ -15,6 +15,7 @@
         "idb": "^8.0.3",
         "leaflet": "^1.9.4",
         "lucide-react": "^1.14.0",
+        "monime-package": "^1.1.7",
         "next": "16.2.5",
         "radix-ui": "^1.4.3",
         "react": "19.2.4",
@@ -876,6 +877,8 @@
     "minimatch": ["minimatch@10.2.5", "", { "dependencies": { "brace-expansion": "^5.0.5" } }, "sha512-MULkVLfKGYDFYejP07QOurDLLQpcjk7Fw+7jXS2R2czRQzR56yHRveU5NDJEOviH+hETZKSkIk5c+T23GjFUMg=="],
 
     "minimist": ["minimist@1.2.8", "", {}, "sha512-2yyAR8qBkN3YuheJanUpWC5U3bb5osDywNB8RzDVlDwDHbocAJveqqj1u8+SVD7jkWT4yvsHCpWqqWqAxb0zCA=="],
+
+    "monime-package": ["monime-package@1.1.7", "", { "dependencies": { "zod": "^3.24.0" } }, "sha512-TbVun8BrSL+w6uRgizaxpDfrz6mhYr/IY0suJajQU4WlVbZwJDiUQdk1TU1pqOTcK0jirwZ7ZxqbN0EtlGRAQw=="],
 
     "motion-dom": ["motion-dom@12.38.0", "", { "dependencies": { "motion-utils": "^12.36.0" } }, "sha512-pdkHLD8QYRp8VfiNLb8xIBJis1byQ9gPT3Jnh2jqfFtAsWUA3dEepDlsWe/xMpO8McV+VdpKVcp+E+TGJEtOoA=="],
 
