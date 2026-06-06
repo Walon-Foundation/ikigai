@@ -3,6 +3,7 @@ import { eq, or } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 import { db } from "@/db/db";
 import { mentorships, messages, users } from "@/db/schema";
+import { flagsConcern } from "@/lib/journal";
 
 const MAX_MESSAGE_LENGTH = 2000;
 
@@ -40,9 +41,17 @@ export async function POST(request: NextRequest) {
   if (!membership)
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
+  const trimmed = content.trim();
   const [msg] = await db
     .insert(messages)
-    .values({ mentorshipId, senderId: sender.id, content: content.trim() })
+    .values({
+      mentorshipId,
+      senderId: sender.id,
+      content: trimmed,
+      // Safeguarding heuristic (no AI) — recomputed server-side, never trusted
+      // from the client. Flagged messages surface to admins for review.
+      keywordFlag: flagsConcern(trimmed),
+    })
     .returning();
 
   return NextResponse.json({
