@@ -11,6 +11,15 @@ const REGIONS = [
   { value: "western_rural", label: "Western Rural" },
 ];
 
+const EVENT_TYPES = [
+  { value: "workshop", label: "Workshop" },
+  { value: "training", label: "Training" },
+  { value: "networking", label: "Networking" },
+  { value: "wellness", label: "Wellness" },
+  { value: "camp", label: "Leadership Camp" },
+  { value: "picnic", label: "Finding Yourself Picnic" },
+];
+
 const inputClass =
   "w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none focus:border-primary placeholder:text-muted-foreground";
 const labelClass =
@@ -33,6 +42,8 @@ export function EventCreateForm() {
           startsAt: String(formData.get("startsAt") ?? ""),
           endsAt: String(formData.get("endsAt") ?? ""),
           capacity: String(formData.get("capacity") ?? ""),
+          type: String(formData.get("type") ?? ""),
+          unlockAtPercent: String(formData.get("unlockAtPercent") ?? ""),
         });
         setDone(true);
         setTimeout(() => setDone(false), 3000);
@@ -133,16 +144,45 @@ export function EventCreateForm() {
           </div>
         </div>
 
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label htmlFor="ev-type" className={labelClass}>
+              Type
+            </label>
+            <select id="ev-type" name="type" className={inputClass}>
+              {EVENT_TYPES.map((t) => (
+                <option key={t.value} value={t.value}>
+                  {t.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="ev-capacity" className={labelClass}>
+              Capacity (optional)
+            </label>
+            <input
+              id="ev-capacity"
+              name="capacity"
+              type="number"
+              min="1"
+              placeholder="Unlimited"
+              className={inputClass}
+            />
+          </div>
+        </div>
+
         <div>
-          <label htmlFor="ev-capacity" className={labelClass}>
-            Capacity (optional)
+          <label htmlFor="ev-unlock" className={labelClass}>
+            Unlock at roadmap % (optional)
           </label>
           <input
-            id="ev-capacity"
-            name="capacity"
+            id="ev-unlock"
+            name="unlockAtPercent"
             type="number"
-            min="1"
-            placeholder="Leave blank for unlimited"
+            min="0"
+            max="100"
+            placeholder="0 = open to all (Picnic is typically 50)"
             className={inputClass}
           />
         </div>

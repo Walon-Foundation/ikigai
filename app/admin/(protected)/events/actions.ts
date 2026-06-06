@@ -10,6 +10,14 @@ const MAX_TITLE = 200;
 const MAX_DESC = 2_000;
 const MAX_LOCATION = 200;
 const REGIONS = ["freetown", "western_rural"] as const;
+const EVENT_TYPES = [
+  "workshop",
+  "training",
+  "networking",
+  "wellness",
+  "camp",
+  "picnic",
+] as const;
 const ATTENDANCE_STATUSES = ["registered", "attended", "no_show"] as const;
 
 function str(value: unknown, max: number): string {
@@ -24,6 +32,8 @@ export async function createEvent(data: {
   startsAt: string;
   endsAt?: string;
   capacity?: string;
+  type?: string;
+  unlockAtPercent?: string;
 }) {
   const admin = await requireAdmin();
 
@@ -39,15 +49,25 @@ export async function createEvent(data: {
   const region = (REGIONS as readonly string[]).includes(data.region ?? "")
     ? (data.region as string)
     : null;
+  const type = (EVENT_TYPES as readonly string[]).includes(data.type ?? "")
+    ? (data.type as string)
+    : "workshop";
   const capacityNum = data.capacity ? Number.parseInt(data.capacity, 10) : NaN;
   const capacity =
     Number.isFinite(capacityNum) && capacityNum > 0 ? capacityNum : null;
+  const unlockNum = data.unlockAtPercent
+    ? Number.parseInt(data.unlockAtPercent, 10)
+    : NaN;
+  const unlockAtPercent =
+    Number.isFinite(unlockNum) && unlockNum > 0 ? Math.min(100, unlockNum) : 0;
 
   await db.insert(events).values({
     title,
     description: str(data.description, MAX_DESC) || null,
     location: str(data.location, MAX_LOCATION) || null,
     region,
+    type,
+    unlockAtPercent,
     startsAt,
     endsAt: endsAt && !Number.isNaN(endsAt.getTime()) ? endsAt : null,
     capacity,
