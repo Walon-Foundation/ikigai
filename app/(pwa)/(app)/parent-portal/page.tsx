@@ -6,6 +6,8 @@ import { GrowthTree } from "@/components/growth-tree";
 import { PageHeader } from "@/components/page-header";
 import { db } from "@/db/db";
 import {
+  eventAttendance,
+  events,
   growthTrees,
   mentorships,
   milestones,
@@ -15,6 +17,7 @@ import {
 import { getDbUser } from "@/lib/db-user";
 import { stageName } from "@/lib/growth";
 import { acceptedChildForParent, latestLinkForParent } from "@/lib/guardian";
+import { getMenteeProgress } from "@/lib/progress";
 
 export default async function ParentPortalPage() {
   const user = await getDbUser();
@@ -73,7 +76,19 @@ export default async function ParentPortalPage() {
     );
   }
 
-  // Consented — load the child's tree, mentor, milestones, completed tasks.
+  // Consented — load progress, attendance, tree, mentor, milestones, tasks.
+  const progress = await getMenteeProgress(child);
+  const attendanceRows = await db
+    .select({
+      title: events.title,
+      startsAt: events.startsAt,
+      status: eventAttendance.status,
+    })
+    .from(eventAttendance)
+    .innerJoin(events, eq(eventAttendance.eventId, events.id))
+    .where(eq(eventAttendance.userId, child.id))
+    .orderBy(events.startsAt);
+
   const [treeRows, milestoneRows, activeMentorshipRows] = await Promise.all([
     db
       .select()
@@ -150,6 +165,22 @@ export default async function ParentPortalPage() {
             </p>
           </div>
 
+          {/* Roadmap completion */}
+          <div className="rounded-2xl border border-border bg-card p-5">
+            <div className="mb-2 flex items-center justify-between text-sm">
+              <span className="font-semibold text-foreground">
+                Roadmap · {progress.currentPhase.name}
+              </span>
+              <span className="text-muted-foreground">{progress.percent}%</span>
+            </div>
+            <div className="h-3 w-full rounded-full bg-muted">
+              <div
+                className="h-3 rounded-full bg-primary transition-all"
+                style={{ width: `${progress.percent}%` }}
+              />
+            </div>
+          </div>
+
           <div className="grid grid-cols-3 gap-3">
             {[
               { label: "Vitality", value: `${health}%` },
@@ -180,6 +211,38 @@ export default async function ParentPortalPage() {
               <p className="text-sm text-muted-foreground">
                 No mentor matched yet.
               </p>
+            )}
+          </div>
+
+          {/* Attendance records */}
+          <div className="rounded-2xl border border-border bg-card p-5">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Attendance
+            </p>
+            {attendanceRows.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                No activities registered yet.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {attendanceRows.map((a) => (
+                  <div
+                    key={`${a.title}-${a.startsAt?.toISOString()}`}
+                    className="flex items-center justify-between text-sm"
+                  >
+                    <span className="text-foreground">{a.title}</span>
+                    <span
+                      className={
+                        a.status === "attended"
+                          ? "text-xs font-semibold text-primary"
+                          : "text-xs text-muted-foreground"
+                      }
+                    >
+                      {a.status === "attended" ? "Attended" : "Registered"}
+                    </span>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
 
