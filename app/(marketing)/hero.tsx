@@ -2,9 +2,9 @@
 
 import { motion } from "framer-motion";
 import { GrowthTree } from "@/components/growth-tree";
+import { clientEnv } from "@/lib/env.client";
 
-const _appHost = process.env.NEXT_PUBLIC_APP_HOSTNAME ?? "app.localhost:3000";
-const APP_URL = `${_appHost.includes("localhost") ? "http" : "https"}://${_appHost}`;
+const APP_URL = clientEnv.appUrl;
 
 export function Hero() {
   return (

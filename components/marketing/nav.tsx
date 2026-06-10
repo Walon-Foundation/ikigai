@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { clientEnv } from "@/lib/env.client";
 import { cn } from "@/lib/utils";
 
 export function Nav() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
-  const appHost = process.env.NEXT_PUBLIC_APP_HOSTNAME ?? "app.localhost:3000";
-  const appUrl = `${appHost.includes("localhost") ? "http" : "https"}://${appHost}`;
+  const appUrl = clientEnv.appUrl;
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 8);

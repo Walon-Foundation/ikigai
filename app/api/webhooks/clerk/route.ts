@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import { Webhook } from "svix";
 import { db } from "@/db/db";
 import { users } from "@/db/schema";
+import { env } from "@/lib/env";
 
 type ClerkUserCreatedEvent = {
   type: "user.created";
@@ -18,7 +19,7 @@ type ClerkUserCreatedEvent = {
 type ClerkEvent = ClerkUserCreatedEvent;
 
 export async function POST(request: Request) {
-  const secret = process.env.CLERK_WEBHOOK_SECRET;
+  const secret = env.clerkWebhookSecret;
   if (!secret) {
     return Response.json(
       { error: "Webhook secret not configured" },

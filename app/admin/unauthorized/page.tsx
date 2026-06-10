@@ -2,11 +2,11 @@
 
 import { useClerk } from "@clerk/nextjs";
 import { ShieldX } from "lucide-react";
+import { clientEnv } from "@/lib/env.client";
 
 export default function AdminUnauthorizedPage() {
   const { signOut } = useClerk();
-  const marketingUrl =
-    process.env.NEXT_PUBLIC_MARKETING_URL ?? "http://localhost:3000";
+  const marketingUrl = clientEnv.marketingUrl;
 
   return (
     <div className="dark flex min-h-screen items-center justify-center bg-background p-6">

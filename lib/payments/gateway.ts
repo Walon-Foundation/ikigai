@@ -1,4 +1,5 @@
 import "server-only";
+import { env } from "@/lib/env";
 import { getMonimeClient, monimeEnabled } from "./monime";
 
 // Payment gateway abstraction (PRD §20). The app talks to this interface only,
@@ -61,7 +62,7 @@ class MonimeGateway implements PaymentGateway {
       amount: req.amount, // SLE minor units
       name: req.customerName,
       authorizedPhoneNumber: req.phoneNumber,
-      financialAccountId: process.env.MONIME_FINANCIAL_ACCOUNT_ID ?? undefined,
+      financialAccountId: env.monimeFinancialAccountId,
       metadata: { reference: req.reference },
     });
     if (!res.success || !res.data) {

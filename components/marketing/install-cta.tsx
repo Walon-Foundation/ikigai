@@ -1,11 +1,12 @@
+import { clientEnv } from "@/lib/env.client";
+
 interface InstallCtaProps {
   headline: string;
   body: string;
 }
 
 export function InstallCta({ headline, body }: InstallCtaProps) {
-  const appHost = process.env.APP_HOSTNAME ?? "app.localhost:3000";
-  const appUrl = `${appHost.includes("localhost") ? "http" : "https"}://${appHost}`;
+  const appUrl = clientEnv.appUrl;
 
   return (
     <section className="bg-[#1C1C1A] py-24">

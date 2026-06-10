@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { db } from "@/db/db";
 import { users } from "@/db/schema";
+import { env } from "@/lib/env";
 
 // Look up a user's role from our database by their Clerk id. Cached briefly so
 // we don't hit the database on every admin request.
@@ -80,8 +81,8 @@ export default clerkMiddleware(async (auth, request) => {
   const pathname = url.pathname;
   const hostname = hostnameOf(request.headers.get("host") ?? "");
 
-  const rawAppHost = process.env.APP_HOSTNAME ?? "app.localhost:3000";
-  const rawAdminHost = process.env.ADMIN_HOSTNAME ?? "admin.localhost:3000";
+  const rawAppHost = env.appHostname;
+  const rawAdminHost = env.adminHostname;
 
   const isAdmin = hostname === hostnameOf(rawAdminHost);
   const isApp = hostname === hostnameOf(rawAppHost);
