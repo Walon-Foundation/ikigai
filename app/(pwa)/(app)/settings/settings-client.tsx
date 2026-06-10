@@ -54,8 +54,12 @@ export function SettingsClient({ user }: { user: DbUser }) {
               <p className="font-semibold text-foreground">
                 {user.displayName ?? "User"}
               </p>
-              <p className="text-sm capitalize text-muted-foreground">
-                {user.role.replace("_", " ")} · Level {user.growthLevel ?? 1}
+              <p className="text-sm text-muted-foreground">
+                {user.role === "mentor"
+                  ? "Mentor"
+                  : user.role === "parent"
+                    ? "Parent / Guardian"
+                    : `Mentee · Level ${user.growthLevel ?? 1}`}
               </p>
             </div>
           </div>

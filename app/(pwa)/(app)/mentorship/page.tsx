@@ -3,10 +3,16 @@ import { db } from "@/db/db";
 import { mentorships, users } from "@/db/schema";
 import { requireRole } from "@/lib/db-user";
 import { matchScore } from "@/lib/match";
+import { MentorMessages } from "./mentor-messages";
 import { MentorshipClient } from "./mentorship-client";
 
 export default async function MentorshipPage() {
   const user = await requireRole(["mentee", "mentor"]);
+
+  // Mentors get their conversation list; the match flow below is mentee-only.
+  if (user.role === "mentor") {
+    return <MentorMessages mentorId={user.id} />;
+  }
 
   const mentorshipRows = await db
     .select({
