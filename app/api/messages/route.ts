@@ -1,9 +1,10 @@
 import { auth } from "@clerk/nextjs/server";
-import { eq, or } from "drizzle-orm";
+import { and, eq, or } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 import { db } from "@/db/db";
 import { mentorships, messages, users } from "@/db/schema";
 import { flagsConcern } from "@/lib/journal";
+import { notifyUser } from "@/lib/notify";
 
 const MAX_MESSAGE_LENGTH = 2000;
 
@@ -20,7 +21,7 @@ export async function POST(request: NextRequest) {
   }
 
   const [sender] = await db
-    .select({ id: users.id })
+    .select({ id: users.id, displayName: users.displayName })
     .from(users)
     .where(eq(users.clerkId, userId))
     .limit(1);
@@ -28,14 +29,20 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
 
   const [membership] = await db
-    .select({ id: mentorships.id })
+    .select({
+      id: mentorships.id,
+      menteeId: mentorships.menteeId,
+      mentorId: mentorships.mentorId,
+    })
     .from(mentorships)
     .where(
-      eq(mentorships.id, mentorshipId) &&
+      and(
+        eq(mentorships.id, mentorshipId),
         or(
           eq(mentorships.menteeId, sender.id),
           eq(mentorships.mentorId, sender.id),
         ),
+      ),
     )
     .limit(1);
   if (!membership)
@@ -53,6 +60,27 @@ export async function POST(request: NextRequest) {
       keywordFlag: flagsConcern(trimmed),
     })
     .returning();
+
+  // Bump activity so the mentor's conversation list re-sorts on new messages.
+  await db
+    .update(mentorships)
+    .set({ lastActivityAt: new Date() })
+    .where(eq(mentorships.id, mentorshipId));
+
+  // Notify the other party (recipient = whichever side isn't the sender).
+  const recipientId =
+    membership.menteeId === sender.id
+      ? membership.mentorId
+      : membership.menteeId;
+  if (recipientId) {
+    await notifyUser({
+      userId: recipientId,
+      title: `New message from ${sender.displayName ?? "your match"}`,
+      body: trimmed.slice(0, 140),
+      type: "nudge",
+      url: `/mentorship/${mentorshipId}`,
+    });
+  }
 
   return NextResponse.json({
     id: msg.id,

@@ -1,8 +1,9 @@
 "use client";
 
-import { ChevronLeft, Send } from "lucide-react";
+import { ChevronLeft, ClipboardList, Send } from "lucide-react";
 import Link from "next/link";
 import { use, useEffect, useRef, useState } from "react";
+import { Avatar } from "@/components/avatar";
 import { cn } from "@/lib/utils";
 
 type Message = {
@@ -13,6 +14,17 @@ type Message = {
   isMine: boolean;
 };
 
+type Peer = {
+  name: string;
+  avatarUrl: string | null;
+  role: string;
+};
+
+type ThreadResponse = {
+  peer: Peer;
+  messages: Message[];
+};
+
 export default function MentorshipChatPage({
   params,
 }: {
@@ -20,6 +32,7 @@ export default function MentorshipChatPage({
 }) {
   const { id } = use(params);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [peer, setPeer] = useState<Peer | null>(null);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -28,8 +41,9 @@ export default function MentorshipChatPage({
     try {
       const res = await fetch(`/api/messages/${id}`);
       if (res.ok) {
-        const data: Message[] = await res.json();
-        setMessages(data);
+        const data: ThreadResponse = await res.json();
+        setMessages(data.messages);
+        setPeer(data.peer);
       }
     } catch {
       // ignore network errors
@@ -87,13 +101,26 @@ export default function MentorshipChatPage({
         >
           <ChevronLeft className="size-4" />
         </Link>
-        <div className="flex size-9 items-center justify-center rounded-full bg-primary-muted/30 font-display text-sm font-bold text-primary">
-          M
-        </div>
+        <Avatar
+          name={peer?.name ?? "…"}
+          src={peer?.avatarUrl ?? null}
+          size={36}
+        />
         <div>
-          <p className="text-sm font-semibold text-foreground">Mentor</p>
-          <p className="text-xs text-muted-foreground">Mentorship Chat</p>
+          <p className="text-sm font-semibold text-foreground">
+            {peer?.name ?? "Mentorship"}
+          </p>
+          <p className="text-xs text-muted-foreground capitalize">
+            {peer?.role ? `Your ${peer.role}` : "Mentorship Chat"}
+          </p>
         </div>
+        <Link
+          href={`/mentorship/${id}/plan`}
+          aria-label="Shared plan and milestones"
+          className="ml-auto flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-foreground hover:border-primary/40"
+        >
+          <ClipboardList className="size-4" /> Plan
+        </Link>
       </div>
 
       {/* Messages */}

@@ -1,5 +1,5 @@
 import { auth } from "@clerk/nextjs/server";
-import { asc, eq, or } from "drizzle-orm";
+import { and, asc, eq, or } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 import { db } from "@/db/db";
 import { mentorships, messages, users } from "@/db/schema";
@@ -23,18 +23,47 @@ export async function GET(
     return NextResponse.json({ error: "User not found" }, { status: 404 });
 
   const [membership] = await db
-    .select({ id: mentorships.id })
+    .select({
+      id: mentorships.id,
+      menteeId: mentorships.menteeId,
+      mentorId: mentorships.mentorId,
+    })
     .from(mentorships)
     .where(
-      eq(mentorships.id, mentorshipId) &&
+      and(
+        eq(mentorships.id, mentorshipId),
         or(
           eq(mentorships.menteeId, myUser.id),
           eq(mentorships.mentorId, myUser.id),
         ),
+      ),
     )
     .limit(1);
   if (!membership)
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  // The peer is whichever side of the mentorship isn't the current user.
+  const iAmMentor = membership.mentorId === myUser.id;
+  const peerId = iAmMentor ? membership.menteeId : membership.mentorId;
+  let peer = {
+    name: iAmMentor ? "Mentee" : "Mentor",
+    avatarUrl: null as string | null,
+    role: iAmMentor ? "mentee" : "mentor",
+  };
+  if (peerId) {
+    const [peerUser] = await db
+      .select({ displayName: users.displayName, avatarUrl: users.avatarUrl })
+      .from(users)
+      .where(eq(users.id, peerId))
+      .limit(1);
+    if (peerUser) {
+      peer = {
+        name: peerUser.displayName ?? peer.name,
+        avatarUrl: peerUser.avatarUrl ?? null,
+        role: iAmMentor ? "mentee" : "mentor",
+      };
+    }
+  }
 
   const rows = await db
     .select({
@@ -49,13 +78,14 @@ export async function GET(
     .where(eq(messages.mentorshipId, mentorshipId))
     .orderBy(asc(messages.createdAt));
 
-  return NextResponse.json(
-    rows.map((m) => ({
+  return NextResponse.json({
+    peer,
+    messages: rows.map((m) => ({
       id: m.id,
       content: m.content,
       senderName: m.senderName ?? "User",
       timestamp: m.createdAt?.toISOString() ?? new Date().toISOString(),
       isMine: m.senderId === myUser?.id,
     })),
-  );
+  });
 }
