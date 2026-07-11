@@ -1,9 +1,20 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq } from "drizzle-orm";
 import { ChevronLeft, MessageCircle } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { Avatar } from "@/components/avatar";
+import { Curriculum, type CurriculumItem } from "@/components/curriculum";
+import { MenteeProfileCard } from "@/components/mentee-profile-card";
+import { SharedMilestones } from "@/components/shared-milestones";
 import { db } from "@/db/db";
-import { growthTrees, mentorships, tasks, users } from "@/db/schema";
+import {
+  curriculumItems,
+  growthTrees,
+  meetingVerifications,
+  mentorships,
+  tasks,
+  users,
+} from "@/db/schema";
 import { getDbUser } from "@/lib/db-user";
 import { stageName } from "@/lib/growth";
 import { getSharedJournals } from "./feedback-actions";
@@ -37,7 +48,9 @@ export default async function MenteeDetailPage({
   const [mentee] = await db
     .select({
       displayName: users.displayName,
+      avatarUrl: users.avatarUrl,
       interestTags: users.interestTags,
+      onboardingData: users.onboardingData,
     })
     .from(users)
     .where(eq(users.id, menteeId))
@@ -55,6 +68,27 @@ export default async function MenteeDetailPage({
     .from(tasks)
     .where(eq(tasks.mentorshipId, mentorship.id))
     .orderBy(desc(tasks.createdAt));
+
+  const curriculumRows = await db
+    .select()
+    .from(curriculumItems)
+    .where(eq(curriculumItems.mentorshipId, mentorship.id))
+    .orderBy(asc(curriculumItems.orderIndex));
+
+  const verifiedMeetings = await db
+    .select({ meetingNumber: meetingVerifications.meetingNumber })
+    .from(meetingVerifications)
+    .where(eq(meetingVerifications.mentorshipId, mentorship.id));
+
+  const curriculum: CurriculumItem[] = curriculumRows.map((c) => ({
+    id: c.id,
+    title: c.title,
+    description: c.description,
+    status: c.status,
+    orderIndex: c.orderIndex,
+    targetDate: c.targetDate?.toISOString() ?? null,
+    completedAt: c.completedAt?.toISOString() ?? null,
+  }));
 
   const sharedJournals = await getSharedJournals(menteeId);
 
@@ -81,13 +115,12 @@ export default async function MenteeDetailPage({
       </Link>
 
       <div className="mb-6 rounded-2xl bg-primary p-5 text-primary-foreground">
-        <div className="flex size-14 items-center justify-center rounded-full bg-primary-muted/30 font-display text-xl font-bold">
-          {mentee.displayName
-            ?.split(" ")
-            .map((n) => n[0])
-            .slice(0, 2)
-            .join("") ?? "M"}
-        </div>
+        <Avatar
+          name={mentee.displayName ?? "Mentee"}
+          src={mentee.avatarUrl}
+          size={56}
+          className="bg-primary-muted/30 text-primary-foreground"
+        />
         <p className="mt-3 font-display text-2xl font-black">
           {mentee.displayName ?? "Mentee"}
         </p>
@@ -129,6 +162,22 @@ export default async function MenteeDetailPage({
               : "Completing tasks grows the tree; failed tasks make it wilt."}
           </p>
         </div>
+
+        {/* Shared journey — starts with the Finding Yourself Picnic */}
+        <SharedMilestones
+          mentorshipId={mentorship.id}
+          verifiedNumbers={verifiedMeetings.map((v) => v.meetingNumber)}
+        />
+
+        {/* Full purpose profile so the mentor can design a curriculum */}
+        <MenteeProfileCard onboardingData={mentee.onboardingData} />
+
+        {/* Shared curriculum — mentor builds it, mentee tracks progress */}
+        <Curriculum
+          mentorshipId={mentorship.id}
+          initialItems={curriculum}
+          canEdit
+        />
 
         <MenteeTasks mentorshipId={mentorship.id} initialTasks={taskItems} />
 
