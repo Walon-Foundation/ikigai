@@ -8,12 +8,13 @@ import { mentorships, milestones, tasks, users } from "@/db/schema";
 import { DEFAULT_TASK_POINTS } from "@/lib/growth";
 import { applyTaskComplete, applyTaskFail } from "@/lib/growth-tree";
 import { MENTOR_CAPACITY } from "@/lib/match";
+import { notifyUser } from "@/lib/notify";
 
 async function requireMentor() {
   const { userId } = await auth();
   if (!userId) throw new Error("Unauthenticated");
   const [me] = await db
-    .select({ id: users.id, role: users.role })
+    .select({ id: users.id, role: users.role, displayName: users.displayName })
     .from(users)
     .where(eq(users.clerkId, userId))
     .limit(1);
@@ -77,6 +78,14 @@ export async function acceptRequest(
       .insert(milestones)
       .values({ userId: request.menteeId, type: "mentor_connect" })
       .onConflictDoNothing();
+
+    await notifyUser({
+      userId: request.menteeId,
+      title: "Your mentor accepted! 🎉",
+      body: `${me.displayName ?? "Your mentor"} accepted your request. Plan your Finding Yourself Picnic to get started.`,
+      type: "match",
+      url: "/mentorship",
+    });
   }
 
   revalidatePath("/mentor-portal");
@@ -85,7 +94,7 @@ export async function acceptRequest(
 
 export async function declineRequest(mentorshipId: string) {
   const me = await requireMentor();
-  await db
+  const [updated] = await db
     .update(mentorships)
     .set({ status: "declined" })
     .where(
@@ -94,7 +103,18 @@ export async function declineRequest(mentorshipId: string) {
         eq(mentorships.mentorId, me.id),
         eq(mentorships.status, "requested"),
       ),
-    );
+    )
+    .returning({ menteeId: mentorships.menteeId });
+
+  if (updated?.menteeId) {
+    await notifyUser({
+      userId: updated.menteeId,
+      title: "Mentor request update",
+      body: "A mentor couldn't take you on right now. Explore other mentors who match your interests.",
+      type: "match",
+      url: "/mentors",
+    });
+  }
   revalidatePath("/mentor-portal");
 }
 

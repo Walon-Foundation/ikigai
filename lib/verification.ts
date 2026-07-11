@@ -1,7 +1,12 @@
 // In-person meeting verification helpers (PRD §18). Pure — no database.
 
 export const MEETINGS = [
-  { number: 1, name: "Introduction", blurb: "First in-person meeting." },
+  {
+    number: 1,
+    name: "Finding Yourself Picnic",
+    blurb:
+      "Your first in-person session — a relaxed picnic to get to know each other.",
+  },
   { number: 2, name: "Progress Review", blurb: "Mid-point check-in." },
   { number: 3, name: "Graduation", blurb: "Final celebration & next steps." },
 ] as const;
