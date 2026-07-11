@@ -20,4 +20,6 @@ export const clientEnv = {
   /** Absolute URL of the marketing site. */
   marketingUrl:
     process.env.NEXT_PUBLIC_MARKETING_URL ?? "http://localhost:3000",
+  /** VAPID public key for Web Push subscription. Empty string = push disabled. */
+  vapidPublicKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "",
 };

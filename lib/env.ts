@@ -26,6 +26,13 @@ const schema = z
     MONIME_SPACE_ID: z.string().optional(),
     MONIME_ACCESS_TOKEN: z.string().optional(),
     MONIME_FINANCIAL_ACCOUNT_ID: z.string().optional(),
+    // Web Push (VAPID). The public key is exposed via NEXT_PUBLIC_VAPID_PUBLIC_KEY
+    // (see env.client.ts). When keys are unset, push send is a no-op — the in-app
+    // notification feed still works. Generate with `web-push generate-vapid-keys`.
+    VAPID_PRIVATE_KEY: z.string().optional(),
+    VAPID_SUBJECT: z.string().default("mailto:hello@findingyourikigai.org"),
+    // UploadThing (profile photos). Required for avatar uploads to work.
+    UPLOADTHING_TOKEN: z.string().optional(),
   })
   .refine(
     (e) =>
@@ -59,6 +66,10 @@ export const env = {
   monimeSpaceId: parsed.data.MONIME_SPACE_ID,
   monimeAccessToken: parsed.data.MONIME_ACCESS_TOKEN,
   monimeFinancialAccountId: parsed.data.MONIME_FINANCIAL_ACCOUNT_ID,
-  // appHostname, appUrl, marketingUrl — public values shared with the client.
+  vapidPrivateKey: parsed.data.VAPID_PRIVATE_KEY,
+  vapidSubject: parsed.data.VAPID_SUBJECT,
+  uploadthingToken: parsed.data.UPLOADTHING_TOKEN,
+  // appHostname, appUrl, marketingUrl, vapidPublicKey — public values shared
+  // with the client.
   ...clientEnv,
 };
