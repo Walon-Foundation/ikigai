@@ -1,4 +1,4 @@
-import { and, eq, ne } from "drizzle-orm";
+import { and, eq, isNotNull, ne } from "drizzle-orm";
 import { db } from "@/db/db";
 import { mentorships, users } from "@/db/schema";
 import { requireRole } from "@/lib/db-user";
@@ -33,6 +33,7 @@ export default async function MentorshipPage() {
           .select({
             id: users.id,
             displayName: users.displayName,
+            avatarUrl: users.avatarUrl,
             bio: users.bio,
             interestTags: users.interestTags,
           })
@@ -59,11 +60,19 @@ export default async function MentorshipPage() {
     .select({
       id: users.id,
       displayName: users.displayName,
+      avatarUrl: users.avatarUrl,
       bio: users.bio,
       interestTags: users.interestTags,
     })
     .from(users)
-    .where(and(eq(users.role, "mentor"), ne(users.id, user.id)))
+    // Suggest only ikigai-approved mentors.
+    .where(
+      and(
+        eq(users.role, "mentor"),
+        ne(users.id, user.id),
+        isNotNull(users.verifiedAt),
+      ),
+    )
     .limit(20);
 
   // Real similarity score per mentor, best matches first.

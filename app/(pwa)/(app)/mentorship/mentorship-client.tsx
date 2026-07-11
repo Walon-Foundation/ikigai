@@ -4,12 +4,14 @@ import { Clock, Loader2, MessageCircle, Star, Users } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { Avatar } from "@/components/avatar";
 import { PageHeader } from "@/components/page-header";
 import { requestMentor } from "./actions";
 
 type MentorUser = {
   id: string;
   displayName: string | null;
+  avatarUrl: string | null;
   bio: string | null;
   interestTags: string[] | null;
   matchScore?: number;
@@ -98,18 +100,14 @@ export function MentorshipClient({ myMentorships, suggestedMentors }: Props) {
 
 function MentorshipRow({ mentorship: m }: { mentorship: MyMentorship }) {
   const isActive = m.status === "active";
-  const initials =
-    m.mentor?.displayName
-      ?.split(" ")
-      .map((n) => n[0])
-      .slice(0, 2)
-      .join("") ?? "M";
 
   const inner = (
     <div className="flex items-center gap-4 rounded-2xl border border-border bg-card p-5">
-      <div className="flex size-14 items-center justify-center rounded-full bg-primary-muted/30 font-display text-lg font-bold text-primary">
-        {initials}
-      </div>
+      <Avatar
+        name={m.mentor?.displayName ?? "Mentor"}
+        src={m.mentor?.avatarUrl}
+        size={56}
+      />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <p className="font-semibold text-foreground">
@@ -158,13 +156,6 @@ function MentorCard({
   const [isPending, startTransition] = useTransition();
   const [requested, setRequested] = useState(alreadyRequested);
 
-  const initials =
-    mentor.displayName
-      ?.split(" ")
-      .map((n) => n[0])
-      .slice(0, 2)
-      .join("") ?? "M";
-
   function handleRequest() {
     startTransition(async () => {
       await requestMentor(mentor.id);
@@ -176,9 +167,11 @@ function MentorCard({
   return (
     <div className="rounded-xl border border-border p-4">
       <div className="flex items-start gap-3">
-        <div className="flex size-11 items-center justify-center rounded-full bg-primary-muted/30 font-display text-sm font-bold text-primary">
-          {initials}
-        </div>
+        <Avatar
+          name={mentor.displayName ?? "Mentor"}
+          src={mentor.avatarUrl}
+          size={44}
+        />
         <div className="flex-1">
           <div className="flex items-center justify-between">
             <p className="font-semibold text-foreground">

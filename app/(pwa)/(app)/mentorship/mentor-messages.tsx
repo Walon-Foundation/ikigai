@@ -1,6 +1,7 @@
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { Clock, MessageCircle, MessagesSquare } from "lucide-react";
 import Link from "next/link";
+import { Avatar } from "@/components/avatar";
 import { PageHeader } from "@/components/page-header";
 import { db } from "@/db/db";
 import { mentorships, users } from "@/db/schema";
@@ -15,6 +16,7 @@ export async function MentorMessages({ mentorId }: { mentorId: string }) {
       status: mentorships.status,
       lastActivityAt: mentorships.lastActivityAt,
       menteeName: users.displayName,
+      menteeAvatar: users.avatarUrl,
       menteeTags: users.interestTags,
     })
     .from(mentorships)
@@ -64,23 +66,16 @@ type Conversation = {
   status: string | null;
   lastActivityAt: Date | null;
   menteeName: string | null;
+  menteeAvatar: string | null;
   menteeTags: string[] | null;
 };
 
 function ConversationRow({ conversation: c }: { conversation: Conversation }) {
   const isActive = c.status === "active";
-  const initials =
-    c.menteeName
-      ?.split(" ")
-      .map((n) => n[0])
-      .slice(0, 2)
-      .join("") ?? "M";
 
   const inner = (
     <div className="flex items-center gap-4 rounded-2xl border border-border bg-card p-5">
-      <div className="flex size-14 items-center justify-center rounded-full bg-primary-muted/30 font-display text-lg font-bold text-primary">
-        {initials}
-      </div>
+      <Avatar name={c.menteeName ?? "Mentee"} src={c.menteeAvatar} size={56} />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <p className="font-semibold text-foreground">
