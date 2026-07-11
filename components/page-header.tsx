@@ -1,8 +1,7 @@
 "use client";
 
 import { useUser } from "@clerk/nextjs";
-import { Bell } from "lucide-react";
-import Link from "next/link";
+import { NotificationBell } from "@/components/notifications";
 
 interface PageHeaderProps {
   title?: string;
@@ -34,13 +33,7 @@ export function PageHeader({ title, showGreeting = false }: PageHeaderProps) {
             </h1>
           )}
         </div>
-        <Link
-          href="/settings"
-          aria-label="Notifications and profile"
-          className="relative flex size-9 items-center justify-center rounded-full bg-muted text-muted-foreground transition-colors hover:bg-primary-muted/30 hover:text-primary"
-        >
-          <Bell className="size-4" />
-        </Link>
+        <NotificationBell />
       </div>
     </header>
   );
