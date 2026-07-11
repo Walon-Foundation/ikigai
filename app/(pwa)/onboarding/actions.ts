@@ -163,6 +163,19 @@ export async function completeMenteeOnboarding() {
   const purposeProfile = { statement, interests, values, personalityLabel };
   await patchOnboardingData(userId, { purposeProfile });
 
+  // Promote assessment tags to the real interestTags column — matching and
+  // every mentor-facing view read users.interestTags, so leaving it empty
+  // (the old behaviour) broke both.
+  const interestTags = [
+    ...new Set([
+      ...(data.assessment?.love ?? []),
+      ...(data.assessment?.skills ?? []),
+      ...(data.assessment?.community ?? []),
+      ...(data.assessment?.opportunity ?? []),
+    ]),
+  ].slice(0, 10);
+  await db.update(users).set({ interestTags }).where(eq(users.clerkId, userId));
+
   await db
     .insert(milestones)
     .values({ userId: user.id, type: "purpose_quiz" })
@@ -182,8 +195,10 @@ export async function saveMentorProfile(data: {
   const { userId } = await auth();
   if (!userId) throw new Error("Unauthenticated");
   await db
+    // Mirror expertise into interestTags so mentor↔mentee matching and the
+    // marketplace tag chips have real data to work with.
     .update(users)
-    .set({ bio: data.bio })
+    .set({ bio: data.bio, interestTags: data.expertise })
     .where(eq(users.clerkId, userId));
   await patchOnboardingData(userId, {
     mentorProfile: {

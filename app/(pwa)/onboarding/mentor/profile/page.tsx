@@ -1,7 +1,9 @@
 "use client";
 
+import { useUser } from "@clerk/nextjs";
 import { ArrowRight } from "lucide-react";
 import { useState, useTransition } from "react";
+import { AvatarUpload } from "@/components/avatar-upload";
 import { cn } from "@/lib/utils";
 import { saveMentorProfile } from "../../actions";
 
@@ -22,6 +24,7 @@ const EXPERTISE_TAGS = [
 const LANGUAGES = ["English", "Krio", "Temne", "Mende", "French", "Arabic"];
 
 export default function MentorProfilePage() {
+  const { user } = useUser();
   const [bio, setBio] = useState("");
   const [expertise, setExpertise] = useState<string[]>([]);
   const [industry, setIndustry] = useState("");
@@ -69,6 +72,13 @@ export default function MentorProfilePage() {
       </p>
 
       <div className="space-y-6">
+        <div className="flex justify-center">
+          <AvatarUpload
+            name={user?.fullName ?? user?.firstName ?? "You"}
+            initialUrl={user?.imageUrl}
+          />
+        </div>
+
         <div>
           <label
             htmlFor="bio"

@@ -1,16 +1,22 @@
 "use client";
 
-import { Check, Loader2, Sprout } from "lucide-react";
+import { useUser } from "@clerk/nextjs";
+import { Check, Loader2 } from "lucide-react";
 import { useTransition } from "react";
+import { AvatarUpload } from "@/components/avatar-upload";
 import { completeMenteeOnboarding } from "../../actions";
 
 export default function MenteeProfilePage() {
+  const { user } = useUser();
   const [isPending, startTransition] = useTransition();
 
   return (
     <div className="flex flex-col items-center py-8 text-center">
-      <div className="mb-6 flex size-20 items-center justify-center rounded-full bg-primary-muted/20 text-primary">
-        <Sprout className="size-10" />
+      <div className="mb-6">
+        <AvatarUpload
+          name={user?.fullName ?? user?.firstName ?? "You"}
+          initialUrl={user?.imageUrl}
+        />
       </div>
       <h2 className="font-display mb-3 text-4xl font-black text-foreground">
         You&apos;re an Explorer!
