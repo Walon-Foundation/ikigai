@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { AppNav } from "@/components/app-nav";
 import { AppSidebar } from "@/components/app-sidebar";
 import { LiteModeInit } from "@/components/lite-mode-init";
-import { PwaGate } from "@/components/pwa-gate";
+import { NotificationsProvider } from "@/components/notifications";
 import { getOrCreateDbUser } from "@/lib/db-user";
 
 type OnboardingData = {
@@ -67,14 +67,15 @@ export default async function AppLayout({
   }
 
   return (
-    <div className="min-h-screen bg-background lg:flex">
-      <LiteModeInit />
-      <PwaGate />
-      <AppSidebar role={user.role} displayName={user.displayName} />
-      <div className="min-w-0 flex-1 pb-16 lg:overflow-y-auto lg:pb-0">
-        {children}
+    <NotificationsProvider>
+      <div className="min-h-screen bg-background lg:flex">
+        <LiteModeInit />
+        <AppSidebar role={user.role} displayName={user.displayName} />
+        <div className="min-w-0 flex-1 pb-16 lg:overflow-y-auto lg:pb-0">
+          {children}
+        </div>
+        <AppNav role={user.role} />
       </div>
-      <AppNav role={user.role} />
-    </div>
+    </NotificationsProvider>
   );
 }
