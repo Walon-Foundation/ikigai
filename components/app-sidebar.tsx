@@ -2,6 +2,7 @@
 
 import { useClerk } from "@clerk/nextjs";
 import {
+  Bell,
   BookOpen,
   Calendar,
   CreditCard,
@@ -21,6 +22,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useNotifications } from "@/components/notifications";
 import { cn } from "@/lib/utils";
 
 type NavItem = { href: string; label: string; icon: React.ElementType };
@@ -32,6 +34,7 @@ const MENTEE_NAV: NavItem[] = [
   { href: "/mentorship", label: "Match", icon: Users },
   { href: "/groups", label: "Groups", icon: MessageCircle },
   { href: "/journal", label: "Journal", icon: BookOpen },
+  { href: "/notifications", label: "Notifications", icon: Bell },
   { href: "/settings", label: "Settings", icon: Star },
 ];
 
@@ -48,6 +51,7 @@ const MENTOR_NAV: NavItem[] = [
   { href: "/mentorship", label: "Messages", icon: MessageCircle },
   { href: "/groups", label: "Groups", icon: MessagesSquare },
   { href: "/activities", label: "Activities", icon: Calendar },
+  { href: "/notifications", label: "Notifications", icon: Bell },
   { href: "/settings", label: "Settings", icon: Star },
 ];
 
@@ -57,6 +61,7 @@ const PARENT_NAV: NavItem[] = [
   { href: "/parent-portal/mentors", label: "Mentors", icon: Star },
   { href: "/parent-portal/payments", label: "Payments", icon: CreditCard },
   { href: "/activities", label: "Activities", icon: Calendar },
+  { href: "/notifications", label: "Notifications", icon: Bell },
   { href: "/settings", label: "Settings", icon: Star },
 ];
 
@@ -78,6 +83,7 @@ export function AppSidebar({
 }) {
   const pathname = usePathname();
   const { signOut } = useClerk();
+  const { unread } = useNotifications();
   const { main, modules } = navForRole(role);
 
   const hour = new Date().getHours();
@@ -138,6 +144,11 @@ export function AppSidebar({
                   className={cn("size-4", isActive && "fill-primary/10")}
                 />
                 {item.label}
+                {item.href === "/notifications" && unread > 0 && (
+                  <span className="ml-auto flex min-w-5 items-center justify-center rounded-full bg-destructive px-1.5 text-[10px] font-bold text-white">
+                    {unread > 9 ? "9+" : unread}
+                  </span>
+                )}
               </Link>
             );
           })}

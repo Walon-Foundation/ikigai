@@ -76,20 +76,26 @@ export default async function ParentPortalPage() {
     );
   }
 
-  // Consented — load progress, attendance, tree, mentor, milestones, tasks.
-  const progress = await getMenteeProgress(child);
-  const attendanceRows = await db
-    .select({
-      title: events.title,
-      startsAt: events.startsAt,
-      status: eventAttendance.status,
-    })
-    .from(eventAttendance)
-    .innerJoin(events, eq(eventAttendance.eventId, events.id))
-    .where(eq(eventAttendance.userId, child.id))
-    .orderBy(events.startsAt);
-
-  const [treeRows, milestoneRows, activeMentorshipRows] = await Promise.all([
+  // Consented — load progress, attendance, tree, milestones, mentorship all at
+  // once (they're independent) instead of in a waterfall.
+  const [
+    progress,
+    attendanceRows,
+    treeRows,
+    milestoneRows,
+    activeMentorshipRows,
+  ] = await Promise.all([
+    getMenteeProgress(child),
+    db
+      .select({
+        title: events.title,
+        startsAt: events.startsAt,
+        status: eventAttendance.status,
+      })
+      .from(eventAttendance)
+      .innerJoin(events, eq(eventAttendance.eventId, events.id))
+      .where(eq(eventAttendance.userId, child.id))
+      .orderBy(events.startsAt),
     db
       .select()
       .from(growthTrees)

@@ -2,20 +2,32 @@ import "server-only";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
+import { cache } from "react";
 import { db } from "@/db/db";
 import { users } from "@/db/schema";
 
 export type DbUser = typeof users.$inferSelect;
 
+// Per-request memoised lookup: the app layout, each page, and shared components
+// all resolve the current user, and without this that identical query would run
+// several times per navigation against Neon (a real latency cost). React
+// cache() dedupes it to one round-trip per request.
+const fetchUserByClerkId = cache(
+  async (clerkId: string): Promise<DbUser | null> => {
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.clerkId, clerkId))
+      .limit(1);
+    return user ?? null;
+  },
+);
+
 export async function getOrCreateDbUser(): Promise<DbUser> {
   const { userId } = await auth();
   if (!userId) throw new Error("Unauthenticated");
 
-  const [existing] = await db
-    .select()
-    .from(users)
-    .where(eq(users.clerkId, userId))
-    .limit(1);
+  const existing = await fetchUserByClerkId(userId);
   if (existing) return existing;
 
   const clerkUser = await currentUser();
@@ -54,12 +66,7 @@ export async function getOrCreateDbUser(): Promise<DbUser> {
 export async function getDbUser(): Promise<DbUser | null> {
   const { userId } = await auth();
   if (!userId) return null;
-  const [user] = await db
-    .select()
-    .from(users)
-    .where(eq(users.clerkId, userId))
-    .limit(1);
-  return user ?? null;
+  return fetchUserByClerkId(userId);
 }
 
 // Role-scoped surfaces. A signed-in user whose role isn't in `allowed` is
@@ -88,11 +95,7 @@ export async function requireAdmin(): Promise<DbUser> {
   const { userId } = await auth();
   if (!userId) redirect("/sign-in");
 
-  const [user] = await db
-    .select()
-    .from(users)
-    .where(eq(users.clerkId, userId))
-    .limit(1);
+  const user = await fetchUserByClerkId(userId);
 
   // Not an admin → show the terminal "not authorized" page on this domain.
   // Staying same-domain (vs a cross-domain redirect) avoids ping-ponging with
