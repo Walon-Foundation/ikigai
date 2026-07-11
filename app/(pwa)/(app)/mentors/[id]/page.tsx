@@ -1,7 +1,8 @@
-import { aliasedTable, and, desc, eq } from "drizzle-orm";
+import { aliasedTable, and, desc, eq, isNotNull } from "drizzle-orm";
 import { ArrowLeft, Award, Briefcase, Globe, MapPin, Star } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Avatar } from "@/components/avatar";
 import { PageHeader } from "@/components/page-header";
 import { db } from "@/db/db";
 import { mentorReviews, mentorships, users } from "@/db/schema";
@@ -28,13 +29,21 @@ export default async function MentorProfilePage({
     .select({
       id: users.id,
       displayName: users.displayName,
+      avatarUrl: users.avatarUrl,
       bio: users.bio,
       role: users.role,
       interestTags: users.interestTags,
       onboardingData: users.onboardingData,
     })
     .from(users)
-    .where(and(eq(users.id, id), eq(users.role, "mentor")))
+    // Only ikigai-approved mentors are viewable in the marketplace.
+    .where(
+      and(
+        eq(users.id, id),
+        eq(users.role, "mentor"),
+        isNotNull(users.verifiedAt),
+      ),
+    )
     .limit(1);
   if (!mentor) notFound();
 
@@ -68,10 +77,6 @@ export default async function MentorProfilePage({
     reviews.length > 0
       ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
       : 0;
-  const initials = (mentor.displayName ?? "M")
-    .split(" ")
-    .map((n) => n[0])
-    .join("");
 
   return (
     <>
@@ -87,9 +92,12 @@ export default async function MentorProfilePage({
         {/* Header */}
         <div className="rounded-2xl border border-border bg-card p-6">
           <div className="flex items-start gap-4">
-            <div className="flex size-16 shrink-0 items-center justify-center rounded-2xl bg-primary/10 font-display text-xl font-black text-primary">
-              {initials}
-            </div>
+            <Avatar
+              name={mentor.displayName ?? "Mentor"}
+              src={mentor.avatarUrl}
+              size={64}
+              className="rounded-2xl"
+            />
             <div className="min-w-0 flex-1">
               <h1 className="font-display text-2xl font-black text-foreground">
                 {mentor.displayName ?? "Mentor"}

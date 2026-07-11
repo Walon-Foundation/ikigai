@@ -1,7 +1,7 @@
 "use server";
 
 import { auth } from "@clerk/nextjs/server";
-import { and, count, eq } from "drizzle-orm";
+import { and, count, eq, isNotNull } from "drizzle-orm";
 import { db } from "@/db/db";
 import { mentorships, users } from "@/db/schema";
 import { MENTOR_CAPACITY, matchScore } from "@/lib/match";
@@ -29,7 +29,14 @@ export async function requestMentor(mentorId: string) {
   const [mentor] = await db
     .select({ id: users.id, interestTags: users.interestTags })
     .from(users)
-    .where(and(eq(users.id, mentorId), eq(users.role, "mentor")))
+    // Defense in depth: cannot request a mentor ikigai hasn't approved.
+    .where(
+      and(
+        eq(users.id, mentorId),
+        eq(users.role, "mentor"),
+        isNotNull(users.verifiedAt),
+      ),
+    )
     .limit(1);
   if (!mentor) throw new Error("Mentor not found");
 

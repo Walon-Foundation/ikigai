@@ -1,6 +1,7 @@
-import { avg, count, eq, isNotNull } from "drizzle-orm";
+import { and, avg, count, eq, isNotNull } from "drizzle-orm";
 import { MapPin, Star } from "lucide-react";
 import Link from "next/link";
+import { Avatar } from "@/components/avatar";
 import { PageHeader } from "@/components/page-header";
 import { db } from "@/db/db";
 import { mentorReviews, users } from "@/db/schema";
@@ -28,12 +29,15 @@ export default async function MentorsMarketplacePage({
       .select({
         id: users.id,
         displayName: users.displayName,
+        avatarUrl: users.avatarUrl,
         bio: users.bio,
         interestTags: users.interestTags,
         onboardingData: users.onboardingData,
       })
       .from(users)
-      .where(eq(users.role, "mentor")),
+      // Only ikigai-approved mentors (verifiedAt set by admin) are browsable.
+      .where(and(eq(users.role, "mentor"), isNotNull(users.verifiedAt)))
+      .limit(60),
     db
       .select({
         mentorId: mentorReviews.mentorId,
@@ -59,6 +63,7 @@ export default async function MentorsMarketplacePage({
     return {
       id: m.id,
       name: m.displayName ?? "Mentor",
+      avatarUrl: m.avatarUrl,
       bio: m.bio,
       tags: m.interestTags ?? [],
       industry: profile?.industry ?? null,
@@ -141,12 +146,7 @@ export default async function MentorsMarketplacePage({
                 href={`/mentors/${m.id}`}
                 className="flex items-start gap-4 rounded-2xl border border-border bg-card p-5 transition-colors hover:border-primary/40"
               >
-                <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-primary/10 font-display font-bold text-primary">
-                  {m.name
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("")}
-                </div>
+                <Avatar name={m.name} src={m.avatarUrl} size={48} />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-2">
                     <p className="font-semibold text-foreground">{m.name}</p>
