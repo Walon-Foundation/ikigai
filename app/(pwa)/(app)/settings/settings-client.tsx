@@ -13,15 +13,27 @@ import {
   User,
 } from "lucide-react";
 import { useState } from "react";
+import { savePushSubscription } from "@/app/(pwa)/(app)/settings/actions";
+import { AvatarUpload } from "@/components/avatar-upload";
 import { PageHeader } from "@/components/page-header";
+import { subscribeToPush, unsubscribeFromPush } from "@/lib/push-client";
 import { usePwaInstall } from "@/lib/use-pwa-install";
 import { cn } from "@/lib/utils";
 
 type DbUser = {
   displayName: string | null;
+  avatarUrl: string | null;
   role: string;
   growthLevel: number | null;
   interestTags: string[] | null;
+  pushEnabled?: boolean;
+};
+
+const PUSH_ERROR: Record<string, string> = {
+  unsupported: "Push isn't supported on this browser.",
+  denied: "Notifications are blocked. Enable them in your browser settings.",
+  "no-key": "Push isn't configured on the server yet.",
+  error: "Couldn't enable push. Please try again.",
 };
 
 export function SettingsClient({ user }: { user: DbUser }) {
@@ -29,16 +41,27 @@ export function SettingsClient({ user }: { user: DbUser }) {
     if (typeof window === "undefined") return false;
     return localStorage.getItem("liteMode") === "true";
   });
-  const [pushEnabled, setPushEnabled] = useState(false);
+  const [pushEnabled, setPushEnabled] = useState(user.pushEnabled ?? false);
+  const [pushError, setPushError] = useState<string | null>(null);
   const [journalPrivacy, setJournalPrivacy] = useState(true);
   const { signOut } = useClerk();
   const { prompt, isIOS, isInstalled, install } = usePwaInstall();
 
-  const initials = (user.displayName ?? "U")
-    .split(" ")
-    .map((n) => n[0])
-    .slice(0, 2)
-    .join("");
+  async function handlePushToggle(next: boolean) {
+    setPushError(null);
+    if (next) {
+      const result = await subscribeToPush(savePushSubscription);
+      if (result.ok) {
+        setPushEnabled(true);
+      } else {
+        setPushError(PUSH_ERROR[result.reason] ?? PUSH_ERROR.error);
+      }
+    } else {
+      await unsubscribeFromPush();
+      await savePushSubscription(null).catch(() => {});
+      setPushEnabled(false);
+    }
+  }
 
   return (
     <>
@@ -47,9 +70,12 @@ export function SettingsClient({ user }: { user: DbUser }) {
         {/* Profile */}
         <div className="mb-6 rounded-2xl border border-border bg-card p-5">
           <div className="flex items-center gap-4">
-            <div className="flex size-14 items-center justify-center rounded-full bg-primary font-display text-lg font-bold text-primary-foreground">
-              {initials}
-            </div>
+            <AvatarUpload
+              name={user.displayName ?? "User"}
+              initialUrl={user.avatarUrl}
+              size={56}
+              showCaption={false}
+            />
             <div>
               <p className="font-semibold text-foreground">
                 {user.displayName ?? "User"}
@@ -81,8 +107,11 @@ export function SettingsClient({ user }: { user: DbUser }) {
             label="Push Notifications"
             desc="Mentor matches, milestones, nudges"
             value={pushEnabled}
-            onChange={setPushEnabled}
+            onChange={handlePushToggle}
           />
+          {pushError && (
+            <p className="mt-2 text-xs text-destructive">{pushError}</p>
+          )}
         </SettingsSection>
 
         {/* Privacy */}

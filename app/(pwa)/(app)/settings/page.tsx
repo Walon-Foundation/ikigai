@@ -10,9 +10,11 @@ export default async function SettingsPage() {
     <SettingsClient
       user={{
         displayName: user.displayName,
+        avatarUrl: user.avatarUrl,
         role: user.role,
         growthLevel: user.growthLevel,
         interestTags: user.interestTags,
+        pushEnabled: !!user.pushSubscription,
       }}
     />
   );

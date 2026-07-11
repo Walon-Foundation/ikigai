@@ -20,6 +20,17 @@ function isPushSubscription(
 export async function savePushSubscription(subscription: unknown) {
   const { userId } = await auth();
   if (!userId) throw new Error("Unauthenticated");
+
+  // null clears the subscription (user turned push off / unsubscribed).
+  if (subscription === null) {
+    await db
+      .update(users)
+      .set({ pushSubscription: null })
+      .where(eq(users.clerkId, userId));
+    revalidatePath("/settings");
+    return;
+  }
+
   if (!isPushSubscription(subscription)) {
     throw new Error("Invalid push subscription");
   }
