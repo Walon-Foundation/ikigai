@@ -24,6 +24,7 @@ export const users = pgTable("users", {
   email: text("email"),
   role: roleEnum("role").notNull().default("mentee"),
   displayName: text("display_name"),
+  avatarUrl: text("avatar_url"), // profile photo (UploadThing URL); null = initials
   bio: text("bio"),
   interestTags: text("interest_tags").array(),
   schoolId: uuid("school_id").references(() => schools.id),
@@ -56,6 +57,23 @@ export const tasks = pgTable("tasks", {
   dueDate: timestamp("due_date"), // display only — never auto-fails
   completedAt: timestamp("completed_at"),
   failedAt: timestamp("failed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// An ordered curriculum a mentor builds for a mentorship (a growth roadmap
+// above the short-lived `tasks`). Both parties see the list; the mentee tracks
+// their own progress against each item and the mentor authors/edits them.
+export const curriculumItems = pgTable("curriculum_items", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  mentorshipId: uuid("mentorship_id")
+    .notNull()
+    .references(() => mentorships.id),
+  title: text("title").notNull(),
+  description: text("description"),
+  orderIndex: integer("order_index").notNull().default(0),
+  status: text("status").notNull().default("planned"), // 'planned' | 'in_progress' | 'done'
+  targetDate: timestamp("target_date"),
+  completedAt: timestamp("completed_at"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -166,6 +184,8 @@ export const pushNotifications = pgTable("push_notifications", {
   title: text("title").notNull(),
   body: text("body").notNull(),
   type: text("type"), // 'nudge' | 'match' | 'milestone' | 'broadcast' | 'task' | 'guardian'
+  url: text("url"), // deep link opened on notification click / feed row tap
+  readAt: timestamp("read_at"), // null = unread (drives the bell badge)
   sentAt: timestamp("sent_at").defaultNow(),
 });
 
