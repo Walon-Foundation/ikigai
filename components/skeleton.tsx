@@ -40,6 +40,12 @@ export function SkeletonText({
   );
 }
 
+// Stands in for the inline "← Back" link that detail pages open with, in place
+// of a sticky header.
+export function BackLinkSkeleton() {
+  return <Skeleton className="mb-4 h-4 w-24" />;
+}
+
 export function SkeletonCard({ className }: { className?: string }) {
   return (
     <div
@@ -74,28 +80,36 @@ export function SkeletonList({
   );
 }
 
-// The full-page frame every loading.tsx uses. It reproduces the sticky mobile
-// PageHeader (so the title doesn't pop in) and announces the load politely to
+// The full-page frame every loading.tsx uses. It announces the load politely to
 // assistive tech, which otherwise gets no signal that a navigation is underway.
+//
+// `title` mirrors the sticky mobile PageHeader, and must be passed only by
+// routes that actually render one. Detail routes (a mentee, an activity, a
+// group thread) have no PageHeader — they open with an inline back-link — so
+// giving them a title here would paint a 56px bar that then disappears when the
+// real page arrives, jumping every piece of content up the screen. Omit the
+// title for those and use <BackLinkSkeleton> instead.
 export function PageSkeleton({
   title,
   message = "Loading…",
   children,
 }: {
-  title: string;
+  title?: string;
   message?: string;
   children: React.ReactNode;
 }) {
   return (
     <>
-      <header className="sticky top-0 z-30 border-b border-border bg-background/80 backdrop-blur-sm lg:hidden">
-        <div className="flex h-14 items-center justify-between px-4">
-          <h1 className="font-display text-xl font-black text-foreground">
-            {title}
-          </h1>
-          <Skeleton className="size-6 rounded-full" />
-        </div>
-      </header>
+      {title && (
+        <header className="sticky top-0 z-30 border-b border-border bg-background/80 backdrop-blur-sm lg:hidden">
+          <div className="flex h-14 items-center justify-between px-4">
+            <h1 className="font-display text-xl font-black text-foreground">
+              {title}
+            </h1>
+            <Skeleton className="size-6 rounded-full" />
+          </div>
+        </header>
+      )}
       <div aria-busy="true" className="mx-auto max-w-2xl px-4 py-6">
         {/* <output> is the semantic status region: it carries an implicit
             role="status" and aria-live="polite", so a screen reader announces

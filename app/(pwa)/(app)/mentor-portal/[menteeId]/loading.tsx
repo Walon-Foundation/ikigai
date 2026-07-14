@@ -1,11 +1,17 @@
-import { PageSkeleton, Skeleton, SkeletonText } from "@/components/skeleton";
+import {
+  BackLinkSkeleton,
+  PageSkeleton,
+  Skeleton,
+  SkeletonText,
+} from "@/components/skeleton";
 
 // The mentor's view of one mentee: peer header, shared milestones, the full
 // Ikigai profile, then the curriculum builder. This is the heaviest page in the
 // app, so a matched skeleton matters most here.
 export default function Loading() {
   return (
-    <PageSkeleton title="Mentee" message="Loading this mentee's profile…">
+    <PageSkeleton message="Loading this mentee's profile…">
+      <BackLinkSkeleton />
       <div className="mb-5 flex items-center gap-3">
         <Skeleton className="size-14 shrink-0 rounded-full" />
         <div className="flex-1 space-y-2">

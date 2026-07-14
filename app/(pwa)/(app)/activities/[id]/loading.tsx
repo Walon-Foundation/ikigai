@@ -1,8 +1,14 @@
-import { PageSkeleton, Skeleton, SkeletonText } from "@/components/skeleton";
+import {
+  BackLinkSkeleton,
+  PageSkeleton,
+  Skeleton,
+  SkeletonText,
+} from "@/components/skeleton";
 
 export default function Loading() {
   return (
-    <PageSkeleton title="Activity" message="Loading this activity…">
+    <PageSkeleton message="Loading this activity…">
+      <BackLinkSkeleton />
       <div className="rounded-2xl border border-border bg-card p-6">
         <Skeleton className="h-6 w-2/3" />
         <div className="mt-4 space-y-2">

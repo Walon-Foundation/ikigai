@@ -1,8 +1,14 @@
-import { PageSkeleton, Skeleton, SkeletonText } from "@/components/skeleton";
+import {
+  BackLinkSkeleton,
+  PageSkeleton,
+  Skeleton,
+  SkeletonText,
+} from "@/components/skeleton";
 
 export default function Loading() {
   return (
-    <PageSkeleton title="Plan" message="Loading your shared plan…">
+    <PageSkeleton message="Loading your shared plan…">
+      <BackLinkSkeleton />
       {/* Peer header */}
       <div className="mb-5 flex items-center gap-3">
         <Skeleton className="size-12 shrink-0 rounded-full" />
