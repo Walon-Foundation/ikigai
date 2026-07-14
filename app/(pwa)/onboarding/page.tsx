@@ -34,11 +34,18 @@ export default function OnboardingPage() {
   const [busyRole, setBusyRole] = useState<Role | null>(null);
   const [isPending, startTransition] = useTransition();
 
+  // setRole() ends in redirect(), which throws — so isPending stays true through
+  // the navigation and the spinner runs until the next screen paints. But if the
+  // action fails for a real reason instead, isPending resets. busyRole is only
+  // ever read alongside isPending (below) so that the tile's spinner resets with
+  // it; on its own it would stay spinning forever on a failed role selection.
   function handleContinue() {
     if (!selected) return;
     setBusyRole(selected);
     startTransition(() => setRole(selected));
   }
+
+  const spinningRole = isPending ? busyRole : null;
 
   return (
     <div>
@@ -55,7 +62,7 @@ export default function OnboardingPage() {
             type="button"
             onClick={() => setSelected(r.value)}
             disabled={isPending}
-            aria-busy={busyRole === r.value}
+            aria-busy={spinningRole === r.value}
             className={cn(
               "flex w-full items-start gap-4 rounded-2xl border-2 p-6 text-left transition-all",
               selected === r.value
@@ -64,7 +71,7 @@ export default function OnboardingPage() {
             )}
           >
             <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary-muted/20 text-primary">
-              {busyRole === r.value ? (
+              {spinningRole === r.value ? (
                 <Spinner />
               ) : (
                 <r.icon className="size-5" />

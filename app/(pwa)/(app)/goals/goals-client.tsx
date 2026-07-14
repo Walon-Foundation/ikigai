@@ -98,8 +98,17 @@ export function GoalActions({
   function run(action: "complete" | "delete", fn: () => Promise<void>) {
     setBusyAction(action);
     startTransition(async () => {
-      await fn();
-      router.refresh();
+      try {
+        await fn();
+        router.refresh();
+      } finally {
+        // Must clear on the failure path too. useTransition resets isPending
+        // when the action rejects, so the button becomes clickable again — but
+        // busyAction is what selects the icon, and without this the goal would
+        // sit there spinning forever after an expired session or a dropped
+        // request, looking stuck even though it isn't.
+        setBusyAction(null);
+      }
     });
   }
 
