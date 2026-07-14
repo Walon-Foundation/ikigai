@@ -51,10 +51,15 @@ export async function pendingRequestsForChild(child: {
 
 // The child a parent is linked to, if they have accepted. Returns null until
 // the child consents — the gate that protects the child's data.
+//
+// The join is what enforces that gate in a single round-trip: a row only comes
+// back when an *accepted* link exists between this parent and that child, so
+// there is no window in which we hold the child before checking consent.
 export async function acceptedChildForParent(parentId: string) {
-  const [link] = await db
-    .select({ childId: guardianLinks.childId })
+  const [row] = await db
+    .select({ child: users })
     .from(guardianLinks)
+    .innerJoin(users, eq(guardianLinks.childId, users.id))
     .where(
       and(
         eq(guardianLinks.parentId, parentId),
@@ -62,14 +67,7 @@ export async function acceptedChildForParent(parentId: string) {
       ),
     )
     .limit(1);
-  if (!link?.childId) return null;
-
-  const [child] = await db
-    .select()
-    .from(users)
-    .where(eq(users.id, link.childId))
-    .limit(1);
-  return child ?? null;
+  return row?.child ?? null;
 }
 
 // The parent's current link status (any state) for the onboarding/portal UI.

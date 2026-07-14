@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/db/db";
 import {
   growthTrees,
+  guardianLinks,
   journalEntries,
   mentorships,
   milestones,
@@ -22,27 +23,65 @@ export default async function DashboardPage() {
   if (!user) redirect("/sign-in");
 
   if (user.role === "mentee" || user.role === "club_lead" || !user.role) {
+    // Each Drizzle call over Neon's HTTP driver is its own network round-trip,
+    // so the shape of this code is the page's latency. The mentorship and its
+    // mentor used to be two sequential queries, and the open tasks a third,
+    // chained behind them — three round-trips deep before the page could
+    // render. Joining the mentor onto the mentorship collapses the first two,
+    // and the tasks are fetched by subquery in the same batch as everything
+    // else, leaving one parallel wave.
+    const activeMentorship = db
+      .select({
+        id: mentorships.id,
+        status: mentorships.status,
+        matchScore: mentorships.matchScore,
+        lastActivityAt: mentorships.lastActivityAt,
+        mentorId: mentorships.mentorId,
+        mentorName: users.displayName,
+        mentorBio: users.bio,
+        mentorTags: users.interestTags,
+      })
+      .from(mentorships)
+      .leftJoin(users, eq(mentorships.mentorId, users.id))
+      .where(eq(mentorships.menteeId, user.id))
+      .orderBy(desc(mentorships.lastActivityAt))
+      .limit(1);
+
+    // Open tasks across all of this mentee's mentorships. We only display the
+    // ones belonging to the mentorship selected above, but scoping the query by
+    // mentee (rather than by a mentorship id we don't have yet) is what lets it
+    // run in this wave instead of waiting on the query above. A mentee has a
+    // handful of tasks, so filtering the surplus in memory is free — far
+    // cheaper than the extra round-trip it replaces.
+    const openTaskRows = db
+      .select({
+        id: tasks.id,
+        title: tasks.title,
+        description: tasks.description,
+        mentorshipId: tasks.mentorshipId,
+      })
+      .from(tasks)
+      .innerJoin(mentorships, eq(tasks.mentorshipId, mentorships.id))
+      .where(
+        and(eq(mentorships.menteeId, user.id), eq(tasks.status, "assigned")),
+      )
+      .orderBy(desc(tasks.createdAt));
+
     const [
       activeMentorshipRows,
       latestEntryRows,
       milestoneRows,
       treeRows,
       guardianRequests,
+      allOpenTasks,
     ] = await Promise.all([
+      activeMentorship,
       db
         .select({
-          id: mentorships.id,
-          status: mentorships.status,
-          matchScore: mentorships.matchScore,
-          lastActivityAt: mentorships.lastActivityAt,
-          mentorId: mentorships.mentorId,
+          content: journalEntries.content,
+          createdAt: journalEntries.createdAt,
+          visibility: journalEntries.visibility,
         })
-        .from(mentorships)
-        .where(eq(mentorships.menteeId, user.id))
-        .orderBy(desc(mentorships.lastActivityAt))
-        .limit(1),
-      db
-        .select()
         .from(journalEntries)
         .where(eq(journalEntries.userId, user.id))
         .orderBy(desc(journalEntries.createdAt))
@@ -52,44 +91,29 @@ export default async function DashboardPage() {
         .from(milestones)
         .where(eq(milestones.userId, user.id)),
       db
-        .select()
+        .select({ health: growthTrees.health, stage: growthTrees.stage })
         .from(growthTrees)
         .where(eq(growthTrees.userId, user.id))
         .limit(1),
       pendingRequestsForChild({ id: user.id, email: user.email }),
+      openTaskRows,
     ]);
 
     const mentorshipRow = activeMentorshipRows[0] ?? null;
-    let mentor = null;
-    if (mentorshipRow?.mentorId) {
-      const [m] = await db
-        .select({
-          displayName: users.displayName,
-          bio: users.bio,
-          interestTags: users.interestTags,
-        })
-        .from(users)
-        .where(eq(users.id, mentorshipRow.mentorId))
-        .limit(1);
-      mentor = m ?? null;
-    }
+    const mentor = mentorshipRow?.mentorId
+      ? {
+          displayName: mentorshipRow.mentorName,
+          bio: mentorshipRow.mentorBio,
+          interestTags: mentorshipRow.mentorTags,
+        }
+      : null;
 
-    // Outstanding tasks from an active mentorship.
+    // Same set the sequential version produced: open tasks for the mentorship
+    // on display, and none at all when there isn't one.
     const openTasks = mentorshipRow
-      ? await db
-          .select({
-            id: tasks.id,
-            title: tasks.title,
-            description: tasks.description,
-          })
-          .from(tasks)
-          .where(
-            and(
-              eq(tasks.mentorshipId, mentorshipRow.id),
-              eq(tasks.status, "assigned"),
-            ),
-          )
-          .orderBy(desc(tasks.createdAt))
+      ? allOpenTasks
+          .filter((t) => t.mentorshipId === mentorshipRow.id)
+          .map(({ id, title, description }) => ({ id, title, description }))
       : [];
 
     const tree = treeRows[0] ?? null;
@@ -169,21 +193,28 @@ export default async function DashboardPage() {
     );
   }
 
-  // Parent
-  const [link, child] = await Promise.all([
+  // Parent. The child's tree used to be fetched only after the child had been
+  // resolved. Joining it back through the accepted guardian link gets it in the
+  // same wave — and the join keeps the consent gate intact, since the row only
+  // exists when the link is accepted.
+  const [link, child, childTreeRows] = await Promise.all([
     latestLinkForParent(user.id),
     acceptedChildForParent(user.id),
-  ]);
-
-  let childTree = null;
-  if (child) {
-    const [t] = await db
+    db
       .select({ health: growthTrees.health, stage: growthTrees.stage })
       .from(growthTrees)
-      .where(eq(growthTrees.userId, child.id))
-      .limit(1);
-    childTree = t ?? null;
-  }
+      .innerJoin(
+        guardianLinks,
+        and(
+          eq(guardianLinks.childId, growthTrees.userId),
+          eq(guardianLinks.parentId, user.id),
+          eq(guardianLinks.status, "accepted"),
+        ),
+      )
+      .limit(1),
+  ]);
+
+  const childTree = childTreeRows[0] ?? null;
 
   return (
     <DashboardClient
