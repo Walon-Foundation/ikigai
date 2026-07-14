@@ -1,6 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { and, eq, or } from "drizzle-orm";
-import { type NextRequest, NextResponse } from "next/server";
+import { after, type NextRequest, NextResponse } from "next/server";
 import { db } from "@/db/db";
 import { mentorships, messages, users } from "@/db/schema";
 import { flagsConcern } from "@/lib/journal";
@@ -61,30 +61,41 @@ export async function POST(request: NextRequest) {
     })
     .returning();
 
-  // Bump activity so the mentor's conversation list re-sorts on new messages.
-  await db
-    .update(mentorships)
-    .set({ lastActivityAt: new Date() })
-    .where(eq(mentorships.id, mentorshipId));
+  // Everything below is bookkeeping the sender does not wait on. Blocking the
+  // response on it meant every message paid for a notification insert plus a
+  // round-trip to the push service (FCM/Mozilla/Apple) before the bubble could
+  // confirm — the single biggest source of send latency in the chat. after()
+  // runs it once the response has already been flushed to the client.
+  after(async () => {
+    // Bump activity so the mentor's conversation list re-sorts on new messages.
+    await db
+      .update(mentorships)
+      .set({ lastActivityAt: new Date() })
+      .where(eq(mentorships.id, mentorshipId));
 
-  // Notify the other party (recipient = whichever side isn't the sender).
-  const recipientId =
-    membership.menteeId === sender.id
-      ? membership.mentorId
-      : membership.menteeId;
-  if (recipientId) {
-    await notifyUser({
-      userId: recipientId,
-      title: `New message from ${sender.displayName ?? "your match"}`,
-      body: trimmed.slice(0, 140),
-      type: "nudge",
-      url: `/mentorship/${mentorshipId}`,
-    });
-  }
+    // Notify the other party (recipient = whichever side isn't the sender).
+    const recipientId =
+      membership.menteeId === sender.id
+        ? membership.mentorId
+        : membership.menteeId;
+    if (recipientId) {
+      await notifyUser({
+        userId: recipientId,
+        title: `New message from ${sender.displayName ?? "your match"}`,
+        body: trimmed.slice(0, 140),
+        type: "nudge",
+        url: `/mentorship/${mentorshipId}`,
+      });
+    }
+  });
 
+  // Return the persisted row in the same shape the thread GET uses, so the
+  // client can swap its optimistic bubble for the real one without a refetch.
   return NextResponse.json({
     id: msg.id,
     content: msg.content,
-    timestamp: msg.createdAt?.toISOString(),
+    senderName: sender.displayName ?? "You",
+    timestamp: msg.createdAt?.toISOString() ?? new Date().toISOString(),
+    isMine: true,
   });
 }
