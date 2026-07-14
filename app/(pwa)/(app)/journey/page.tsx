@@ -1,6 +1,6 @@
 import { and, eq } from "drizzle-orm";
 import { Check, Lock } from "lucide-react";
-import { GrowthTree } from "@/components/growth-tree";
+import { GrowthTree } from "@/components/growth-tree-lazy";
 import { PageHeader } from "@/components/page-header";
 import { db } from "@/db/db";
 import { growthTrees, mentorships, tasks } from "@/db/schema";

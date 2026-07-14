@@ -2,7 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { Clock, CreditCard, Star } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { GrowthTree } from "@/components/growth-tree";
+import { GrowthTree } from "@/components/growth-tree-lazy";
 import { PageHeader } from "@/components/page-header";
 import { db } from "@/db/db";
 import {
