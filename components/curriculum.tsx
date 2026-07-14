@@ -6,7 +6,6 @@ import {
   Check,
   Circle,
   CircleDot,
-  Loader2,
   Pencil,
   Plus,
   Trash2,
@@ -21,6 +20,7 @@ import {
   moveCurriculumItem,
   setCurriculumItemStatus,
 } from "@/app/(pwa)/(app)/mentor-portal/[menteeId]/curriculum-actions";
+import { BusyLabel, Spinner } from "@/components/spinner";
 import { cn } from "@/lib/utils";
 
 export type CurriculumItem = {
@@ -67,6 +67,10 @@ export function Curriculum({
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  // Each item has several independently-firing actions (status, move,
+  // delete) plus the add/edit forms — key busy state by item id + action
+  // (or a form name) so only the clicked button spins.
+  const [busy, setBusy] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newDesc, setNewDesc] = useState("");
@@ -79,10 +83,15 @@ export function Curriculum({
   const percent =
     items.length > 0 ? Math.round((done / items.length) * 100) : 0;
 
-  function run(fn: () => Promise<unknown>) {
+  function run(key: string, fn: () => Promise<unknown>) {
+    setBusy(key);
     startTransition(async () => {
-      await fn();
-      router.refresh();
+      try {
+        await fn();
+        router.refresh();
+      } finally {
+        setBusy(null);
+      }
     });
   }
 
@@ -139,8 +148,9 @@ export function Curriculum({
                     <button
                       type="button"
                       disabled={isPending || !editTitle.trim()}
+                      aria-busy={busy === `${item.id}:save`}
                       onClick={() =>
-                        run(async () => {
+                        run(`${item.id}:save`, async () => {
                           await editCurriculumItem({
                             id: item.id,
                             title: editTitle,
@@ -151,7 +161,12 @@ export function Curriculum({
                       }
                       className="rounded-full bg-primary px-4 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-50"
                     >
-                      Save
+                      <BusyLabel
+                        pending={busy === `${item.id}:save`}
+                        busy="Saving…"
+                      >
+                        Save
+                      </BusyLabel>
                     </button>
                     <button
                       type="button"
@@ -168,8 +183,9 @@ export function Curriculum({
                     type="button"
                     aria-label={`Mark ${NEXT_STATUS[item.status]}`}
                     disabled={isPending}
+                    aria-busy={busy === `${item.id}:status`}
                     onClick={() =>
-                      run(() =>
+                      run(`${item.id}:status`, () =>
                         setCurriculumItemStatus({
                           id: item.id,
                           status: NEXT_STATUS[item.status] ?? "planned",
@@ -178,7 +194,11 @@ export function Curriculum({
                     }
                     className={cn("mt-0.5 shrink-0", meta.className)}
                   >
-                    <StatusIcon className="size-5" />
+                    {busy === `${item.id}:status` ? (
+                      <Spinner className="size-5" />
+                    ) : (
+                      <StatusIcon className="size-5" />
+                    )}
                   </button>
                   <div className="min-w-0 flex-1">
                     <p
@@ -209,23 +229,37 @@ export function Curriculum({
                           type="button"
                           aria-label="Move up"
                           disabled={isPending || idx === 0}
+                          aria-busy={busy === `${item.id}:up`}
                           onClick={() =>
-                            run(() => moveCurriculumItem(item.id, "up"))
+                            run(`${item.id}:up`, () =>
+                              moveCurriculumItem(item.id, "up"),
+                            )
                           }
                           className="disabled:opacity-30"
                         >
-                          <ArrowUp className="size-3.5" />
+                          {busy === `${item.id}:up` ? (
+                            <Spinner className="size-3.5" />
+                          ) : (
+                            <ArrowUp className="size-3.5" />
+                          )}
                         </button>
                         <button
                           type="button"
                           aria-label="Move down"
                           disabled={isPending || idx === items.length - 1}
+                          aria-busy={busy === `${item.id}:down`}
                           onClick={() =>
-                            run(() => moveCurriculumItem(item.id, "down"))
+                            run(`${item.id}:down`, () =>
+                              moveCurriculumItem(item.id, "down"),
+                            )
                           }
                           className="disabled:opacity-30"
                         >
-                          <ArrowDown className="size-3.5" />
+                          {busy === `${item.id}:down` ? (
+                            <Spinner className="size-3.5" />
+                          ) : (
+                            <ArrowDown className="size-3.5" />
+                          )}
                         </button>
                       </div>
                       <div className="flex gap-1">
@@ -244,12 +278,19 @@ export function Curriculum({
                           type="button"
                           aria-label="Delete"
                           disabled={isPending}
+                          aria-busy={busy === `${item.id}:delete`}
                           onClick={() =>
-                            run(() => deleteCurriculumItem(item.id))
+                            run(`${item.id}:delete`, () =>
+                              deleteCurriculumItem(item.id),
+                            )
                           }
                           className="text-destructive"
                         >
-                          <Trash2 className="size-3.5" />
+                          {busy === `${item.id}:delete` ? (
+                            <Spinner className="size-3.5" />
+                          ) : (
+                            <Trash2 className="size-3.5" />
+                          )}
                         </button>
                       </div>
                     </div>
@@ -281,8 +322,9 @@ export function Curriculum({
               <button
                 type="button"
                 disabled={isPending || !newTitle.trim()}
+                aria-busy={busy === "add"}
                 onClick={() =>
-                  run(async () => {
+                  run("add", async () => {
                     await addCurriculumItem({
                       mentorshipId,
                       title: newTitle,
@@ -295,12 +337,9 @@ export function Curriculum({
                 }
                 className="flex items-center gap-1.5 rounded-full bg-primary px-4 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-50"
               >
-                {isPending ? (
-                  <Loader2 className="size-3.5 animate-spin" />
-                ) : (
-                  <Plus className="size-3.5" />
-                )}
-                Add step
+                <BusyLabel pending={busy === "add"} busy="Adding…">
+                  <Plus className="size-3.5" /> Add step
+                </BusyLabel>
               </button>
               <button
                 type="button"

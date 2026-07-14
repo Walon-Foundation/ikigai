@@ -2,6 +2,7 @@
 
 import { ArrowRight, HeartHandshake, Sprout, Users } from "lucide-react";
 import { useState, useTransition } from "react";
+import { BusyLabel, Spinner } from "@/components/spinner";
 import { cn } from "@/lib/utils";
 import { setRole } from "./actions";
 
@@ -30,10 +31,12 @@ const ROLES = [
 
 export default function OnboardingPage() {
   const [selected, setSelected] = useState<Role | null>(null);
+  const [busyRole, setBusyRole] = useState<Role | null>(null);
   const [isPending, startTransition] = useTransition();
 
   function handleContinue() {
     if (!selected) return;
+    setBusyRole(selected);
     startTransition(() => setRole(selected));
   }
 
@@ -51,6 +54,8 @@ export default function OnboardingPage() {
             key={r.value}
             type="button"
             onClick={() => setSelected(r.value)}
+            disabled={isPending}
+            aria-busy={busyRole === r.value}
             className={cn(
               "flex w-full items-start gap-4 rounded-2xl border-2 p-6 text-left transition-all",
               selected === r.value
@@ -59,7 +64,11 @@ export default function OnboardingPage() {
             )}
           >
             <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary-muted/20 text-primary">
-              <r.icon className="size-5" />
+              {busyRole === r.value ? (
+                <Spinner />
+              ) : (
+                <r.icon className="size-5" />
+              )}
             </div>
             <div className="flex-1">
               <p className="font-display text-lg font-bold text-foreground">
@@ -74,9 +83,12 @@ export default function OnboardingPage() {
         type="button"
         onClick={handleContinue}
         disabled={!selected || isPending}
+        aria-busy={isPending}
         className="mt-8 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-8 py-4 font-semibold text-primary-foreground transition-colors hover:bg-primary-light disabled:opacity-40"
       >
-        Continue <ArrowRight className="size-4" />
+        <BusyLabel pending={isPending} busy="Setting up…">
+          Continue <ArrowRight className="size-4" />
+        </BusyLabel>
       </button>
     </div>
   );

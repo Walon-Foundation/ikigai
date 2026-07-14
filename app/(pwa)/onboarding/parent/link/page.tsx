@@ -1,12 +1,26 @@
 "use client";
 
-import { ArrowRight, Loader2 } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { useState, useTransition } from "react";
+import { BusyLabel } from "@/components/spinner";
 import { saveParentLink } from "../../actions";
 
 export default function ParentLinkPage() {
   const [email, setEmail] = useState("");
   const [isPending, startTransition] = useTransition();
+  // Both buttons below share one `saveParentLink` action, so track which of
+  // the two was tapped — otherwise both would spin together.
+  const [busyAction, setBusyAction] = useState<"link" | "skip" | null>(null);
+
+  function handleLink() {
+    setBusyAction("link");
+    startTransition(() => saveParentLink(email));
+  }
+
+  function handleSkip() {
+    setBusyAction("skip");
+    startTransition(() => saveParentLink(""));
+  }
 
   return (
     <div>
@@ -56,26 +70,29 @@ export default function ParentLinkPage() {
 
       <button
         type="button"
-        onClick={() => startTransition(() => saveParentLink(email))}
+        onClick={handleLink}
         disabled={!email.includes("@") || isPending}
+        aria-busy={busyAction === "link" && isPending}
         className="mt-8 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-8 py-4 font-semibold text-primary-foreground disabled:opacity-40"
       >
-        {isPending ? (
-          <Loader2 className="size-4 animate-spin" />
-        ) : (
-          <>
-            Link Account <ArrowRight className="size-4" />
-          </>
-        )}
+        <BusyLabel pending={busyAction === "link" && isPending} busy="Linking…">
+          Link Account <ArrowRight className="size-4" />
+        </BusyLabel>
       </button>
 
       <button
         type="button"
-        onClick={() => startTransition(() => saveParentLink(""))}
+        onClick={handleSkip}
         disabled={isPending}
+        aria-busy={busyAction === "skip" && isPending}
         className="mt-3 inline-flex w-full items-center justify-center rounded-lg border border-border px-8 py-4 text-sm font-semibold text-muted-foreground hover:bg-muted"
       >
-        Skip for now
+        <BusyLabel
+          pending={busyAction === "skip" && isPending}
+          busy="Skipping…"
+        >
+          Skip for now
+        </BusyLabel>
       </button>
     </div>
   );

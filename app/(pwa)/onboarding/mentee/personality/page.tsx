@@ -2,6 +2,7 @@
 
 import { ArrowRight } from "lucide-react";
 import { useState, useTransition } from "react";
+import { BusyLabel } from "@/components/spinner";
 import { saveMenteePersonality } from "../../actions";
 
 const SCALES = [
@@ -93,9 +94,12 @@ export default function PersonalityPage() {
         type="button"
         onClick={() => startTransition(() => saveMenteePersonality(scores))}
         disabled={isPending}
+        aria-busy={isPending}
         className="mt-10 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-8 py-4 font-semibold text-primary-foreground disabled:opacity-40"
       >
-        Continue <ArrowRight className="size-4" />
+        <BusyLabel pending={isPending} busy="Saving…">
+          Continue <ArrowRight className="size-4" />
+        </BusyLabel>
       </button>
     </div>
   );

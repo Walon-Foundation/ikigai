@@ -3,6 +3,7 @@
 import { Plus, Send } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { BusyLabel, Spinner } from "@/components/spinner";
 import { createGroup, joinGroup, postGroupMessage } from "./actions";
 
 export function CreateGroupForm() {
@@ -53,9 +54,12 @@ export function CreateGroupForm() {
         <button
           type="submit"
           disabled={pending}
+          aria-busy={pending}
           className="rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-40"
         >
-          {pending ? "Creating…" : "Create"}
+          <BusyLabel pending={pending} busy="Creating…">
+            Create
+          </BusyLabel>
         </button>
         <button
           type="button"
@@ -82,9 +86,12 @@ export function JoinGroupButton({ groupId }: { groupId: string }) {
         })
       }
       disabled={pending}
+      aria-busy={pending}
       className="rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-40"
     >
-      {pending ? "Joining…" : "Join group"}
+      <BusyLabel pending={pending} busy="Joining…">
+        Join group
+      </BusyLabel>
     </button>
   );
 }
@@ -119,9 +126,10 @@ export function GroupMessageForm({ groupId }: { groupId: string }) {
         type="button"
         onClick={send}
         disabled={pending || !value.trim()}
+        aria-busy={pending}
         className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground disabled:opacity-40"
       >
-        <Send className="size-4" />
+        {pending ? <Spinner className="size-4" /> : <Send className="size-4" />}
       </button>
     </div>
   );

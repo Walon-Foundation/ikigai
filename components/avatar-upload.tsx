@@ -1,8 +1,9 @@
 "use client";
 
-import { Camera, Loader2 } from "lucide-react";
+import { Camera } from "lucide-react";
 import { useRef, useState } from "react";
 import { Avatar } from "@/components/avatar";
+import { Spinner } from "@/components/spinner";
 import { useUploadThing } from "@/lib/uploadthing";
 
 // Circular avatar with an overlaid camera button that uploads a new photo
@@ -47,10 +48,11 @@ export function AvatarUpload({
           aria-label="Upload profile photo"
           onClick={() => inputRef.current?.click()}
           disabled={isUploading}
+          aria-busy={isUploading}
           className="absolute bottom-0 right-0 flex size-8 items-center justify-center rounded-full border-2 border-background bg-primary text-primary-foreground shadow disabled:opacity-60"
         >
           {isUploading ? (
-            <Loader2 className="size-4 animate-spin" />
+            <Spinner className="size-4" />
           ) : (
             <Camera className="size-4" />
           )}

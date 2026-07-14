@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { BusyLabel } from "@/components/spinner";
 import { confirmPayment, payForPlan } from "./actions";
 
 export function PayWidget({
@@ -82,9 +83,12 @@ export function PayWidget({
           type="button"
           onClick={check}
           disabled={pending}
+          aria-busy={pending}
           className="rounded-full bg-primary px-4 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-40"
         >
-          {pending ? "Checking…" : "I've paid — check"}
+          <BusyLabel pending={pending} busy="Checking…">
+            I&apos;ve paid — check
+          </BusyLabel>
         </button>
         {note && <p className="mt-1 text-xs text-muted-foreground">{note}</p>}
         {error && <p className="mt-1 text-xs text-destructive">{error}</p>}
@@ -106,9 +110,12 @@ export function PayWidget({
           type="button"
           onClick={pay}
           disabled={pending}
+          aria-busy={pending}
           className="rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-40"
         >
-          {pending ? "Starting…" : "Confirm"}
+          <BusyLabel pending={pending} busy="Starting…">
+            Confirm
+          </BusyLabel>
         </button>
         <button
           type="button"

@@ -1,7 +1,8 @@
 "use client";
 
-import { Check, Loader2, Plus, Sprout, X } from "lucide-react";
+import { Check, Plus, Sprout, X } from "lucide-react";
 import { useState, useTransition } from "react";
+import { BusyLabel } from "@/components/spinner";
 import { cn } from "@/lib/utils";
 import { assignTask, completeTask, failTask } from "../actions";
 
@@ -91,10 +92,12 @@ export function MenteeTasks({
               type="button"
               onClick={handleAssign}
               disabled={!title.trim() || isPending}
+              aria-busy={isPending}
               className="flex items-center gap-1 rounded-full bg-primary px-4 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-50"
             >
-              {isPending && <Loader2 className="size-3.5 animate-spin" />}
-              Assign
+              <BusyLabel pending={isPending} busy="Assigning…">
+                Assign
+              </BusyLabel>
             </button>
           </div>
         </div>
@@ -120,7 +123,27 @@ export function MenteeTasks({
 
 function TaskRow({ task }: { task: TaskItem }) {
   const [isPending, startTransition] = useTransition();
+  // Complete and Mark failed act on the same task — track which one was
+  // clicked so only that button spins instead of both.
+  const [busyAction, setBusyAction] = useState<"complete" | "fail" | null>(
+    null,
+  );
   const isOpen = task.status === "assigned";
+
+  function run(action: "complete" | "fail") {
+    setBusyAction(action);
+    startTransition(async () => {
+      try {
+        if (action === "complete") {
+          await completeTask(task.id);
+        } else {
+          await failTask(task.id);
+        }
+      } finally {
+        setBusyAction(null);
+      }
+    });
+  }
 
   return (
     <div className="rounded-xl border border-border p-3">
@@ -148,31 +171,24 @@ function TaskRow({ task }: { task: TaskItem }) {
           <button
             type="button"
             disabled={isPending}
-            onClick={() =>
-              startTransition(async () => {
-                await completeTask(task.id);
-              })
-            }
+            aria-busy={busyAction === "complete"}
+            onClick={() => run("complete")}
             className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-primary py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50"
           >
-            {isPending ? (
-              <Loader2 className="size-3.5 animate-spin" />
-            ) : (
-              <Check className="size-3.5" />
-            )}
-            Complete
+            <BusyLabel pending={busyAction === "complete"} busy="Completing…">
+              <Check className="size-3.5" /> Complete
+            </BusyLabel>
           </button>
           <button
             type="button"
             disabled={isPending}
-            onClick={() =>
-              startTransition(async () => {
-                await failTask(task.id);
-              })
-            }
+            aria-busy={busyAction === "fail"}
+            onClick={() => run("fail")}
             className="flex flex-1 items-center justify-center gap-1 rounded-lg border border-destructive/40 py-2 text-xs font-semibold text-destructive hover:bg-destructive/5 disabled:opacity-50"
           >
-            <X className="size-3.5" /> Mark failed
+            <BusyLabel pending={busyAction === "fail"} busy="Marking failed…">
+              <X className="size-3.5" /> Mark failed
+            </BusyLabel>
           </button>
         </div>
       )}

@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { BusyLabel } from "@/components/spinner";
 import { addJournalFeedback } from "./feedback-actions";
 
 export function FeedbackForm({
@@ -37,9 +38,12 @@ export function FeedbackForm({
         type="button"
         onClick={send}
         disabled={pending || !value.trim()}
+        aria-busy={pending}
         className="rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-40"
       >
-        {pending ? "…" : "Send"}
+        <BusyLabel pending={pending} busy="Sending…">
+          Send
+        </BusyLabel>
       </button>
     </div>
   );

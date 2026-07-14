@@ -3,6 +3,7 @@
 import { Star } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { BusyLabel } from "@/components/spinner";
 import { requestMentor } from "../../mentorship/actions";
 import { submitMentorReview } from "../actions";
 
@@ -47,9 +48,12 @@ export function RequestMentorButton({
         type="button"
         onClick={handleRequest}
         disabled={pending}
+        aria-busy={pending}
         className="w-full rounded-full bg-primary py-3 font-semibold text-primary-foreground transition-colors hover:bg-primary-light disabled:opacity-40"
       >
-        {pending ? "Requesting…" : "Request mentorship"}
+        <BusyLabel pending={pending} busy="Requesting…">
+          Request mentorship
+        </BusyLabel>
       </button>
       {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
     </div>
@@ -113,9 +117,12 @@ export function ReviewForm({
         type="button"
         onClick={handleSubmit}
         disabled={pending || rating < 1}
+        aria-busy={pending}
         className="mt-3 rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-40"
       >
-        {pending ? "Saving…" : done ? "Saved ✓" : "Submit review"}
+        <BusyLabel pending={pending} busy="Saving…">
+          {done ? "Saved ✓" : "Submit review"}
+        </BusyLabel>
       </button>
     </div>
   );

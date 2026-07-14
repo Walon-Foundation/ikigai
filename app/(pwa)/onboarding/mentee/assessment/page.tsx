@@ -2,6 +2,7 @@
 
 import { ArrowRight, ChevronLeft } from "lucide-react";
 import { useState, useTransition } from "react";
+import { BusyLabel } from "@/components/spinner";
 import { cn } from "@/lib/utils";
 import { saveMenteeAssessment } from "../../actions";
 
@@ -198,10 +199,13 @@ export default function AssessmentPage() {
           type="button"
           onClick={handleNext}
           disabled={isPending}
+          aria-busy={isPending}
           className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-primary px-8 py-3 font-semibold text-primary-foreground disabled:opacity-40"
         >
-          {isLast ? "Save & Continue" : "Next"}
-          <ArrowRight className="size-4" />
+          <BusyLabel pending={isPending} busy="Saving…">
+            {isLast ? "Save & Continue" : "Next"}
+            <ArrowRight className="size-4" />
+          </BusyLabel>
         </button>
       </div>
     </div>

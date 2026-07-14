@@ -1,9 +1,10 @@
 "use client";
 
 import { useUser } from "@clerk/nextjs";
-import { Check, Loader2 } from "lucide-react";
+import { Check } from "lucide-react";
 import { useTransition } from "react";
 import { AvatarUpload } from "@/components/avatar-upload";
+import { BusyLabel } from "@/components/spinner";
 import { completeMenteeOnboarding } from "../../actions";
 
 export default function MenteeProfilePage() {
@@ -58,13 +59,12 @@ export default function MenteeProfilePage() {
         type="button"
         onClick={() => startTransition(() => completeMenteeOnboarding())}
         disabled={isPending}
+        aria-busy={isPending}
         className="inline-flex items-center gap-2 rounded-lg bg-primary px-10 py-4 text-base font-semibold text-primary-foreground disabled:opacity-60"
       >
-        {isPending ? (
-          <Loader2 className="size-4 animate-spin" />
-        ) : (
-          "Go to My Dashboard"
-        )}
+        <BusyLabel pending={isPending} busy="Finishing…">
+          Go to My Dashboard
+        </BusyLabel>
       </button>
     </div>
   );

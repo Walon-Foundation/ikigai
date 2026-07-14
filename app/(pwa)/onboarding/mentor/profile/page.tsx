@@ -4,6 +4,7 @@ import { useUser } from "@clerk/nextjs";
 import { ArrowRight } from "lucide-react";
 import { useState, useTransition } from "react";
 import { AvatarUpload } from "@/components/avatar-upload";
+import { BusyLabel } from "@/components/spinner";
 import { cn } from "@/lib/utils";
 import { saveMentorProfile } from "../../actions";
 
@@ -200,9 +201,12 @@ export default function MentorProfilePage() {
         type="button"
         onClick={handleSubmit}
         disabled={!canContinue || isPending}
+        aria-busy={isPending}
         className="mt-8 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-8 py-4 font-semibold text-primary-foreground disabled:opacity-40"
       >
-        Continue <ArrowRight className="size-4" />
+        <BusyLabel pending={isPending} busy="Saving…">
+          Continue <ArrowRight className="size-4" />
+        </BusyLabel>
       </button>
     </div>
   );

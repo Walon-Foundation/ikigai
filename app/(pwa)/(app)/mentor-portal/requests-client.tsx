@@ -1,7 +1,8 @@
 "use client";
 
-import { Check, Loader2, Star, X } from "lucide-react";
+import { Check, Star, X } from "lucide-react";
 import { useState, useTransition } from "react";
+import { BusyLabel } from "@/components/spinner";
 import { acceptRequest, declineRequest } from "./actions";
 
 export type RequestItem = {
@@ -42,6 +43,11 @@ function RequestCard({
   atCapacity: boolean;
 }) {
   const [isPending, startTransition] = useTransition();
+  // Accept and decline act on the same request — track which one was
+  // clicked so only that button spins instead of both.
+  const [busyAction, setBusyAction] = useState<"accept" | "decline" | null>(
+    null,
+  );
   const [error, setError] = useState<string | null>(null);
 
   const initials =
@@ -90,40 +96,51 @@ function RequestCard({
         <button
           type="button"
           disabled={isPending || atCapacity}
+          aria-busy={busyAction === "accept"}
           onClick={() => {
             setError(null);
+            setBusyAction("accept");
             startTransition(async () => {
-              const res = await acceptRequest(request.id);
-              if (!res.ok) {
-                setError(
-                  res.reason === "full"
-                    ? "You already have the maximum of two active mentees."
-                    : "This request is no longer available.",
-                );
+              try {
+                const res = await acceptRequest(request.id);
+                if (!res.ok) {
+                  setError(
+                    res.reason === "full"
+                      ? "You already have the maximum of two active mentees."
+                      : "This request is no longer available.",
+                  );
+                }
+              } finally {
+                setBusyAction(null);
               }
             });
           }}
           className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-primary py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-50"
         >
-          {isPending ? (
-            <Loader2 className="size-4 animate-spin" />
-          ) : (
-            <Check className="size-4" />
-          )}
-          Accept
+          <BusyLabel pending={busyAction === "accept"} busy="Accepting…">
+            <Check className="size-4" /> Accept
+          </BusyLabel>
         </button>
         <button
           type="button"
           disabled={isPending}
+          aria-busy={busyAction === "decline"}
           onClick={() => {
             setError(null);
+            setBusyAction("decline");
             startTransition(async () => {
-              await declineRequest(request.id);
+              try {
+                await declineRequest(request.id);
+              } finally {
+                setBusyAction(null);
+              }
             });
           }}
           className="flex flex-1 items-center justify-center gap-1 rounded-lg border border-border py-2.5 text-sm font-semibold text-muted-foreground hover:bg-muted disabled:opacity-50"
         >
-          <X className="size-4" /> Decline
+          <BusyLabel pending={busyAction === "decline"} busy="Declining…">
+            <X className="size-4" /> Decline
+          </BusyLabel>
         </button>
       </div>
       {atCapacity && (

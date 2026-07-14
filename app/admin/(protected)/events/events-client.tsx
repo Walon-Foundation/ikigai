@@ -2,6 +2,7 @@
 
 import { CalendarPlus, Trash2 } from "lucide-react";
 import { useState, useTransition } from "react";
+import { BusyLabel } from "@/components/spinner";
 import { cn } from "@/lib/utils";
 import { createEvent, deleteEvent, setAttendanceStatus } from "./actions";
 
@@ -192,10 +193,13 @@ export function EventCreateForm() {
         <button
           type="submit"
           disabled={pending}
+          aria-busy={pending}
           className="flex w-full items-center justify-center gap-2 rounded-full bg-primary py-3 font-semibold text-primary-foreground hover:bg-primary-light disabled:opacity-40 transition-colors"
         >
-          <CalendarPlus className="size-4" />
-          {pending ? "Creating…" : done ? "Created! ✓" : "Create Event"}
+          <BusyLabel pending={pending} busy="Creating…">
+            <CalendarPlus className="size-4" />
+            {done ? "Created! ✓" : "Create Event"}
+          </BusyLabel>
         </button>
       </div>
     </form>
@@ -267,9 +271,12 @@ export function DeleteEventButton({ eventId }: { eventId: string }) {
       type="button"
       onClick={handleDelete}
       disabled={pending}
+      aria-busy={pending}
       className="rounded-full bg-destructive/10 px-3 py-1 text-xs font-semibold text-destructive disabled:opacity-50"
     >
-      {pending ? "Deleting…" : "Confirm delete"}
+      <BusyLabel pending={pending} busy="Deleting…">
+        Confirm delete
+      </BusyLabel>
     </button>
   );
 }

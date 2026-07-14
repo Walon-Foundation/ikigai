@@ -1,7 +1,8 @@
 "use client";
 
-import { FileText, IdCard, Loader2 } from "lucide-react";
+import { FileText, IdCard } from "lucide-react";
 import { useTransition } from "react";
+import { BusyLabel } from "@/components/spinner";
 import { submitMentorVerification } from "../../actions";
 
 export default function MentorVerificationPage() {
@@ -73,13 +74,12 @@ export default function MentorVerificationPage() {
         type="button"
         onClick={() => startTransition(() => submitMentorVerification())}
         disabled={isPending}
+        aria-busy={isPending}
         className="mt-8 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-8 py-4 font-semibold text-primary-foreground disabled:opacity-40"
       >
-        {isPending ? (
-          <Loader2 className="size-4 animate-spin" />
-        ) : (
-          "Submit Application"
-        )}
+        <BusyLabel pending={isPending} busy="Submitting…">
+          Submit Application
+        </BusyLabel>
       </button>
     </div>
   );

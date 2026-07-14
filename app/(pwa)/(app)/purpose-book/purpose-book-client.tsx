@@ -1,7 +1,8 @@
 "use client";
 
-import { Check, Loader2 } from "lucide-react";
+import { Check } from "lucide-react";
 import { useState, useTransition } from "react";
+import { Spinner } from "@/components/spinner";
 import { saveLifeVision } from "./actions";
 
 export function LifeVisionEditor({ initial }: { initial: string }) {
@@ -31,7 +32,7 @@ export function LifeVisionEditor({ initial }: { initial: string }) {
       <div className="mt-2 flex h-5 items-center gap-1.5 text-xs text-muted-foreground">
         {pending ? (
           <>
-            <Loader2 className="size-3.5 animate-spin" /> Saving…
+            <Spinner className="size-3.5" /> Saving…
           </>
         ) : saved ? (
           <>

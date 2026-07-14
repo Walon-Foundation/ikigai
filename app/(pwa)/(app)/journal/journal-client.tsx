@@ -4,6 +4,7 @@ import { openDB } from "idb";
 import { AlertTriangle, Globe, Lock, Users, WifiOff } from "lucide-react";
 import { useEffect, useState, useTransition } from "react";
 import { PageHeader } from "@/components/page-header";
+import { BusyLabel } from "@/components/spinner";
 import { flagsConcern, type JournalVisibility } from "@/lib/journal";
 import { cn } from "@/lib/utils";
 import { saveJournalEntry } from "./actions";
@@ -221,15 +222,16 @@ export function JournalClient({ initialEntries }: { initialEntries: Entry[] }) {
               type="button"
               onClick={handleSave}
               disabled={!newContent.trim() || isPending}
+              aria-busy={isPending}
               className="rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-light disabled:opacity-40"
             >
-              {saved
-                ? "Saved"
-                : offlineSaved
-                  ? "Saved offline"
-                  : isPending
-                    ? "Saving…"
+              <BusyLabel pending={isPending} busy="Saving…">
+                {saved
+                  ? "Saved"
+                  : offlineSaved
+                    ? "Saved offline"
                     : "Save Entry"}
+              </BusyLabel>
             </button>
             {newContent && (
               <button

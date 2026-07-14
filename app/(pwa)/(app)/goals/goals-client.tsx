@@ -3,6 +3,7 @@
 import { Check, Plus, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { BusyLabel, Spinner } from "@/components/spinner";
 import { addGoal, completeGoal, deleteGoal } from "./actions";
 
 export function AddGoalForm() {
@@ -60,9 +61,12 @@ export function AddGoalForm() {
         <button
           type="submit"
           disabled={pending}
+          aria-busy={pending}
           className="rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-40"
         >
-          {pending ? "Saving…" : "Save goal"}
+          <BusyLabel pending={pending} busy="Saving…">
+            Save goal
+          </BusyLabel>
         </button>
         <button
           type="button"
@@ -85,6 +89,19 @@ export function GoalActions({
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  // Complete and Delete fire independently, so a single shared pending flag
+  // would spin both buttons at once — track which one is busy.
+  const [busyAction, setBusyAction] = useState<"complete" | "delete" | null>(
+    null,
+  );
+
+  function run(action: "complete" | "delete", fn: () => Promise<void>) {
+    setBusyAction(action);
+    startTransition(async () => {
+      await fn();
+      router.refresh();
+    });
+  }
 
   return (
     <div className="flex items-center gap-1">
@@ -92,31 +109,31 @@ export function GoalActions({
         <button
           type="button"
           aria-label="Complete goal"
-          onClick={() =>
-            startTransition(async () => {
-              await completeGoal(goalId);
-              router.refresh();
-            })
-          }
+          onClick={() => run("complete", () => completeGoal(goalId))}
           disabled={pending}
+          aria-busy={busyAction === "complete"}
           className="flex size-8 items-center justify-center rounded-full border border-border text-muted-foreground hover:border-primary hover:text-primary disabled:opacity-40"
         >
-          <Check className="size-4" />
+          {busyAction === "complete" ? (
+            <Spinner className="size-4" />
+          ) : (
+            <Check className="size-4" />
+          )}
         </button>
       )}
       <button
         type="button"
         aria-label="Delete goal"
-        onClick={() =>
-          startTransition(async () => {
-            await deleteGoal(goalId);
-            router.refresh();
-          })
-        }
+        onClick={() => run("delete", () => deleteGoal(goalId))}
         disabled={pending}
+        aria-busy={busyAction === "delete"}
         className="flex size-8 items-center justify-center rounded-full text-muted-foreground hover:text-destructive disabled:opacity-40"
       >
-        <Trash2 className="size-4" />
+        {busyAction === "delete" ? (
+          <Spinner className="size-4" />
+        ) : (
+          <Trash2 className="size-4" />
+        )}
       </button>
     </div>
   );

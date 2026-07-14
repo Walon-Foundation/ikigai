@@ -12,10 +12,11 @@ import {
   Smartphone,
   User,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { savePushSubscription } from "@/app/(pwa)/(app)/settings/actions";
 import { AvatarUpload } from "@/components/avatar-upload";
 import { PageHeader } from "@/components/page-header";
+import { BusyLabel, Spinner } from "@/components/spinner";
 import { subscribeToPush, unsubscribeFromPush } from "@/lib/push-client";
 import { usePwaInstall } from "@/lib/use-pwa-install";
 import { cn } from "@/lib/utils";
@@ -43,24 +44,34 @@ export function SettingsClient({ user }: { user: DbUser }) {
   });
   const [pushEnabled, setPushEnabled] = useState(user.pushEnabled ?? false);
   const [pushError, setPushError] = useState<string | null>(null);
+  const [isPushPending, startPushTransition] = useTransition();
   const [journalPrivacy, setJournalPrivacy] = useState(true);
+  const [isSigningOut, startSignOutTransition] = useTransition();
   const { signOut } = useClerk();
   const { prompt, isIOS, isInstalled, install } = usePwaInstall();
 
-  async function handlePushToggle(next: boolean) {
+  function handlePushToggle(next: boolean) {
     setPushError(null);
-    if (next) {
-      const result = await subscribeToPush(savePushSubscription);
-      if (result.ok) {
-        setPushEnabled(true);
+    startPushTransition(async () => {
+      if (next) {
+        const result = await subscribeToPush(savePushSubscription);
+        if (result.ok) {
+          setPushEnabled(true);
+        } else {
+          setPushError(PUSH_ERROR[result.reason] ?? PUSH_ERROR.error);
+        }
       } else {
-        setPushError(PUSH_ERROR[result.reason] ?? PUSH_ERROR.error);
+        await unsubscribeFromPush();
+        await savePushSubscription(null).catch(() => {});
+        setPushEnabled(false);
       }
-    } else {
-      await unsubscribeFromPush();
-      await savePushSubscription(null).catch(() => {});
-      setPushEnabled(false);
-    }
+    });
+  }
+
+  function handleSignOut() {
+    startSignOutTransition(async () => {
+      await signOut({ redirectUrl: "/" });
+    });
   }
 
   return (
@@ -108,6 +119,7 @@ export function SettingsClient({ user }: { user: DbUser }) {
             desc="Mentor matches, milestones, nudges"
             value={pushEnabled}
             onChange={handlePushToggle}
+            pending={isPushPending}
           />
           {pushError && (
             <p className="mt-2 text-xs text-destructive">{pushError}</p>
@@ -220,11 +232,15 @@ export function SettingsClient({ user }: { user: DbUser }) {
         {/* Sign out */}
         <button
           type="button"
-          onClick={() => signOut({ redirectUrl: "/" })}
-          className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card p-5 text-left text-destructive hover:bg-muted"
+          onClick={handleSignOut}
+          disabled={isSigningOut}
+          aria-busy={isSigningOut}
+          className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card p-5 text-left text-destructive hover:bg-muted disabled:opacity-60"
         >
-          <LogOut className="size-4" />
-          <span className="text-sm font-medium">Sign out</span>
+          <BusyLabel pending={isSigningOut} busy="Signing out…">
+            <LogOut className="size-4" />
+            <span className="text-sm font-medium">Sign out</span>
+          </BusyLabel>
         </button>
       </div>
     </>
@@ -256,11 +272,13 @@ function ToggleRow({
   desc,
   value,
   onChange,
+  pending,
 }: {
   label: string;
   desc: string;
   value: boolean;
   onChange: (v: boolean) => void;
+  pending?: boolean;
 }) {
   return (
     <div className="flex items-center justify-between gap-4">
@@ -268,21 +286,26 @@ function ToggleRow({
         <p className="text-sm font-medium text-foreground">{label}</p>
         <p className="text-xs text-muted-foreground">{desc}</p>
       </div>
-      <button
-        type="button"
-        onClick={() => onChange(!value)}
-        className={cn(
-          "relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors",
-          value ? "bg-primary" : "bg-muted",
-        )}
-      >
-        <span
+      <div className="flex items-center gap-2">
+        {pending && <Spinner className="size-4" />}
+        <button
+          type="button"
+          onClick={() => onChange(!value)}
+          disabled={pending}
+          aria-busy={pending}
           className={cn(
-            "inline-block size-5 rounded-full bg-white shadow transition-transform",
-            value ? "translate-x-5" : "translate-x-0",
+            "relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors",
+            value ? "bg-primary" : "bg-muted",
           )}
-        />
-      </button>
+        >
+          <span
+            className={cn(
+              "inline-block size-5 rounded-full bg-white shadow transition-transform",
+              value ? "translate-x-5" : "translate-x-0",
+            )}
+          />
+        </button>
+      </div>
     </div>
   );
 }

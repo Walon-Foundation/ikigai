@@ -2,6 +2,7 @@
 
 import { ArrowRight } from "lucide-react";
 import { useState, useTransition } from "react";
+import { BusyLabel } from "@/components/spinner";
 import { cn } from "@/lib/utils";
 import { saveMentorPricing } from "../../actions";
 
@@ -124,9 +125,12 @@ export default function MentorPricingPage() {
           )
         }
         disabled={!canContinue || isPending}
+        aria-busy={isPending}
         className="mt-8 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-8 py-4 font-semibold text-primary-foreground disabled:opacity-40"
       >
-        Continue <ArrowRight className="size-4" />
+        <BusyLabel pending={isPending} busy="Saving…">
+          Continue <ArrowRight className="size-4" />
+        </BusyLabel>
       </button>
     </div>
   );
