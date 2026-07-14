@@ -1,20 +1,31 @@
 import { auth } from "@clerk/nextjs/server";
-import { and, asc, eq, gt, or } from "drizzle-orm";
+import { and, asc, eq, gt, or, sql } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 import { db } from "@/db/db";
 import { mentorships, messages, users } from "@/db/schema";
+
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // The chat polls this endpoint continuously, so it is the hottest read in the
 // app and every avoidable round-trip here is paid over and over.
 //
 // Two things keep it cheap:
-//   - `?since=<ISO>` returns only messages newer than the client's newest one.
-//     A poll on a quiet thread then costs one indexed range scan returning zero
-//     rows, instead of re-sending the whole conversation every few seconds.
+//   - `?after=<messageId>` returns only messages newer than the one the client
+//     already holds, so a poll on a quiet thread is an indexed range scan that
+//     returns zero rows instead of re-sending the whole conversation.
 //   - The membership check and the message read run concurrently. The message
 //     query re-states the membership predicate as a SQL join, so it is
 //     self-authorizing: a non-member's join matches nothing and the query can
 //     safely be in flight before the membership check has come back.
+//
+// The cursor is a message *id*, not a timestamp, and the server owns it. That
+// is not incidental: `created_at` is a Postgres timestamp with microsecond
+// precision, but a JS Date only holds milliseconds. Round-tripping the cursor
+// through the client would floor it *below* the very message it points at, so
+// `created_at > cursor` would match that message again on every single poll —
+// re-sending the last message forever and defeating the whole optimization.
+// Comparing by id keeps the comparison inside SQL, at full precision.
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ mentorshipId: string }> },
@@ -24,9 +35,11 @@ export async function GET(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { mentorshipId } = await params;
-  const sinceParam = request.nextUrl.searchParams.get("since");
-  const since = sinceParam ? new Date(sinceParam) : null;
-  const isIncremental = since !== null && !Number.isNaN(since.getTime());
+  const afterParam = request.nextUrl.searchParams.get("after");
+  // An unrecognised cursor falls back to a full load rather than erroring — the
+  // client recovers with a complete thread instead of an empty one.
+  const afterId = afterParam && UUID_RE.test(afterParam) ? afterParam : null;
+  const isIncremental = afterId !== null;
 
   const [myUser] = await db
     .select({ id: users.id })
@@ -69,7 +82,15 @@ export async function GET(
       .where(
         and(
           eq(messages.mentorshipId, mentorshipId),
-          isIncremental ? gt(messages.createdAt, since) : undefined,
+          afterId
+            ? gt(
+                messages.createdAt,
+                // Resolved inside SQL, so no precision is lost. If the id is
+                // unknown (e.g. the message was deleted), coalescing to
+                // -infinity returns the whole thread rather than nothing.
+                sql`coalesce((select created_at from messages where id = ${afterId}::uuid), '-infinity'::timestamp)`,
+              )
+            : undefined,
         ),
       )
       .orderBy(asc(messages.createdAt)),
@@ -87,10 +108,15 @@ export async function GET(
     isMine: m.senderId === myUser.id,
   }));
 
+  // Hand the client back the cursor to send next time. Rows are ordered by
+  // created_at, so the last one is the newest. An empty batch leaves the cursor
+  // where it was — the client never computes it, which is what keeps it exact.
+  const cursor = items.at(-1)?.id ?? afterId;
+
   // A poll only needs the new messages. The peer's name and photo don't change
   // mid-conversation, so we resolve them once, on the initial load.
   if (isIncremental) {
-    return NextResponse.json({ messages: items, incremental: true });
+    return NextResponse.json({ messages: items, cursor });
   }
 
   const iAmMentor = membership.mentorId === myUser.id;
@@ -115,5 +141,5 @@ export async function GET(
     }
   }
 
-  return NextResponse.json({ peer, messages: items, incremental: false });
+  return NextResponse.json({ peer, messages: items, cursor });
 }

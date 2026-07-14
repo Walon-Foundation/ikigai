@@ -2,7 +2,7 @@
 
 import { AlertCircle, ChevronLeft, ClipboardList, Send } from "lucide-react";
 import Link from "next/link";
-import { use, useCallback, useEffect, useRef, useState } from "react";
+import { use, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Avatar } from "@/components/avatar";
 import { Spinner } from "@/components/spinner";
 import { cn } from "@/lib/utils";
@@ -29,6 +29,9 @@ type Peer = {
 type ThreadResponse = {
   peer?: Peer;
   messages: Message[];
+  // Opaque: the id of the newest message the server has given us. We hand it
+  // straight back on the next poll and never try to derive it ourselves.
+  cursor: string | null;
 };
 
 export default function MentorshipChatPage({
@@ -44,61 +47,52 @@ export default function MentorshipChatPage({
   const [loading, setLoading] = useState(true);
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  // Timestamp of the newest message we hold, so a poll can ask for "just what's
-  // new" instead of re-downloading the whole conversation every few seconds.
-  // A ref, not state: updating it must not itself trigger a re-render.
+  // The server's cursor, handed back verbatim on the next poll. We never derive
+  // it ourselves: it identifies a message by id, and only the database can
+  // compare against that message's true created_at (a Postgres timestamp keeps
+  // microseconds; a JS Date would silently floor them away and make every poll
+  // re-fetch the last message forever). A ref, not state — updating it must not
+  // trigger a re-render.
   const cursor = useRef<string | null>(null);
 
-  // Only ever move the cursor forward. A send and a poll can resolve out of
-  // order, and rewinding it would re-request messages we already have.
-  const advanceCursor = useCallback((timestamp: string) => {
-    if (!cursor.current || timestamp > cursor.current)
-      cursor.current = timestamp;
-  }, []);
+  const mergeServerMessages = useCallback((incoming: Message[]) => {
+    if (incoming.length === 0) return;
+    setMessages((prev) => {
+      const incomingIds = new Set(incoming.map((m) => m.id));
 
-  const mergeServerMessages = useCallback(
-    (incoming: Message[]) => {
-      if (incoming.length === 0) return;
-      setMessages((prev) => {
-        const incomingIds = new Set(incoming.map((m) => m.id));
+      // A poll can race a send: the server may hand back a message whose
+      // optimistic bubble is still on screen under a local id, which would
+      // show the sent message twice. Match those by content, consuming one
+      // echo per bubble so sending the same text twice still leaves two.
+      const echoes = incoming.filter((m) => m.isMine).map((m) => m.content);
 
-        // A poll can race a send: the server may hand back a message whose
-        // optimistic bubble is still on screen under a local id, which would
-        // show the sent message twice. Match those by content, consuming one
-        // echo per bubble so sending the same text twice still leaves two.
-        const echoes = incoming.filter((m) => m.isMine).map((m) => m.content);
-
-        const kept: Message[] = [];
-        for (const m of prev) {
-          if (incomingIds.has(m.id)) continue;
-          if (m.status === "sending") {
-            const i = echoes.indexOf(m.content);
-            if (i !== -1) {
-              echoes.splice(i, 1);
-              continue;
-            }
+      const kept: Message[] = [];
+      for (const m of prev) {
+        if (incomingIds.has(m.id)) continue;
+        if (m.status === "sending") {
+          const i = echoes.indexOf(m.content);
+          if (i !== -1) {
+            echoes.splice(i, 1);
+            continue;
           }
-          kept.push(m);
         }
-        return [...kept, ...incoming];
-      });
-
-      const newest = incoming[incoming.length - 1];
-      if (newest) advanceCursor(newest.timestamp);
-    },
-    [advanceCursor],
-  );
+        kept.push(m);
+      }
+      return [...kept, ...incoming];
+    });
+  }, []);
 
   const poll = useCallback(async () => {
     try {
       const url = cursor.current
-        ? `/api/messages/${id}?since=${encodeURIComponent(cursor.current)}`
+        ? `/api/messages/${id}?after=${cursor.current}`
         : `/api/messages/${id}`;
       const res = await fetch(url);
       if (!res.ok) return;
       const data: ThreadResponse = await res.json();
       if (data.peer) setPeer(data.peer);
       mergeServerMessages(data.messages);
+      if (data.cursor) cursor.current = data.cursor;
     } catch {
       // A dropped poll is not worth surfacing — the next one recovers.
     } finally {
@@ -139,6 +133,22 @@ export default function MentorshipChatPage({
     };
   }, [poll]);
 
+  // Render order, which is not the same as arrival order.
+  //
+  // Delivered messages sort by the server's clock — the only clock both parties
+  // share. Messages still in flight always sit at the bottom regardless of their
+  // timestamp: that timestamp came from the sender's device, and a phone with a
+  // skewed clock would otherwise drop its own message into the middle of the
+  // history. It also stops a bubble from visibly jumping position when the
+  // server finally echoes it back with a real timestamp.
+  const ordered = useMemo(() => {
+    const delivered = messages
+      .filter((m) => !m.status)
+      .sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+    const inFlight = messages.filter((m) => m.status);
+    return [...delivered, ...inFlight];
+  }, [messages]);
+
   // Follow the conversation only when it actually grows. Keying this on the
   // message count rather than the array means a poll that returns nothing no
   // longer yanks the view back to the bottom every few seconds.
@@ -147,8 +157,17 @@ export default function MentorshipChatPage({
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages.length]);
 
+  // Local ids currently being POSTed. A ref, not state: two taps on "retry" can
+  // both run before React re-renders, so a state flag would not have flipped in
+  // time to stop the second — and a double send inserts two real rows, leaving a
+  // permanent duplicate in the thread. The guard has to live somewhere that
+  // updates synchronously.
+  const inFlight = useRef<Set<string>>(new Set());
+
   const deliver = useCallback(
     async (localId: string, content: string) => {
+      if (inFlight.current.has(localId)) return;
+      inFlight.current.add(localId);
       try {
         const res = await fetch("/api/messages", {
           method: "POST",
@@ -164,7 +183,9 @@ export default function MentorshipChatPage({
         setMessages((prev) =>
           prev.map((m) => (m.id === localId ? { ...saved, isMine: true } : m)),
         );
-        if (saved.timestamp) advanceCursor(saved.timestamp);
+        // Deliberately not advancing the cursor here: only the server moves it,
+        // and it can't know about this message until a poll asks. The next poll
+        // will hand our own message back, and the id dedup above drops it.
       } catch {
         // Mark it, don't drop it: silently removing the bubble (or leaving it
         // looking sent) would tell the user a message went through when it did
@@ -172,9 +193,11 @@ export default function MentorshipChatPage({
         setMessages((prev) =>
           prev.map((m) => (m.id === localId ? { ...m, status: "failed" } : m)),
         );
+      } finally {
+        inFlight.current.delete(localId);
       }
     },
-    [id, advanceCursor],
+    [id],
   );
 
   async function sendMessage() {
@@ -253,7 +276,7 @@ export default function MentorshipChatPage({
           </p>
         )}
         <div className="space-y-4">
-          {messages.map((msg) => (
+          {ordered.map((msg) => (
             <div
               key={msg.id}
               className={cn(
