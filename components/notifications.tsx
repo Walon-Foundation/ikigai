@@ -95,8 +95,36 @@ export function NotificationsProvider({
 
   useEffect(() => {
     refresh();
-    const interval = setInterval(refresh, POLL_MS);
-    return () => clearInterval(interval);
+    let timer: ReturnType<typeof setInterval> | null = null;
+
+    // This poll runs on every page for as long as the app is open, so leaving it
+    // ticking in a backgrounded tab spends a user's mobile data and battery on
+    // updates nobody is looking at — and OS push already covers the case where
+    // the app isn't in front of them. Stop while hidden, catch up on return.
+    const start = () => {
+      if (timer === null) timer = setInterval(refresh, POLL_MS);
+    };
+    const stop = () => {
+      if (timer !== null) {
+        clearInterval(timer);
+        timer = null;
+      }
+    };
+    const onVisibility = () => {
+      if (document.hidden) {
+        stop();
+      } else {
+        refresh();
+        start();
+      }
+    };
+
+    if (!document.hidden) start();
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      stop();
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
   }, [refresh]);
 
   // Auto-dismiss toasts after a few seconds.

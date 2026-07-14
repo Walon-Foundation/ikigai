@@ -3,6 +3,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { asc, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { db } from "@/db/db";
 import { curriculumItems, mentorships, users } from "@/db/schema";
 import { notifyUser } from "@/lib/notify";
@@ -96,21 +97,25 @@ export async function addCurriculumItem(input: {
       ? Math.max(...existing.map((e) => e.orderIndex)) + 1
       : 0;
 
+  const title = clampTitle(input.title);
   await db.insert(curriculumItems).values({
     mentorshipId: ctx.id,
-    title: clampTitle(input.title),
+    title,
     description: clampDesc(input.description),
     orderIndex: nextIndex,
     targetDate: input.targetDate ? new Date(input.targetDate) : null,
   });
 
   if (ctx.menteeId) {
-    await notifyUser({
-      userId: ctx.menteeId,
-      title: "New curriculum step added",
-      body: clampTitle(input.title),
-      type: "task",
-      url: "/mentorship",
+    const menteeId = ctx.menteeId;
+    after(async () => {
+      await notifyUser({
+        userId: menteeId,
+        title: "New curriculum step added",
+        body: title,
+        type: "task",
+        url: "/mentorship",
+      });
     });
     revalidatePath(`/mentor-portal/${ctx.menteeId}`);
   }
@@ -197,12 +202,14 @@ export async function setCurriculumItemStatus(input: {
   // Tell the counterpart (the party who isn't the actor).
   const counterpart = ctx.isMentor ? ctx.menteeId : ctx.mentorId;
   if (counterpart && input.status === "done") {
-    await notifyUser({
-      userId: counterpart,
-      title: "Curriculum step completed ✅",
-      body: "A step in your shared curriculum was marked done.",
-      type: "milestone",
-      url: "/mentorship",
+    after(async () => {
+      await notifyUser({
+        userId: counterpart,
+        title: "Curriculum step completed ✅",
+        body: "A step in your shared curriculum was marked done.",
+        type: "milestone",
+        url: "/mentorship",
+      });
     });
   }
 

@@ -28,19 +28,17 @@ export default async function AdminSchoolsPage() {
       .where(isNotNull(schools.verifiedAt)),
   ]);
 
-  // Get member counts for active schools
-  const memberCounts = await Promise.all(
-    active.map(async (school) => {
-      const [{ memberCount }] = await db
-        .select({ memberCount: count() })
-        .from(users)
-        .where(eq(users.schoolId, school.id));
-      return { schoolId: school.id, count: Number(memberCount) };
-    }),
-  );
-  const countMap = Object.fromEntries(
-    memberCounts.map((m) => [m.schoolId, m.count]),
-  );
+  // Get member counts for active schools in one aggregate query instead of
+  // one round-trip per school.
+  const memberCounts = await db
+    .select({ schoolId: users.schoolId, memberCount: count() })
+    .from(users)
+    .where(isNotNull(users.schoolId))
+    .groupBy(users.schoolId);
+  const countMap: Record<string, number> = {};
+  for (const m of memberCounts) {
+    if (m.schoolId) countMap[m.schoolId] = Number(m.memberCount);
+  }
 
   return (
     <div>

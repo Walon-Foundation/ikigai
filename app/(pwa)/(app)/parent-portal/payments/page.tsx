@@ -1,4 +1,4 @@
-import { count, desc, eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { CreditCard, FileText } from "lucide-react";
 import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/page-header";
@@ -42,15 +42,7 @@ export default async function ParentPaymentsPage() {
   const defaultPhone =
     (user.onboardingData as OnboardingData)?.parentProfile?.phone ?? "";
 
-  // Seed default plans once.
-  const [{ planCount }] = await db
-    .select({ planCount: count() })
-    .from(paymentPlans);
-  if (Number(planCount) === 0) {
-    await db.insert(paymentPlans).values(DEFAULT_PLANS);
-  }
-
-  const [plans, history] = await Promise.all([
+  const [initialPlans, history] = await Promise.all([
     db.select().from(paymentPlans).where(eq(paymentPlans.active, true)),
     db
       .select({
@@ -65,6 +57,17 @@ export default async function ParentPaymentsPage() {
       .where(eq(payments.payerId, user.id))
       .orderBy(desc(payments.createdAt)),
   ]);
+
+  // Seed the default plans the first time anyone opens this page. The old code
+  // paid a COUNT(*) round-trip on every single load to discover a thing that is
+  // only ever true once; the plans query we just ran already tells us. Deferring
+  // the seed instead would have rendered an empty plan list to whoever happened
+  // to load the page first, so this stays on the request path — it runs at most
+  // once in the lifetime of the deployment.
+  let plans = initialPlans;
+  if (plans.length === 0) {
+    plans = await db.insert(paymentPlans).values(DEFAULT_PLANS).returning();
+  }
 
   return (
     <>

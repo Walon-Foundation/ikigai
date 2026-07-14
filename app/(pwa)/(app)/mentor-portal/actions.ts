@@ -3,6 +3,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { and, count, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { db } from "@/db/db";
 import { mentorships, milestones, tasks, users } from "@/db/schema";
 import { DEFAULT_TASK_POINTS } from "@/lib/growth";
@@ -79,12 +80,18 @@ export async function acceptRequest(
       .values({ userId: request.menteeId, type: "mentor_connect" })
       .onConflictDoNothing();
 
-    await notifyUser({
-      userId: request.menteeId,
-      title: "Your mentor accepted! 🎉",
-      body: `${me.displayName ?? "Your mentor"} accepted your request. Plan your Finding Yourself Picnic to get started.`,
-      type: "match",
-      url: "/mentorship",
+    const menteeId = request.menteeId;
+    const mentorName = me.displayName;
+    // Defer the push notification past the response — the mentee doesn't
+    // need it before the mentor's own UI updates.
+    after(async () => {
+      await notifyUser({
+        userId: menteeId,
+        title: "Your mentor accepted! 🎉",
+        body: `${mentorName ?? "Your mentor"} accepted your request. Plan your Finding Yourself Picnic to get started.`,
+        type: "match",
+        url: "/mentorship",
+      });
     });
   }
 
@@ -107,12 +114,15 @@ export async function declineRequest(mentorshipId: string) {
     .returning({ menteeId: mentorships.menteeId });
 
   if (updated?.menteeId) {
-    await notifyUser({
-      userId: updated.menteeId,
-      title: "Mentor request update",
-      body: "A mentor couldn't take you on right now. Explore other mentors who match your interests.",
-      type: "match",
-      url: "/mentors",
+    const menteeId = updated.menteeId;
+    after(async () => {
+      await notifyUser({
+        userId: menteeId,
+        title: "Mentor request update",
+        body: "A mentor couldn't take you on right now. Explore other mentors who match your interests.",
+        type: "match",
+        url: "/mentors",
+      });
     });
   }
   revalidatePath("/mentor-portal");

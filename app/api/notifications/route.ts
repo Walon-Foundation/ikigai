@@ -1,14 +1,23 @@
+import { auth } from "@clerk/nextjs/server";
 import { and, desc, eq, isNull } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { db } from "@/db/db";
-import { pushNotifications } from "@/db/schema";
+import { pushNotifications, users } from "@/db/schema";
 import { getDbUser } from "@/lib/db-user";
 
 // The in-app notification feed for the current user. Powers the header bell
 // (unread count) and the /notifications page.
+//
+// Every signed-in client polls this on an interval, on every page, for as long
+// as the app is open — so it is the app's most frequently executed query and the
+// only one whose cost is paid even when the user is doing nothing. Resolving the
+// user with a join rather than a separate lookup halves it: one round-trip per
+// poll instead of two. (React's cache() can't help here — it dedupes within a
+// single request, and each poll is its own request.)
 export async function GET() {
-  const me = await getDbUser();
-  if (!me) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { userId } = await auth();
+  if (!userId)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const rows = await db
     .select({
@@ -21,7 +30,8 @@ export async function GET() {
       sentAt: pushNotifications.sentAt,
     })
     .from(pushNotifications)
-    .where(eq(pushNotifications.userId, me.id))
+    .innerJoin(users, eq(pushNotifications.userId, users.id))
+    .where(eq(users.clerkId, userId))
     .orderBy(desc(pushNotifications.sentAt))
     .limit(30);
 

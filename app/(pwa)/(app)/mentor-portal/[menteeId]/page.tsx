@@ -31,75 +31,117 @@ export default async function MenteeDetailPage({
   if (!user) redirect("/sign-in");
   if (user.role !== "mentor") redirect("/dashboard");
 
-  // The mentor may only view a mentee they have an active mentorship with.
-  const [mentorship] = await db
-    .select({ id: mentorships.id, status: mentorships.status })
-    .from(mentorships)
-    .where(
-      and(
-        eq(mentorships.menteeId, menteeId),
-        eq(mentorships.mentorId, user.id),
-        eq(mentorships.status, "active"),
+  // This page used to be nine network round-trips deep: the mentorship, then the
+  // mentee, then the tree, then tasks, then curriculum, then meetings, then two
+  // more inside getSharedJournals — each waiting on the one before it. Over the
+  // neon-http driver every one of those is a separate request to us-east-1, so
+  // the chain, not the data, was the page's load time. It is the mentor's most
+  // visited screen.
+  //
+  // Everything below now goes out at once. The queries that would otherwise have
+  // needed `mentorship.id` are instead scoped by joining `mentorships` on
+  // (menteeId, mentorId, status='active') — the same predicate the access check
+  // uses. That removes the dependency AND makes each query self-authorizing: for
+  // a mentor with no active mentorship to this mentee, every join matches
+  // nothing, so no row can be read before the redirect below fires.
+  const isMyActiveMentee = and(
+    eq(mentorships.menteeId, menteeId),
+    eq(mentorships.mentorId, user.id),
+    eq(mentorships.status, "active"),
+  );
+
+  const [
+    mentorshipRows,
+    menteeRows,
+    treeRows,
+    taskRows,
+    curriculumRows,
+    verifiedMeetings,
+    sharedJournals,
+  ] = await Promise.all([
+    db
+      .select({ id: mentorships.id, status: mentorships.status })
+      .from(mentorships)
+      .where(isMyActiveMentee)
+      .limit(1),
+    db
+      .select({
+        displayName: users.displayName,
+        avatarUrl: users.avatarUrl,
+        interestTags: users.interestTags,
+        onboardingData: users.onboardingData,
+      })
+      .from(users)
+      .innerJoin(mentorships, isMyActiveMentee)
+      .where(eq(users.id, menteeId))
+      .limit(1),
+    db
+      .select({ health: growthTrees.health, stage: growthTrees.stage })
+      .from(growthTrees)
+      .innerJoin(mentorships, isMyActiveMentee)
+      .where(eq(growthTrees.userId, menteeId))
+      .limit(1),
+    db
+      .select()
+      .from(tasks)
+      .innerJoin(
+        mentorships,
+        and(eq(tasks.mentorshipId, mentorships.id), isMyActiveMentee),
+      )
+      .orderBy(desc(tasks.createdAt)),
+    db
+      .select()
+      .from(curriculumItems)
+      .innerJoin(
+        mentorships,
+        and(eq(curriculumItems.mentorshipId, mentorships.id), isMyActiveMentee),
+      )
+      .orderBy(asc(curriculumItems.orderIndex)),
+    db
+      .select({ meetingNumber: meetingVerifications.meetingNumber })
+      .from(meetingVerifications)
+      .innerJoin(
+        mentorships,
+        and(
+          eq(meetingVerifications.mentorshipId, mentorships.id),
+          isMyActiveMentee,
+        ),
       ),
-    )
-    .limit(1);
+    getSharedJournals(menteeId, user.id),
+  ]);
+
+  const mentorship = mentorshipRows[0];
   if (!mentorship) redirect("/mentor-portal");
 
-  const [mentee] = await db
-    .select({
-      displayName: users.displayName,
-      avatarUrl: users.avatarUrl,
-      interestTags: users.interestTags,
-      onboardingData: users.onboardingData,
-    })
-    .from(users)
-    .where(eq(users.id, menteeId))
-    .limit(1);
+  const mentee = menteeRows[0];
   if (!mentee) redirect("/mentor-portal");
 
-  const [tree] = await db
-    .select()
-    .from(growthTrees)
-    .where(eq(growthTrees.userId, menteeId))
-    .limit(1);
+  const tree = treeRows[0];
 
-  const taskRows = await db
-    .select()
-    .from(tasks)
-    .where(eq(tasks.mentorshipId, mentorship.id))
-    .orderBy(desc(tasks.createdAt));
+  const curriculum: CurriculumItem[] = curriculumRows.map((row) => {
+    const c = row.curriculum_items;
+    return {
+      id: c.id,
+      title: c.title,
+      description: c.description,
+      status: c.status,
+      orderIndex: c.orderIndex,
+      targetDate: c.targetDate?.toISOString() ?? null,
+      completedAt: c.completedAt?.toISOString() ?? null,
+    };
+  });
 
-  const curriculumRows = await db
-    .select()
-    .from(curriculumItems)
-    .where(eq(curriculumItems.mentorshipId, mentorship.id))
-    .orderBy(asc(curriculumItems.orderIndex));
-
-  const verifiedMeetings = await db
-    .select({ meetingNumber: meetingVerifications.meetingNumber })
-    .from(meetingVerifications)
-    .where(eq(meetingVerifications.mentorshipId, mentorship.id));
-
-  const curriculum: CurriculumItem[] = curriculumRows.map((c) => ({
-    id: c.id,
-    title: c.title,
-    description: c.description,
-    status: c.status,
-    orderIndex: c.orderIndex,
-    targetDate: c.targetDate?.toISOString() ?? null,
-    completedAt: c.completedAt?.toISOString() ?? null,
-  }));
-
-  const sharedJournals = await getSharedJournals(menteeId);
-
-  const taskItems: TaskItem[] = taskRows.map((t) => ({
-    id: t.id,
-    title: t.title,
-    description: t.description,
-    status: t.status,
-    growthPoints: t.growthPoints,
-    createdAt: t.createdAt?.toISOString() ?? null,
-  }));
+  const taskItems: TaskItem[] = taskRows.map((row) => {
+    const t = row.tasks;
+    return {
+      id: t.id,
+      title: t.title,
+      description: t.description,
+      status: t.status,
+      growthPoints: t.growthPoints,
+      createdAt: t.createdAt?.toISOString() ?? null,
+    };
+  });
 
   const health = tree?.health ?? 100;
   const stage = tree?.stage ?? 1;

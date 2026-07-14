@@ -1,4 +1,5 @@
 import { and, asc, eq, or } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
@@ -26,38 +27,48 @@ export default async function MentorshipPlanPage({
   const me = await getDbUser();
   if (!me) redirect("/sign-in");
 
-  const [mentorship] = await db
-    .select({
-      id: mentorships.id,
-      menteeId: mentorships.menteeId,
-      mentorId: mentorships.mentorId,
-    })
-    .from(mentorships)
-    .where(
-      and(
-        eq(mentorships.id, id),
-        or(eq(mentorships.menteeId, me.id), eq(mentorships.mentorId, me.id)),
-      ),
-    )
-    .limit(1);
-  if (!mentorship) notFound();
+  // This page is opened from the chat, so it should feel instant. It used to be
+  // four round-trips deep — mentorship, then the peer, then the curriculum and
+  // meetings — each waiting on the last. Over neon-http that chain *is* the load
+  // time.
+  //
+  // Both sides of the mentorship are joined in up front (aliased, since `users`
+  // appears twice), so the peer comes back with the mentorship rather than after
+  // it. The curriculum and meetings restate the membership predicate as a join,
+  // which both frees them from needing the mentorship row first and makes them
+  // self-authorizing: a non-party matches no rows.
+  const isParty = or(
+    eq(mentorships.menteeId, me.id),
+    eq(mentorships.mentorId, me.id),
+  );
+  const inThisMentorship = and(eq(mentorships.id, id), isParty);
 
-  const isMentor = mentorship.mentorId === me.id;
-  const peerId = isMentor ? mentorship.menteeId : mentorship.mentorId;
+  const menteeUser = alias(users, "mentee_user");
+  const mentorUser = alias(users, "mentor_user");
 
-  const [peer] = peerId
-    ? await db
-        .select({ displayName: users.displayName, avatarUrl: users.avatarUrl })
-        .from(users)
-        .where(eq(users.id, peerId))
-        .limit(1)
-    : [undefined];
-
-  const [curriculumRows, verified] = await Promise.all([
+  const [mentorshipRows, curriculumRows, verified] = await Promise.all([
+    db
+      .select({
+        id: mentorships.id,
+        menteeId: mentorships.menteeId,
+        mentorId: mentorships.mentorId,
+        menteeName: menteeUser.displayName,
+        menteeAvatar: menteeUser.avatarUrl,
+        mentorName: mentorUser.displayName,
+        mentorAvatar: mentorUser.avatarUrl,
+      })
+      .from(mentorships)
+      .leftJoin(menteeUser, eq(mentorships.menteeId, menteeUser.id))
+      .leftJoin(mentorUser, eq(mentorships.mentorId, mentorUser.id))
+      .where(inThisMentorship)
+      .limit(1),
     db
       .select()
       .from(curriculumItems)
-      .where(eq(curriculumItems.mentorshipId, id))
+      .innerJoin(
+        mentorships,
+        and(eq(curriculumItems.mentorshipId, mentorships.id), inThisMentorship),
+      )
       .orderBy(asc(curriculumItems.orderIndex)),
     db
       .select({
@@ -65,20 +76,40 @@ export default async function MentorshipPlanPage({
         verifiedAt: meetingVerifications.verifiedAt,
       })
       .from(meetingVerifications)
-      .where(eq(meetingVerifications.mentorshipId, id)),
+      .innerJoin(
+        mentorships,
+        and(
+          eq(meetingVerifications.mentorshipId, mentorships.id),
+          inThisMentorship,
+        ),
+      ),
   ]);
+
+  const mentorship = mentorshipRows[0];
+  if (!mentorship) notFound();
+
+  const isMentor = mentorship.mentorId === me.id;
+  const peer = isMentor
+    ? { displayName: mentorship.menteeName, avatarUrl: mentorship.menteeAvatar }
+    : {
+        displayName: mentorship.mentorName,
+        avatarUrl: mentorship.mentorAvatar,
+      };
 
   const verifiedNumbers = new Set(verified.map((v) => v.meetingNumber));
 
-  const curriculum: CurriculumItem[] = curriculumRows.map((c) => ({
-    id: c.id,
-    title: c.title,
-    description: c.description,
-    status: c.status,
-    orderIndex: c.orderIndex,
-    targetDate: c.targetDate?.toISOString() ?? null,
-    completedAt: c.completedAt?.toISOString() ?? null,
-  }));
+  const curriculum: CurriculumItem[] = curriculumRows.map((row) => {
+    const c = row.curriculum_items;
+    return {
+      id: c.id,
+      title: c.title,
+      description: c.description,
+      status: c.status,
+      orderIndex: c.orderIndex,
+      targetDate: c.targetDate?.toISOString() ?? null,
+      completedAt: c.completedAt?.toISOString() ?? null,
+    };
+  });
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-6">

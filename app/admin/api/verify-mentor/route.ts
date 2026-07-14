@@ -1,5 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { eq } from "drizzle-orm";
+import { after } from "next/server";
 import { db } from "@/db/db";
 import { users } from "@/db/schema";
 import { notifyUser } from "@/lib/notify";
@@ -29,24 +30,28 @@ export async function POST(request: Request) {
       .update(users)
       .set({ verifiedAt: new Date() })
       .where(eq(users.id, mentorId));
-    await notifyUser({
-      userId: mentorId,
-      title: "You're an approved mentor! ✅",
-      body: "ikigai approved your mentor profile. You can now receive mentee requests.",
-      type: "milestone",
-      url: "/mentor-portal",
+    after(async () => {
+      await notifyUser({
+        userId: mentorId,
+        title: "You're an approved mentor! ✅",
+        body: "ikigai approved your mentor profile. You can now receive mentee requests.",
+        type: "milestone",
+        url: "/mentor-portal",
+      });
     });
   } else {
     await db
       .update(users)
       .set({ role: "mentee", verifiedAt: null })
       .where(eq(users.id, mentorId));
-    await notifyUser({
-      userId: mentorId,
-      title: "Mentor application update",
-      body: "Your mentor application needs more information. Please check your email from the ikigai team.",
-      type: "milestone",
-      url: "/dashboard",
+    after(async () => {
+      await notifyUser({
+        userId: mentorId,
+        title: "Mentor application update",
+        body: "Your mentor application needs more information. Please check your email from the ikigai team.",
+        type: "milestone",
+        url: "/dashboard",
+      });
     });
   }
 
