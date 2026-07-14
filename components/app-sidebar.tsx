@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { LinkPending } from "@/components/nav-progress";
 import { useNotifications } from "@/components/notifications";
 import { cn } from "@/lib/utils";
 
@@ -149,6 +150,7 @@ export function AppSidebar({
                     {unread > 9 ? "9+" : unread}
                   </span>
                 )}
+                <LinkPending />
               </Link>
             );
           })}
@@ -175,6 +177,7 @@ export function AppSidebar({
                   >
                     <item.icon className="size-4" />
                     {item.label}
+                    <LinkPending />
                   </Link>
                 );
               })}

@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { LinkPending } from "@/components/nav-progress";
 import { cn } from "@/lib/utils";
 
 type NavItem = { href: string; label: string; icon: React.ElementType };
@@ -63,12 +64,14 @@ export function AppNav({ role }: { role: string | null }) {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex flex-col items-center gap-0.5 rounded-xl px-3 py-2 transition-colors",
+                "relative flex flex-col items-center gap-0.5 rounded-xl px-3 py-2 transition-colors",
                 isActive
                   ? "text-primary"
                   : "text-muted-foreground hover:text-foreground",
               )}
             >
+              {/* Confirms which tab you pressed while the next screen loads. */}
+              <LinkPending className="absolute top-1 right-1.5 ml-0" />
               <item.icon
                 className={cn("size-5", isActive && "fill-primary/10")}
               />
@@ -79,10 +82,11 @@ export function AppNav({ role }: { role: string | null }) {
         <Link
           href="/settings"
           className={cn(
-            "flex flex-col items-center gap-0.5 rounded-xl px-3 py-2 transition-colors",
+            "relative flex flex-col items-center gap-0.5 rounded-xl px-3 py-2 transition-colors",
             isProfileActive ? "text-primary" : "text-muted-foreground",
           )}
         >
+          <LinkPending className="absolute top-1 right-1.5 ml-0" />
           <div
             className={cn(
               "flex size-6 items-center justify-center rounded-full text-[11px] font-bold leading-none",

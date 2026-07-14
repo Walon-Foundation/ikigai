@@ -143,6 +143,42 @@
   }
 }
 
+/* Indeterminate navigation progress bar (components/nav-progress.tsx).
+   We never know real progress, so the bar rushes to ~80% and then crawls —
+   it always looks like it's working and never falsely claims to be finished. */
+@theme {
+  --animate-nav-progress: nav-progress 2s cubic-bezier(0.1, 0.6, 0.3, 1)
+    infinite;
+}
+
+@keyframes nav-progress {
+  0% {
+    transform: scaleX(0);
+  }
+  40% {
+    transform: scaleX(0.7);
+  }
+  80% {
+    transform: scaleX(0.9);
+  }
+  100% {
+    transform: scaleX(0.98);
+  }
+}
+
+/* Loading UI is feedback, not decoration — it must stay visible in Lite Mode.
+   But honour a stated motion preference: hold the skeletons and the progress
+   bar still rather than pulsing them. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-pulse,
+  .animate-nav-progress {
+    animation: none;
+  }
+  .animate-nav-progress {
+    transform: scaleX(0.5);
+  }
+}
+
 /* Lite Mode — hide decorative/media content to save data */
 html[data-lite="true"] .lite-hidden {
   /* biome-ignore lint/complexity/noImportantStyles: lite mode must override all display rules */
