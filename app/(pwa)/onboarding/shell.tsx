@@ -7,9 +7,8 @@ const STEP_MAP: Record<string, { current: number; total: number }> = {
   "/onboarding/mentee/values": { current: 2, total: 4 },
   "/onboarding/mentee/personality": { current: 3, total: 4 },
   "/onboarding/mentee/profile": { current: 4, total: 4 },
-  "/onboarding/mentor/profile": { current: 1, total: 3 },
-  "/onboarding/mentor/pricing": { current: 2, total: 3 },
-  "/onboarding/mentor/verification": { current: 3, total: 3 },
+  "/onboarding/mentor/profile": { current: 1, total: 2 },
+  "/onboarding/mentor/verification": { current: 2, total: 2 },
   "/onboarding/parent/profile": { current: 1, total: 2 },
   "/onboarding/parent/link": { current: 2, total: 2 },
 };

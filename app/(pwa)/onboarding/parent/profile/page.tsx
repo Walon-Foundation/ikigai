@@ -2,6 +2,7 @@
 
 import { ArrowRight } from "lucide-react";
 import { useState, useTransition } from "react";
+import { MissingFields } from "@/components/missing-fields";
 import { BusyLabel } from "@/components/spinner";
 import { cn } from "@/lib/utils";
 import { saveParentProfile } from "../../actions";
@@ -19,12 +20,32 @@ export default function ParentProfilePage() {
   const [displayName, setDisplayName] = useState("");
   const [relationship, setRelationship] = useState<string | null>(null);
   const [phone, setPhone] = useState("");
+  const [showMissing, setShowMissing] = useState(false);
   const [isPending, startTransition] = useTransition();
 
-  const canContinue =
-    displayName.trim().length > 1 &&
-    relationship !== null &&
-    phone.trim().length > 6;
+  // Named in the user's words rather than the validator's, and listed on the
+  // screen instead of expressed only as a greyed-out button.
+  const missing = [
+    displayName.trim().length > 1 ? null : "Your name",
+    relationship !== null ? null : "Your relationship to the child",
+    phone.trim().length > 6 ? null : "A phone number we can reach you on",
+  ].filter((f): f is string => f !== null);
+
+  function handleSubmit() {
+    // Say what's wrong instead of silently doing nothing.
+    if (missing.length > 0) {
+      setShowMissing(true);
+      return;
+    }
+    startTransition(() =>
+      saveParentProfile({
+        displayName,
+        // Safe: `missing` is empty here, so a relationship was chosen.
+        relationship: relationship as string,
+        phone,
+      }),
+    );
+  }
 
   return (
     <div>
@@ -95,16 +116,8 @@ export default function ParentProfilePage() {
 
       <button
         type="button"
-        onClick={() =>
-          startTransition(() =>
-            saveParentProfile({
-              displayName,
-              relationship: relationship!,
-              phone,
-            }),
-          )
-        }
-        disabled={!canContinue || isPending}
+        onClick={handleSubmit}
+        disabled={isPending}
         aria-busy={isPending}
         className="mt-8 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-8 py-4 font-semibold text-primary-foreground disabled:opacity-40"
       >
@@ -112,6 +125,7 @@ export default function ParentProfilePage() {
           Continue <ArrowRight className="size-4" />
         </BusyLabel>
       </button>
+      {showMissing && <MissingFields fields={missing} />}
     </div>
   );
 }

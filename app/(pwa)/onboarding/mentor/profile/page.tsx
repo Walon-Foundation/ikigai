@@ -4,6 +4,7 @@ import { useUser } from "@clerk/nextjs";
 import { ArrowRight } from "lucide-react";
 import { useState, useTransition } from "react";
 import { AvatarUpload } from "@/components/avatar-upload";
+import { MissingFields } from "@/components/missing-fields";
 import { BusyLabel } from "@/components/spinner";
 import { cn } from "@/lib/utils";
 import { saveMentorProfile } from "../../actions";
@@ -32,14 +33,18 @@ export default function MentorProfilePage() {
   const [years, setYears] = useState("");
   const [languages, setLanguages] = useState<string[]>(["English"]);
   const [location, setLocation] = useState("");
+  const [showMissing, setShowMissing] = useState(false);
   const [isPending, startTransition] = useTransition();
 
-  const canContinue =
-    bio.trim().length > 20 &&
-    expertise.length > 0 &&
-    industry.length > 0 &&
-    years.length > 0 &&
-    location.length > 0;
+  // Named, in the user's words, not the validator's. "Your bio needs at least
+  // 20 characters" is a rule nobody could infer from a greyed-out button.
+  const missing = [
+    bio.trim().length > 20 ? null : "A short bio — at least 20 characters",
+    expertise.length > 0 ? null : "At least one area of expertise",
+    industry.length > 0 ? null : "Your industry",
+    years.length > 0 ? null : "Your years of experience",
+    location.length > 0 ? null : "Where you're based",
+  ].filter((f): f is string => f !== null);
 
   function toggleTag(
     tag: string,
@@ -50,7 +55,11 @@ export default function MentorProfilePage() {
   }
 
   function handleSubmit() {
-    if (!canContinue) return;
+    // Say what's wrong instead of silently doing nothing.
+    if (missing.length > 0) {
+      setShowMissing(true);
+      return;
+    }
     startTransition(() =>
       saveMentorProfile({
         bio,
@@ -200,7 +209,7 @@ export default function MentorProfilePage() {
       <button
         type="button"
         onClick={handleSubmit}
-        disabled={!canContinue || isPending}
+        disabled={isPending}
         aria-busy={isPending}
         className="mt-8 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-8 py-4 font-semibold text-primary-foreground disabled:opacity-40"
       >
@@ -208,6 +217,7 @@ export default function MentorProfilePage() {
           Continue <ArrowRight className="size-4" />
         </BusyLabel>
       </button>
+      {showMissing && <MissingFields fields={missing} />}
     </div>
   );
 }

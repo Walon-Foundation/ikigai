@@ -28,7 +28,6 @@ function getMentorNextStep(data: OnboardingData): string {
   if (!data.roleSelected) return "/onboarding";
   const d = data as Record<string, unknown>;
   if (!d.mentorProfile) return "/onboarding/mentor/profile";
-  if (!d.mentorPricing) return "/onboarding/mentor/pricing";
   return "/onboarding/mentor/verification";
 }
 

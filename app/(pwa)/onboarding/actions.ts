@@ -38,11 +38,6 @@ type OnboardingData = {
     languages: string[];
     location: string;
   };
-  mentorPricing?: {
-    hourlyRate: number;
-    packageTypes: string[];
-    availability: string[];
-  };
   verificationSubmitted?: boolean;
   personalStatement?: string;
   parentProfile?: {
@@ -212,17 +207,6 @@ export async function saveMentorProfile(data: {
       location: data.location,
     },
   });
-  redirect("/onboarding/mentor/pricing");
-}
-
-export async function saveMentorPricing(data: {
-  hourlyRate: number;
-  packageTypes: string[];
-  availability: string[];
-}) {
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthenticated");
-  await patchOnboardingData(userId, { mentorPricing: data });
   redirect("/onboarding/mentor/verification");
 }
 
