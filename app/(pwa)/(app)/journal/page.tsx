@@ -16,8 +16,15 @@ export default async function JournalPage() {
     .orderBy(desc(journalEntries.createdAt))
     .limit(50);
 
+  // The mentee's setting decides what a new entry starts as. This used to be
+  // hard-coded to "private" in the client while the settings toggle claimed to
+  // control it.
+  const defaultVisibility = (user.journalDefaultVisibility ??
+    "private") as Visibility;
+
   return (
     <JournalClient
+      defaultVisibility={defaultVisibility}
       initialEntries={entries.map((e) => ({
         id: e.id,
         content: e.content,

@@ -12,11 +12,18 @@ import {
   Smartphone,
   User,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { savePushSubscription } from "@/app/(pwa)/(app)/settings/actions";
+import {
+  savePushSubscription,
+  updateInterests,
+  updateJournalDefault,
+  updateProfile,
+} from "@/app/(pwa)/(app)/settings/actions";
 import { AvatarUpload } from "@/components/avatar-upload";
 import { PageHeader } from "@/components/page-header";
 import { BusyLabel, Spinner } from "@/components/spinner";
+import { INTEREST_TAGS } from "@/lib/constants";
 import { subscribeToPush, unsubscribeFromPush } from "@/lib/push-client";
 import { usePwaInstall } from "@/lib/use-pwa-install";
 import { cn } from "@/lib/utils";
@@ -24,10 +31,12 @@ import { cn } from "@/lib/utils";
 type DbUser = {
   displayName: string | null;
   avatarUrl: string | null;
+  bio: string | null;
   role: string;
   growthLevel: number | null;
   interestTags: string[] | null;
   pushEnabled?: boolean;
+  journalMentorDefault?: boolean;
 };
 
 const PUSH_ERROR: Record<string, string> = {
@@ -45,10 +54,32 @@ export function SettingsClient({ user }: { user: DbUser }) {
   const [pushEnabled, setPushEnabled] = useState(user.pushEnabled ?? false);
   const [pushError, setPushError] = useState<string | null>(null);
   const [isPushPending, startPushTransition] = useTransition();
-  const [journalPrivacy, setJournalPrivacy] = useState(true);
+  const [journalPrivacy, setJournalPrivacy] = useState(
+    user.journalMentorDefault ?? false,
+  );
+  const [journalError, setJournalError] = useState(false);
+  const [isJournalPending, startJournalTransition] = useTransition();
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [editingInterests, setEditingInterests] = useState(false);
   const [isSigningOut, startSignOutTransition] = useTransition();
   const { signOut } = useClerk();
   const { prompt, isIOS, isInstalled, dismissed, install } = usePwaInstall();
+
+  // This one is a privacy control, so a failure has to be visible and the
+  // switch has to go back where it was. Silently showing "mentor can't see my
+  // journal" over a database that says otherwise is the whole bug this fixes.
+  function handleJournalToggle(next: boolean) {
+    setJournalError(false);
+    setJournalPrivacy(next);
+    startJournalTransition(async () => {
+      try {
+        await updateJournalDefault(next);
+      } catch {
+        setJournalPrivacy(!next);
+        setJournalError(true);
+      }
+    });
+  }
 
   function handlePushToggle(next: boolean) {
     setPushError(null);
@@ -100,16 +131,25 @@ export function SettingsClient({ user }: { user: DbUser }) {
               </p>
             </div>
           </div>
-          <button
-            type="button"
-            className="mt-4 flex w-full items-center justify-between rounded-xl border border-border px-4 py-3 text-sm text-muted-foreground hover:text-foreground"
-          >
-            <div className="flex items-center gap-2">
-              <User className="size-4" />
-              Edit Profile
-            </div>
-            <ChevronRight className="size-4" />
-          </button>
+          {editingProfile ? (
+            <ProfileForm
+              initialName={user.displayName ?? ""}
+              initialBio={user.bio ?? ""}
+              onDone={() => setEditingProfile(false)}
+            />
+          ) : (
+            <button
+              type="button"
+              onClick={() => setEditingProfile(true)}
+              className="mt-4 flex w-full items-center justify-between rounded-xl border border-border px-4 py-3 text-sm text-muted-foreground hover:text-foreground"
+            >
+              <div className="flex items-center gap-2">
+                <User className="size-4" />
+                Edit Profile
+              </div>
+              <ChevronRight className="size-4" />
+            </button>
+          )}
         </div>
 
         {/* Notifications */}
@@ -130,10 +170,16 @@ export function SettingsClient({ user }: { user: DbUser }) {
         <SettingsSection title="Privacy" icon={Lock}>
           <ToggleRow
             label="Journal visible to mentor by default"
-            desc="Mentors can see 'Mentor Only' entries"
+            desc="New entries start as 'Mentor Only' instead of Private"
             value={journalPrivacy}
-            onChange={setJournalPrivacy}
+            onChange={handleJournalToggle}
+            pending={isJournalPending}
           />
+          {journalError && (
+            <p className="mt-2 text-xs font-semibold text-destructive">
+              Couldn&apos;t save that — your journal setting is unchanged.
+            </p>
+          )}
           <div className="mt-3 flex items-center justify-between rounded-xl border border-border p-3">
             <div>
               <p className="text-sm font-medium text-foreground">
@@ -166,22 +212,39 @@ export function SettingsClient({ user }: { user: DbUser }) {
           <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Your Interests
           </p>
-          <div className="flex flex-wrap gap-2">
-            {(user.interestTags ?? []).map((tag) => (
-              <span
-                key={tag}
-                className="rounded-full bg-primary-muted/20 px-3 py-1 text-xs font-medium capitalize text-primary"
+          {editingInterests ? (
+            <InterestsForm
+              initialTags={user.interestTags ?? []}
+              onDone={() => setEditingInterests(false)}
+            />
+          ) : (
+            <>
+              <div className="flex flex-wrap gap-2">
+                {(user.interestTags ?? []).length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    No interests yet — they help us match you with the right
+                    mentor.
+                  </p>
+                ) : (
+                  (user.interestTags ?? []).map((tag) => (
+                    <span
+                      key={tag}
+                      className="rounded-full bg-primary-muted/20 px-3 py-1 text-xs font-medium capitalize text-primary"
+                    >
+                      {tag.replace("_", " ")}
+                    </span>
+                  ))
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingInterests(true)}
+                className="mt-3 text-xs font-medium text-primary"
               >
-                {tag.replace("_", " ")}
-              </span>
-            ))}
-          </div>
-          <button
-            type="button"
-            className="mt-3 text-xs font-medium text-primary"
-          >
-            Edit interests
-          </button>
+                Edit interests
+              </button>
+            </>
+          )}
         </div>
 
         {/* Install app — `=== false`, not `!isInstalled`: until the browser has
@@ -251,6 +314,186 @@ export function SettingsClient({ user }: { user: DbUser }) {
         </button>
       </div>
     </>
+  );
+}
+
+function ProfileForm({
+  initialName,
+  initialBio,
+  onDone,
+}: {
+  initialName: string;
+  initialBio: string;
+  onDone: () => void;
+}) {
+  const router = useRouter();
+  const [name, setName] = useState(initialName);
+  const [bio, setBio] = useState(initialBio);
+  const [failed, setFailed] = useState(false);
+  const [pending, startTransition] = useTransition();
+
+  function save() {
+    if (!name.trim()) return;
+    setFailed(false);
+    startTransition(async () => {
+      try {
+        await updateProfile({ displayName: name, bio });
+        router.refresh();
+        onDone();
+      } catch {
+        // Stay open and keep what they typed.
+        setFailed(true);
+      }
+    });
+  }
+
+  return (
+    <div className="mt-4 space-y-3 border-t border-border pt-4">
+      <div>
+        <label
+          htmlFor="profile-name"
+          className="mb-1.5 block text-xs font-semibold text-foreground"
+        >
+          Display name
+        </label>
+        <input
+          id="profile-name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          maxLength={80}
+          className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+        />
+      </div>
+      <div>
+        <label
+          htmlFor="profile-bio"
+          className="mb-1.5 block text-xs font-semibold text-foreground"
+        >
+          About you
+        </label>
+        <textarea
+          id="profile-bio"
+          value={bio}
+          onChange={(e) => setBio(e.target.value)}
+          rows={3}
+          maxLength={500}
+          placeholder="A sentence or two about yourself."
+          className="w-full resize-none rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+        />
+      </div>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={save}
+          disabled={pending || !name.trim()}
+          aria-busy={pending}
+          className="rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-40"
+        >
+          <BusyLabel pending={pending} busy="Saving…">
+            Save
+          </BusyLabel>
+        </button>
+        <button
+          type="button"
+          onClick={onDone}
+          disabled={pending}
+          className="rounded-full border border-border px-4 py-2 text-xs font-semibold text-muted-foreground disabled:opacity-40"
+        >
+          Cancel
+        </button>
+      </div>
+      {failed && (
+        <p className="text-xs font-semibold text-destructive">
+          Couldn&apos;t save — your changes are still here, try again.
+        </p>
+      )}
+    </div>
+  );
+}
+
+function InterestsForm({
+  initialTags,
+  onDone,
+}: {
+  initialTags: string[];
+  onDone: () => void;
+}) {
+  const router = useRouter();
+  const [tags, setTags] = useState<string[]>(initialTags);
+  const [failed, setFailed] = useState(false);
+  const [pending, startTransition] = useTransition();
+
+  function toggle(tag: string) {
+    setTags((current) =>
+      current.includes(tag)
+        ? current.filter((t) => t !== tag)
+        : [...current, tag],
+    );
+  }
+
+  function save() {
+    setFailed(false);
+    startTransition(async () => {
+      try {
+        await updateInterests(tags);
+        router.refresh();
+        onDone();
+      } catch {
+        setFailed(true);
+      }
+    });
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap gap-2">
+        {INTEREST_TAGS.map((tag) => (
+          <button
+            key={tag}
+            type="button"
+            onClick={() => toggle(tag)}
+            aria-pressed={tags.includes(tag)}
+            className={cn(
+              "rounded-full border px-3 py-1.5 text-xs font-medium transition-all",
+              tags.includes(tag)
+                ? "border-primary bg-primary text-primary-foreground"
+                : "border-border bg-card hover:border-primary/40",
+            )}
+          >
+            {tag}
+          </button>
+        ))}
+      </div>
+      <p className="text-xs text-muted-foreground">
+        These decide which mentors we suggest for you.
+      </p>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={save}
+          disabled={pending}
+          aria-busy={pending}
+          className="rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-40"
+        >
+          <BusyLabel pending={pending} busy="Saving…">
+            Save
+          </BusyLabel>
+        </button>
+        <button
+          type="button"
+          onClick={onDone}
+          disabled={pending}
+          className="rounded-full border border-border px-4 py-2 text-xs font-semibold text-muted-foreground disabled:opacity-40"
+        >
+          Cancel
+        </button>
+      </div>
+      {failed && (
+        <p className="text-xs font-semibold text-destructive">
+          Couldn&apos;t save — your choices are still here, try again.
+        </p>
+      )}
+    </div>
   );
 }
 

@@ -2,6 +2,7 @@
 
 import {
   BookOpen,
+  Check,
   ChevronRight,
   Clock,
   CreditCard,
@@ -15,9 +16,13 @@ import {
   Users,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
 import { PageHeader } from "@/components/page-header";
+import { BusyLabel } from "@/components/spinner";
 import { stageName } from "@/lib/growth";
 import { GuardianConsent, type GuardianRequest } from "./guardian-consent";
+import { completeMyTask } from "./task-actions";
 
 type Mentor = {
   displayName: string | null;
@@ -30,6 +35,55 @@ type OpenTask = {
   title: string;
   description: string | null;
 };
+
+// A task the mentee can actually finish. These used to be inert divs — only the
+// mentor could complete a task, so the mentee could see the work but not do
+// anything about it, while tasks are what drive growth points and tree health.
+function TaskCard({ task }: { task: OpenTask }) {
+  const router = useRouter();
+  const [failed, setFailed] = useState(false);
+  const [pending, startTransition] = useTransition();
+
+  function complete() {
+    setFailed(false);
+    startTransition(async () => {
+      try {
+        await completeMyTask(task.id);
+        router.refresh();
+      } catch {
+        setFailed(true);
+      }
+    });
+  }
+
+  return (
+    <div className="rounded-2xl border border-border bg-card p-4">
+      <p className="text-sm font-semibold text-foreground">{task.title}</p>
+      {task.description && (
+        <p className="mt-0.5 text-xs text-muted-foreground">
+          {task.description}
+        </p>
+      )}
+      <button
+        type="button"
+        onClick={complete}
+        disabled={pending}
+        aria-busy={pending}
+        className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-40"
+      >
+        <BusyLabel pending={pending} busy="Saving…">
+          <Check className="size-3.5" />
+          Mark done
+        </BusyLabel>
+      </button>
+      {failed && (
+        <p className="mt-1.5 text-[11px] font-semibold text-destructive">
+          Couldn&apos;t save that — try again.
+        </p>
+      )}
+    </div>
+  );
+}
 
 type MenteeData = {
   activeMentorship: {
@@ -188,19 +242,7 @@ function MenteeView({
               </p>
               <div className="space-y-2">
                 {data.tasks.map((t) => (
-                  <div
-                    key={t.id}
-                    className="rounded-2xl border border-border bg-card p-4"
-                  >
-                    <p className="text-sm font-semibold text-foreground">
-                      {t.title}
-                    </p>
-                    {t.description && (
-                      <p className="mt-0.5 text-xs text-muted-foreground">
-                        {t.description}
-                      </p>
-                    )}
-                  </div>
+                  <TaskCard key={t.id} task={t} />
                 ))}
               </div>
             </div>

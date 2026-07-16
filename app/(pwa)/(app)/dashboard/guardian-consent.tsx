@@ -1,7 +1,8 @@
 "use client";
 
-import { Check, Loader2, ShieldQuestion, X } from "lucide-react";
+import { Check, ShieldQuestion, X } from "lucide-react";
 import { useState, useTransition } from "react";
+import { BusyLabel } from "@/components/spinner";
 import { acceptGuardianLink, declineGuardianLink } from "./guardian-actions";
 
 export type GuardianRequest = {
@@ -26,6 +27,32 @@ function ConsentCard({ request }: { request: GuardianRequest }) {
   const [resolved, setResolved] = useState<"accepted" | "declined" | null>(
     null,
   );
+  const [failed, setFailed] = useState(false);
+  // Keyed, not a shared boolean: one isPending for both buttons spun "Accept"
+  // when the user pressed "Decline".
+  const [busy, setBusy] = useState<"accepted" | "declined" | null>(null);
+
+  function decide(choice: "accepted" | "declined") {
+    setFailed(false);
+    setBusy(choice);
+    startTransition(async () => {
+      try {
+        if (choice === "accepted") {
+          await acceptGuardianLink(request.id);
+        } else {
+          await declineGuardianLink(request.id);
+        }
+        // Only after the write returns. This is a consent decision about who
+        // can watch a child's progress — reporting it as done when it failed
+        // is not an option.
+        setResolved(choice);
+      } catch {
+        setFailed(true);
+      } finally {
+        setBusy(null);
+      }
+    });
+  }
 
   if (resolved) {
     return (
@@ -60,35 +87,33 @@ function ConsentCard({ request }: { request: GuardianRequest }) {
         <button
           type="button"
           disabled={isPending}
-          onClick={() =>
-            startTransition(async () => {
-              await acceptGuardianLink(request.id);
-              setResolved("accepted");
-            })
-          }
+          aria-busy={busy === "accepted"}
+          onClick={() => decide("accepted")}
           className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-primary py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-50"
         >
-          {isPending ? (
-            <Loader2 className="size-4 animate-spin" />
-          ) : (
+          <BusyLabel pending={busy === "accepted"} busy="Accepting…">
             <Check className="size-4" />
-          )}
-          Accept
+            Accept
+          </BusyLabel>
         </button>
         <button
           type="button"
           disabled={isPending}
-          onClick={() =>
-            startTransition(async () => {
-              await declineGuardianLink(request.id);
-              setResolved("declined");
-            })
-          }
+          aria-busy={busy === "declined"}
+          onClick={() => decide("declined")}
           className="flex flex-1 items-center justify-center gap-1 rounded-lg border border-border bg-card py-2.5 text-sm font-semibold text-muted-foreground hover:bg-muted disabled:opacity-50"
         >
-          <X className="size-4" /> Decline
+          <BusyLabel pending={busy === "declined"} busy="Declining…">
+            <X className="size-4" />
+            Decline
+          </BusyLabel>
         </button>
       </div>
+      {failed && (
+        <p className="mt-2 text-xs font-semibold text-destructive">
+          Couldn&apos;t save that — nothing was changed. Try again.
+        </p>
+      )}
     </div>
   );
 }

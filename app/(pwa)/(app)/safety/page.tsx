@@ -1,16 +1,10 @@
 "use client";
 
-import {
-  AlertTriangle,
-  ChevronRight,
-  Loader2,
-  Phone,
-  Send,
-  Shield,
-} from "lucide-react";
+import { AlertTriangle, ChevronRight, Phone, Send, Shield } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, useTransition } from "react";
 import { PageHeader } from "@/components/page-header";
+import { BusyLabel } from "@/components/spinner";
 import { SAFETY_RESOURCES } from "@/lib/constants";
 import { awardSafetyMilestone, submitSafetyReport } from "./actions";
 
@@ -20,6 +14,7 @@ export default function SafetyPage() {
   );
   const [reportNotes, setReportNotes] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [failed, setFailed] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
@@ -28,10 +23,18 @@ export default function SafetyPage() {
 
   function submitReport() {
     if (!reportNotes.trim()) return;
+    setFailed(false);
     startTransition(async () => {
-      await submitSafetyReport({ type: reportType, notes: reportNotes });
-      setSubmitted(true);
-      setReportNotes("");
+      try {
+        await submitSafetyReport({ type: reportType, notes: reportNotes });
+        setSubmitted(true);
+        setReportNotes("");
+      } catch {
+        // A safety report that fails must say so. Previously the throw was
+        // unhandled: the button simply returned to its resting state and the
+        // person was left to guess whether anyone had been told.
+        setFailed(true);
+      }
     });
   }
 
@@ -142,15 +145,21 @@ export default function SafetyPage() {
                 type="button"
                 onClick={submitReport}
                 disabled={!reportNotes.trim() || isPending}
+                aria-busy={isPending}
                 className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-earth py-3 text-sm font-semibold text-white disabled:opacity-40"
               >
-                {isPending ? (
-                  <Loader2 className="size-4 animate-spin" />
-                ) : (
+                <BusyLabel pending={isPending} busy="Submitting…">
                   <Send className="size-4" />
-                )}
-                {isPending ? "Submitting…" : "Submit Report"}
+                  Submit Report
+                </BusyLabel>
               </button>
+              {failed && (
+                <p className="mt-2 text-center text-sm font-semibold text-destructive">
+                  Couldn&apos;t send your report — it has not reached our team.
+                  Your text is still here. If this is urgent, use a helpline
+                  above.
+                </p>
+              )}
             </>
           )}
         </div>

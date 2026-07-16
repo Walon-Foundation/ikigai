@@ -61,10 +61,17 @@ async function clearPendingEntry(id: string) {
 }
 // ──────────────────────────────────────────────────────────────────
 
-export function JournalClient({ initialEntries }: { initialEntries: Entry[] }) {
+export function JournalClient({
+  initialEntries,
+  defaultVisibility,
+}: {
+  initialEntries: Entry[];
+  defaultVisibility: Visibility;
+}) {
   const [entries, setEntries] = useState<Entry[]>(initialEntries);
   const [newContent, setNewContent] = useState("");
-  const [visibility, setVisibility] = useState<Visibility>("private");
+  // Seeded from the mentee's setting rather than hard-coded to "private".
+  const [visibility, setVisibility] = useState<Visibility>(defaultVisibility);
   const [showWarning, setShowWarning] = useState(false);
   const [saved, setSaved] = useState(false);
   const [offlineSaved, setOfflineSaved] = useState(false);

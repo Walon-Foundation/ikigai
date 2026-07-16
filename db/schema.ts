@@ -39,6 +39,16 @@ export const users = pgTable(
     interestTags: text("interest_tags").array(),
     schoolId: uuid("school_id").references(() => schools.id),
     growthLevel: integer("growth_level").default(1), // 1=Explorer, 2=Advocate, 3=Mentor
+    // What a new journal entry defaults to: 'private' | 'mentor_only'.
+    // The settings toggle for this has always existed but had nothing behind it
+    // — it was React state that reset on reload, and it defaulted to ON while
+    // the journal itself hard-coded new entries to 'private'. So it was wrong
+    // in both directions at once: a mentee who left it on and assumed their
+    // mentor could see their entries was mistaken, and a mentee who turned it
+    // off to hide them had changed nothing.
+    journalDefaultVisibility: text("journal_default_visibility").default(
+      "private",
+    ),
     verifiedAt: timestamp("verified_at"),
     pushSubscription: jsonb("push_subscription"), // Web Push subscription object
     onboardingData: jsonb("onboarding_data"),

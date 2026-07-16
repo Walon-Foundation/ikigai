@@ -1,11 +1,12 @@
 "use client";
 
-import { Clock, Loader2, MessageCircle, Star, Users } from "lucide-react";
+import { Clock, MessageCircle, Star, Users } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { Avatar } from "@/components/avatar";
 import { PageHeader } from "@/components/page-header";
+import { BusyLabel } from "@/components/spinner";
 import { requestMentor } from "./actions";
 
 type MentorUser = {
@@ -201,14 +202,12 @@ function MentorCard({
         type="button"
         onClick={handleRequest}
         disabled={requested || isPending}
+        aria-busy={isPending}
         className="mt-3 flex w-full items-center justify-center gap-2 rounded-full bg-primary py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-light disabled:bg-muted disabled:text-muted-foreground"
       >
-        {isPending && <Loader2 className="size-4 animate-spin" />}
-        {requested
-          ? "Request sent"
-          : isPending
-            ? "Requesting…"
-            : "Request mentor"}
+        <BusyLabel pending={isPending} busy="Requesting…">
+          {requested ? "Request sent" : "Request mentor"}
+        </BusyLabel>
       </button>
     </div>
   );
