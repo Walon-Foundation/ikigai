@@ -1,10 +1,11 @@
-import { Heart, MapPin } from "lucide-react";
+import { ExternalLink, Heart, MapPin } from "lucide-react";
 import { after } from "next/server";
 import { PageHeader } from "@/components/page-header";
 import { db } from "@/db/db";
 import { milestones } from "@/db/schema";
 import { PAD_HER_POWER_RESOURCES } from "@/lib/constants";
 import { requireRole } from "@/lib/db-user";
+import { PAD_HER_POWER_LINKS } from "@/lib/resource-links";
 import { ResourceMapClient } from "./resource-map-client";
 
 const CATEGORIES = [
@@ -85,12 +86,18 @@ export default async function PadHerPowerPage() {
                     <p className="mt-1 text-sm text-muted-foreground">
                       {res.desc}
                     </p>
-                    <button
-                      type="button"
-                      className="mt-3 rounded-full border border-earth px-4 py-1.5 text-xs font-semibold text-earth hover:bg-earth-light/10 transition-colors"
-                    >
-                      Read more
-                    </button>
+                    {PAD_HER_POWER_LINKS[res.id] && (
+                      <a
+                        href={PAD_HER_POWER_LINKS[res.id].url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-earth px-4 py-1.5 text-xs font-semibold text-earth transition-colors hover:bg-earth-light/10"
+                      >
+                        Read more on {PAD_HER_POWER_LINKS[res.id].source}
+                        <ExternalLink className="size-3" aria-hidden="true" />
+                        <span className="sr-only">(opens in a new tab)</span>
+                      </a>
+                    )}
                   </div>
                 ))}
               </div>
