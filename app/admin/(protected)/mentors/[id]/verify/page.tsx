@@ -1,12 +1,27 @@
 import { and, eq } from "drizzle-orm";
-import { AlertTriangle, ChevronLeft } from "lucide-react";
+import {
+  AlertTriangle,
+  ChevronLeft,
+  CreditCard,
+  ExternalLink,
+  FileText,
+} from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { UTApi } from "uploadthing/server";
 import { db } from "@/db/db";
-import { users } from "@/db/schema";
+import { mentorDocuments, users } from "@/db/schema";
 import { VerifyActions } from "./verify-actions";
 
 type MentorOnboarding = { personalStatement?: string } | null;
+
+const DOCUMENT_KINDS = [
+  { kind: "government_id", label: "Government ID", icon: CreditCard },
+  { kind: "cv", label: "CV / Resume", icon: FileText },
+] as const;
+
+/** Signed links live just long enough for the admin to open them. */
+const LINK_TTL_SECONDS = 15 * 60;
 
 export default async function VerifyMentorPage({
   params,
@@ -25,6 +40,36 @@ export default async function VerifyMentorPage({
 
   const statement = (mentor.onboardingData as MentorOnboarding)
     ?.personalStatement;
+
+  // The stored files are private, so there is no URL to render — one is minted
+  // here, per view, and expires. generateSignedURL is local (it signs the key
+  // rather than calling UploadThing), so this costs no round-trip. The bytes
+  // still never touch this backend: the admin's own browser fetches the file
+  // from storage with the signed link.
+  const rows = await db
+    .select({
+      kind: mentorDocuments.kind,
+      fileKey: mentorDocuments.fileKey,
+      fileName: mentorDocuments.fileName,
+    })
+    .from(mentorDocuments)
+    .where(eq(mentorDocuments.userId, id));
+
+  const utapi = new UTApi();
+  const documents = await Promise.all(
+    rows.map(async (row) => {
+      try {
+        const { ufsUrl } = await utapi.generateSignedURL(row.fileKey, {
+          expiresIn: LINK_TTL_SECONDS,
+        });
+        return { ...row, url: ufsUrl };
+      } catch {
+        // A document we can't produce a link for must read as unavailable, not
+        // as absent — and certainly not as verified.
+        return { ...row, url: null };
+      }
+    }),
+  );
 
   return (
     <div className="max-w-2xl">
@@ -115,28 +160,58 @@ export default async function VerifyMentorPage({
       </div>
 
       {/* Submitted Documents.
-          This card used to render a hardcoded array claiming "Government ID —
-          ✓ Uploaded" and "CV — ✓ Uploaded" for EVERY mentor. No document
-          storage exists in this codebase, so nothing had ever been uploaded and
-          there was nothing behind the checkmarks. On the screen where an admin
-          decides whether to approve an adult who will be paired with a child,
-          that is fabricated compliance evidence: an admin checking that ID was
-          submitted before approving was told yes, always.
-          Until the real upload flow lands, this states the truth instead. */}
-      <div className="mb-6 rounded-xl border border-earth/30 bg-earth-light/10 p-6">
-        <div className="flex items-start gap-3">
-          <AlertTriangle className="mt-0.5 size-5 shrink-0 text-earth" />
-          <div>
-            <p className="text-sm font-semibold text-foreground">
-              No documents on file
-            </p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Document upload isn&apos;t built yet — mentors are told at
-              onboarding that our team will contact them by email. Verify this
-              mentor&apos;s ID and CV through that channel before approving.
-            </p>
-          </div>
+          This card used to render a HARDCODED array claiming "Government ID —
+          ✓ Uploaded" and "CV — ✓ Uploaded" for every mentor, with no document
+          storage behind it. On the screen where an admin decides whether to
+          approve an adult who will be paired with a child, that was fabricated
+          compliance evidence. It reads real state now, and says so plainly when
+          a document is missing. */}
+      <div className="mb-6 rounded-xl border border-border bg-card p-6">
+        <p className="mb-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          Submitted Documents
+        </p>
+        <div className="space-y-3">
+          {DOCUMENT_KINDS.map((doc) => {
+            const found = documents.find((d) => d.kind === doc.kind);
+            return (
+              <div
+                key={doc.kind}
+                className="flex items-center gap-3 rounded-lg border border-border p-3"
+              >
+                <doc.icon className="size-5 shrink-0 text-muted-foreground" />
+                <div className="min-w-0 flex-1">
+                  <span className="text-sm font-medium text-foreground">
+                    {doc.label}
+                  </span>
+                  {found?.fileName && (
+                    <p className="truncate text-xs text-muted-foreground">
+                      {found.fileName}
+                    </p>
+                  )}
+                </div>
+                {found?.url ? (
+                  <a
+                    href={found.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex shrink-0 items-center gap-1 rounded-full border border-primary px-3 py-1 text-xs font-semibold text-primary hover:bg-primary/10"
+                  >
+                    View
+                    <ExternalLink className="size-3" />
+                  </a>
+                ) : (
+                  <span className="flex shrink-0 items-center gap-1 text-xs font-semibold text-earth">
+                    <AlertTriangle className="size-3" />
+                    Not submitted
+                  </span>
+                )}
+              </div>
+            );
+          })}
         </div>
+        <p className="mt-3 text-xs text-muted-foreground">
+          Links are private and expire after 15 minutes.
+        </p>
       </div>
 
       <VerifyActions

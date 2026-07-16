@@ -1,5 +1,6 @@
 import "server-only";
 import { and, eq, inArray, isNull, lt } from "drizzle-orm";
+import { UTApi } from "uploadthing/server";
 import { db } from "@/db/db";
 import {
   eventAttendance,
@@ -9,6 +10,7 @@ import {
   guardianLinks,
   journalEntries,
   journalFeedback,
+  mentorDocuments,
   mentorReviews,
   milestones,
   pushNotifications,
@@ -61,6 +63,21 @@ export async function purgeUser(userId: string): Promise<void> {
   // Reviews this user wrote. Reviews written ABOUT them (mentorId) stay — they
   // are other people's words about a mentor, not this user's data.
   await db.delete(mentorReviews).where(eq(mentorReviews.authorId, userId));
+
+  // Vetting documents are the most sensitive thing this platform holds — a
+  // scan of someone's national ID. Purging must remove the files themselves
+  // from storage, not merely forget the keys, or a deleted mentor's ID would
+  // outlive their account with nothing left pointing at it.
+  const docs = await db
+    .select({ fileKey: mentorDocuments.fileKey })
+    .from(mentorDocuments)
+    .where(eq(mentorDocuments.userId, userId));
+  if (docs.length > 0) {
+    await new UTApi()
+      .deleteFiles(docs.map((d) => d.fileKey))
+      .catch((err) => console.error("purge: could not delete documents", err));
+    await db.delete(mentorDocuments).where(eq(mentorDocuments.userId, userId));
+  }
 
   // Guardian links are a relationship, and the other side is often a child's
   // parent. Remove the link rather than leave a dangling consent.

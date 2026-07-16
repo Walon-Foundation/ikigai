@@ -2,6 +2,7 @@
 
 import { FileText, IdCard } from "lucide-react";
 import { useState, useTransition } from "react";
+import { DocumentUpload } from "@/components/document-upload";
 import { BusyLabel } from "@/components/spinner";
 import { submitMentorVerification } from "../../actions";
 
@@ -52,31 +53,24 @@ export default function MentorVerificationPage() {
       </div>
 
       <div className="space-y-4">
-        <div className="flex items-center gap-4 rounded-xl border-2 border-dashed border-border p-5">
-          <IdCard className="size-8 shrink-0 text-muted-foreground" />
-          <div>
-            <p className="font-semibold text-foreground">Government ID</p>
-            <p className="text-sm text-muted-foreground">
-              National ID, passport, or driver&apos;s licence
-            </p>
-            <p className="mt-1 text-xs text-primary">
-              File upload coming soon — our team will contact you via email
-            </p>
-          </div>
-        </div>
+        <DocumentUpload
+          endpoint="governmentId"
+          label="Government ID"
+          hint="National ID, passport, or driver's licence"
+          icon={IdCard}
+        />
 
-        <div className="flex items-center gap-4 rounded-xl border-2 border-dashed border-border p-5">
-          <FileText className="size-8 shrink-0 text-muted-foreground" />
-          <div>
-            <p className="font-semibold text-foreground">CV / Resume</p>
-            <p className="text-sm text-muted-foreground">
-              PDF or Word document
-            </p>
-            <p className="mt-1 text-xs text-primary">
-              File upload coming soon — our team will contact you via email
-            </p>
-          </div>
-        </div>
+        <DocumentUpload
+          endpoint="mentorCv"
+          label="CV / Resume"
+          hint="PDF or image, up to 8MB"
+          icon={FileText}
+        />
+
+        <p className="text-xs text-muted-foreground">
+          Your documents are uploaded straight to our storage provider and are
+          only ever readable by the ikigai team reviewing your application.
+        </p>
 
         <div>
           <label

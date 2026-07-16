@@ -1,16 +1,97 @@
 import { auth } from "@clerk/nextjs/server";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { createUploadthing, type FileRouter } from "uploadthing/next";
-import { UploadThingError } from "uploadthing/server";
+import { UploadThingError, UTApi } from "uploadthing/server";
 import { db } from "@/db/db";
-import { users } from "@/db/schema";
+import { mentorDocuments, users } from "@/db/schema";
 
 const f = createUploadthing();
+const utapi = new UTApi();
 
-// The image bytes never pass through this backend — the browser uploads them
-// directly to UploadThing's storage. This server-side middleware only runs to
+// The file bytes never pass through this backend — the browser uploads them
+// directly to UploadThing's storage. These server-side middlewares only run to
 // authenticate the Clerk user and authorize the upload; onUploadComplete then
-// receives the stored file's URL (not the bytes) and persists it.
+// receives the stored file's metadata (a key and a URL, not the bytes) and
+// persists it.
+
+/** Authenticate, and confirm the caller is a mentor. */
+async function requireMentorUpload() {
+  const { userId } = await auth();
+  if (!userId) throw new UploadThingError("Unauthorized");
+
+  const [user] = await db
+    .select({ id: users.id, role: users.role })
+    .from(users)
+    .where(eq(users.clerkId, userId))
+    .limit(1);
+
+  if (!user) throw new UploadThingError("Unauthorized");
+  if (user.role !== "mentor") throw new UploadThingError("Forbidden");
+  return { userId: user.id };
+}
+
+/**
+ * Store a vetting document, and make it private.
+ *
+ * This app's default ACL has to stay public-read because avatars are rendered
+ * straight from their URLs, so a document lands public and is flipped to
+ * private here, immediately after upload. If that flip fails the file is
+ * deleted rather than left readable at a public URL: losing an upload is
+ * recoverable — the applicant uploads it again — whereas a government ID
+ * sitting permanently at a public link is not.
+ *
+ * Only the key is stored. There is no working URL for a private file, so the
+ * admin screen mints a short-lived signed one at view time.
+ */
+async function storeDocument(
+  userId: string,
+  kind: "government_id" | "cv",
+  file: { key: string; name: string },
+) {
+  try {
+    await utapi.updateACL(file.key, "private");
+  } catch (err) {
+    await utapi.deleteFiles(file.key).catch(() => {});
+    console.error("uploadthing: could not make document private", err);
+    throw new UploadThingError("Upload failed");
+  }
+
+  // One document per kind per mentor: a re-upload replaces the previous file of
+  // THIS kind rather than stacking, and the old object is removed from storage
+  // instead of being orphaned there forever.
+  //
+  // Scoped to (userId, kind), not userId alone — matching on the user would
+  // make uploading a CV delete the government ID, and take its file with it.
+  const mine = and(
+    eq(mentorDocuments.userId, userId),
+    eq(mentorDocuments.kind, kind),
+  );
+
+  const previous = await db
+    .select({ fileKey: mentorDocuments.fileKey })
+    .from(mentorDocuments)
+    .where(mine);
+  const stale = previous
+    .filter((p) => p.fileKey !== file.key)
+    .map((p) => p.fileKey);
+
+  await db
+    .delete(mentorDocuments)
+    .where(mine)
+    .catch(() => {});
+
+  await db.insert(mentorDocuments).values({
+    userId,
+    kind,
+    fileKey: file.key,
+    fileName: file.name,
+  });
+
+  if (stale.length > 0) await utapi.deleteFiles(stale).catch(() => {});
+
+  return { uploaded: true as const };
+}
+
 export const ourFileRouter = {
   avatar: f({
     image: { maxFileSize: "4MB", maxFileCount: 1 },
@@ -28,6 +109,24 @@ export const ourFileRouter = {
       // Returned value is sent to the client's onClientUploadComplete.
       return { url: file.ufsUrl };
     }),
+
+  governmentId: f({
+    image: { maxFileSize: "8MB", maxFileCount: 1 },
+    pdf: { maxFileSize: "8MB", maxFileCount: 1 },
+  })
+    .middleware(async () => requireMentorUpload())
+    .onUploadComplete(async ({ metadata, file }) =>
+      storeDocument(metadata.userId, "government_id", file),
+    ),
+
+  mentorCv: f({
+    pdf: { maxFileSize: "8MB", maxFileCount: 1 },
+    image: { maxFileSize: "8MB", maxFileCount: 1 },
+  })
+    .middleware(async () => requireMentorUpload())
+    .onUploadComplete(async ({ metadata, file }) =>
+      storeDocument(metadata.userId, "cv", file),
+    ),
 } satisfies FileRouter;
 
 export type OurFileRouter = typeof ourFileRouter;
