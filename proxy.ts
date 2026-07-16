@@ -1,8 +1,5 @@
 import { clerkMiddleware } from "@clerk/nextjs/server";
-import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
-import { db } from "@/db/db";
-import { users } from "@/db/schema";
 import { env } from "@/lib/env";
 
 // Look up a user's role from our database by their Clerk id. Cached briefly so
@@ -17,6 +14,18 @@ async function getUserRole(clerkId: string): Promise<string | null> {
   }
 
   try {
+    // Imported here, not at module scope. This is the only place in the proxy
+    // that touches the database, and it only ever runs on the admin subdomain —
+    // but a top-level import puts the Drizzle schema and the Neon driver into
+    // the middleware bundle, which then loads on every single request to the
+    // marketing site, for seven pages of prerendered static HTML that never
+    // read a row.
+    const [{ db }, { users }, { eq }] = await Promise.all([
+      import("@/db/db"),
+      import("@/db/schema"),
+      import("drizzle-orm"),
+    ]);
+
     const [user] = await db
       .select({ role: users.role })
       .from(users)

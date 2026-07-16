@@ -1,4 +1,4 @@
-import { count, eq, gte, isNotNull, isNull, sql } from "drizzle-orm";
+import { count, countDistinct, eq, gte, isNull, sql } from "drizzle-orm";
 import { db } from "@/db/db";
 import {
   eventAttendance,
@@ -11,9 +11,25 @@ import {
   users,
 } from "@/db/schema";
 
+// Sunday-aligned week starts, oldest first, plus the end of the newest week.
+// Computed here rather than with date_trunc('week', …) because Postgres weeks
+// start on Monday and these buckets have always started on Sunday — the labels
+// below are generated from the same array, so the chart and the SQL can't drift.
+function weekBuckets(): Date[] {
+  const bounds: Date[] = [];
+  for (let i = 3; i >= -1; i--) {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() - d.getDay() - i * 7);
+    bounds.push(d);
+  }
+  return bounds; // 5 bounds = 4 buckets
+}
+
 export default async function AdminAnalyticsPage() {
   const fourWeeksAgo = new Date(Date.now() - 28 * 24 * 60 * 60 * 1000);
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const wk = weekBuckets();
 
   const [
     [{ total }],
@@ -21,11 +37,10 @@ export default async function AdminAnalyticsPage() {
     [{ mentorCount }],
     [{ clubLeadCount }],
     [{ openReports }],
-    userTagRows,
-    recentEntries,
-    activeJournalUsers,
-    activeMessageUsers,
-    mentorsWithActive,
+    tagRows,
+    weekRows,
+    activeUsersResult,
+    [{ retainedMentors: retained }],
     [taskTotals],
     [attendanceTotals],
     [messagesRecent],
@@ -48,26 +63,49 @@ export default async function AdminAnalyticsPage() {
       .select({ openReports: count() })
       .from(safetyReports)
       .where(isNull(safetyReports.resolvedAt)),
+    // Counted in Postgres, not here. Every one of these five used to pull its
+    // whole result set across the wire so JavaScript could reduce it to a
+    // handful of integers: every user's tags, every journal entry in 28 days,
+    // every active author, every active mentor. The payload grew with the
+    // platform, forever, to render the same fifteen numbers.
+    //
+    // Tag histogram: at most 8 rows back instead of the entire users table.
+    db.execute(sql`
+      select lower(t) as tag, count(*)::int as n
+      from ${users}, unnest(${users.interestTags}) as t
+      group by lower(t)
+      -- Tie-break by name. Interest tags bunch heavily at the same count, so
+      -- ordering on count alone leaves Postgres free to return a different
+      -- eight every load — the chart would reshuffle on refresh with no data
+      -- having changed.
+      order by count(*) desc, lower(t) asc
+      limit 8
+    `),
+    // Weekly journal counts: one row, four numbers, instead of every entry.
     db
-      .select({ interestTags: users.interestTags })
-      .from(users)
-      .where(isNotNull(users.interestTags)),
-    db
-      .select({ createdAt: journalEntries.createdAt })
+      .select({
+        w0: sql<number>`count(*) filter (where ${journalEntries.createdAt} >= ${wk[0]} and ${journalEntries.createdAt} < ${wk[1]})`,
+        w1: sql<number>`count(*) filter (where ${journalEntries.createdAt} >= ${wk[1]} and ${journalEntries.createdAt} < ${wk[2]})`,
+        w2: sql<number>`count(*) filter (where ${journalEntries.createdAt} >= ${wk[2]} and ${journalEntries.createdAt} < ${wk[3]})`,
+        w3: sql<number>`count(*) filter (where ${journalEntries.createdAt} >= ${wk[3]} and ${journalEntries.createdAt} < ${wk[4]})`,
+      })
       .from(journalEntries)
-      .where(gte(journalEntries.createdAt, fourWeeksAgo)),
-    // Active users = distinct authors of journals/messages in last 30 days
+      .where(gte(journalEntries.createdAt, wk[0])),
+    // Active users = distinct authors of journals/messages in last 30 days.
+    // The UNION dedupes in Postgres — someone who both journalled and messaged
+    // is one active user, which is why this can't be two countDistinct calls.
+    db.execute(sql`
+      select count(distinct user_id)::int as n from (
+        select ${journalEntries.userId} as user_id from ${journalEntries}
+          where ${journalEntries.createdAt} >= ${thirtyDaysAgo}
+        union
+        select ${messages.senderId} from ${messages}
+          where ${messages.createdAt} >= ${thirtyDaysAgo}
+      ) a
+    `),
+    // Mentor retention = mentors holding at least one active mentorship.
     db
-      .selectDistinct({ userId: journalEntries.userId })
-      .from(journalEntries)
-      .where(gte(journalEntries.createdAt, thirtyDaysAgo)),
-    db
-      .selectDistinct({ userId: messages.senderId })
-      .from(messages)
-      .where(gte(messages.createdAt, thirtyDaysAgo)),
-    // Mentor retention = mentors holding at least one active mentorship
-    db
-      .selectDistinct({ mentorId: mentorships.mentorId })
+      .select({ retainedMentors: countDistinct(mentorships.mentorId) })
       .from(mentorships)
       .where(eq(mentorships.status, "active")),
     // Task completion
@@ -105,12 +143,11 @@ export default async function AdminAnalyticsPage() {
   const clubLeads = Number(clubLeadCount);
 
   // --- Spec metrics --------------------------------------------------------
-  const activeSet = new Set<string>();
-  for (const r of activeJournalUsers) if (r.userId) activeSet.add(r.userId);
-  for (const r of activeMessageUsers) if (r.userId) activeSet.add(r.userId);
-  const activeUsers = activeSet.size;
+  const activeUsers = Number(
+    (activeUsersResult.rows[0] as { n?: number } | undefined)?.n ?? 0,
+  );
 
-  const retainedMentors = mentorsWithActive.filter((m) => m.mentorId).length;
+  const retainedMentors = Number(retained ?? 0);
   const mentorRetention =
     mentors > 0 ? Math.round((retainedMentors / mentors) * 100) : 0;
 
@@ -166,48 +203,23 @@ export default async function AdminAnalyticsPage() {
     },
   ];
 
-  // Interest tag counts — aggregate in JS
-  const tagCounts: Record<string, number> = {};
-  for (const { interestTags } of userTagRows) {
-    for (const tag of interestTags ?? []) {
-      const key = tag.toLowerCase();
-      tagCounts[key] = (tagCounts[key] ?? 0) + 1;
-    }
-  }
-  const maxTagCount = Math.max(...Object.values(tagCounts), 1);
-  const interestTagData = Object.entries(tagCounts)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 8)
-    .map(([tag, cnt]) => ({
-      tag: tag.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
-      count: cnt,
-      pct: Math.round((cnt / maxTagCount) * 100),
-    }));
-
-  // Weekly journal counts — aggregate in JS
-  function weekStart(d: Date): string {
-    const copy = new Date(d);
-    copy.setHours(0, 0, 0, 0);
-    copy.setDate(copy.getDate() - copy.getDay());
-    return copy.toLocaleDateString("en-GB", { month: "short", day: "numeric" });
-  }
-  const weekCounts: Record<string, number> = {};
-  for (let i = 3; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(d.getDate() - i * 7);
-    weekCounts[weekStart(d)] = 0;
-  }
-  for (const { createdAt } of recentEntries) {
-    if (createdAt) {
-      const key = weekStart(createdAt);
-      if (key in weekCounts) weekCounts[key] = (weekCounts[key] ?? 0) + 1;
-    }
-  }
-  const weeklyJournals = Object.entries(weekCounts).map(([week, cnt]) => ({
-    week,
-    count: cnt,
+  // Interest tag counts — already grouped, sorted and capped by Postgres.
+  const tagRowsTyped = tagRows.rows as { tag: string; n: number }[];
+  const maxTagCount = Math.max(...tagRowsTyped.map((r) => Number(r.n)), 1);
+  const interestTagData = tagRowsTyped.map((r) => ({
+    tag: r.tag.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
+    count: Number(r.n),
+    pct: Math.round((Number(r.n) / maxTagCount) * 100),
   }));
-  const maxWeekCount = Math.max(...Object.values(weekCounts), 1);
+
+  // Weekly journal counts — the four numbers Postgres just returned, labelled
+  // from the same bucket bounds the SQL filtered on.
+  const w = weekRows[0];
+  const weeklyJournals = [w?.w0, w?.w1, w?.w2, w?.w3].map((n, i) => ({
+    week: wk[i].toLocaleDateString("en-GB", { month: "short", day: "numeric" }),
+    count: Number(n ?? 0),
+  }));
+  const maxWeekCount = Math.max(...weeklyJournals.map((x) => x.count), 1);
 
   return (
     <div>

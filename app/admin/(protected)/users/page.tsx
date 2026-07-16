@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { count, eq } from "drizzle-orm";
 import Link from "next/link";
 import { db } from "@/db/db";
 import { schools, users } from "@/db/schema";
@@ -27,13 +27,21 @@ type RoleFilter =
   | "parent"
   | "admin";
 
+// One page of users. This list had no limit at all: it selected every user on
+// the platform, joined to schools, and rendered every one of them. It worked
+// because the platform is small — it is exactly the kind of thing that is fine
+// until the day it isn't, and the day it isn't is the day you have users.
+const PAGE_SIZE = 50;
+
 export default async function AdminUsersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ role?: string }>;
+  searchParams: Promise<{ role?: string; page?: string }>;
 }) {
-  const { role } = await searchParams;
+  const { role, page } = await searchParams;
   const filter = (role ?? "all") as RoleFilter;
+  const pageNum = Math.max(1, Number.parseInt(page ?? "1", 10) || 1);
+  const offset = (pageNum - 1) * PAGE_SIZE;
 
   const where =
     filter !== "all"
@@ -43,21 +51,31 @@ export default async function AdminUsersPage({
         )
       : undefined;
 
-  const rows = await db
-    .select({
-      id: users.id,
-      displayName: users.displayName,
-      email: users.email,
-      role: users.role,
-      growthLevel: users.growthLevel,
-      createdAt: users.createdAt,
-      verifiedAt: users.verifiedAt,
-      schoolName: schools.name,
-    })
-    .from(users)
-    .leftJoin(schools, eq(users.schoolId, schools.id))
-    .where(where)
-    .orderBy(users.createdAt);
+  const [rows, [{ total }]] = await Promise.all([
+    db
+      .select({
+        id: users.id,
+        displayName: users.displayName,
+        email: users.email,
+        role: users.role,
+        growthLevel: users.growthLevel,
+        createdAt: users.createdAt,
+        verifiedAt: users.verifiedAt,
+        schoolName: schools.name,
+      })
+      .from(users)
+      .leftJoin(schools, eq(users.schoolId, schools.id))
+      .where(where)
+      // id as a tiebreak: createdAt alone is not unique, and without a total
+      // order a row can appear on two pages or none.
+      .orderBy(users.createdAt, users.id)
+      .limit(PAGE_SIZE)
+      .offset(offset),
+    db.select({ total: count() }).from(users).where(where),
+  ]);
+
+  const totalUsers = Number(total);
+  const totalPages = Math.max(1, Math.ceil(totalUsers / PAGE_SIZE));
 
   return (
     <div>
@@ -194,6 +212,61 @@ export default async function AdminUsersPage({
           </table>
         </div>
       </div>
+
+      {totalPages > 1 && (
+        <div className="mt-4 flex items-center justify-between text-sm">
+          <p className="text-muted-foreground">
+            Page {pageNum} of {totalPages} · {totalUsers} user
+            {totalUsers === 1 ? "" : "s"}
+          </p>
+          <div className="flex gap-2">
+            <PageLink
+              filter={filter}
+              page={pageNum - 1}
+              disabled={pageNum <= 1}
+              label="Previous"
+            />
+            <PageLink
+              filter={filter}
+              page={pageNum + 1}
+              disabled={pageNum >= totalPages}
+              label="Next"
+            />
+          </div>
+        </div>
+      )}
     </div>
+  );
+}
+
+function PageLink({
+  filter,
+  page,
+  disabled,
+  label,
+}: {
+  filter: RoleFilter;
+  page: number;
+  disabled: boolean;
+  label: string;
+}) {
+  if (disabled) {
+    return (
+      <span className="rounded-full border border-border px-4 py-1.5 text-xs font-semibold text-muted-foreground opacity-40">
+        {label}
+      </span>
+    );
+  }
+  const params = new URLSearchParams();
+  if (filter !== "all") params.set("role", filter);
+  if (page > 1) params.set("page", String(page));
+  const qs = params.toString();
+  return (
+    <Link
+      href={qs ? `/admin/users?${qs}` : "/admin/users"}
+      className="rounded-full border border-border px-4 py-1.5 text-xs font-semibold text-foreground hover:bg-muted"
+    >
+      {label}
+    </Link>
   );
 }
