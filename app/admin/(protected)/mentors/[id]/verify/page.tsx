@@ -1,10 +1,12 @@
 import { and, eq } from "drizzle-orm";
-import { Check, ChevronLeft, CreditCard, FileText } from "lucide-react";
+import { AlertTriangle, ChevronLeft } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/db/db";
 import { users } from "@/db/schema";
 import { VerifyActions } from "./verify-actions";
+
+type MentorOnboarding = { personalStatement?: string } | null;
 
 export default async function VerifyMentorPage({
   params,
@@ -20,6 +22,9 @@ export default async function VerifyMentorPage({
     .limit(1);
 
   if (!mentor) notFound();
+
+  const statement = (mentor.onboardingData as MentorOnboarding)
+    ?.personalStatement;
 
   return (
     <div className="max-w-2xl">
@@ -81,6 +86,17 @@ export default async function VerifyMentorPage({
           </div>
         )}
 
+        {statement && (
+          <div className="mb-4">
+            <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Personal Statement
+            </p>
+            <p className="whitespace-pre-wrap text-sm text-foreground">
+              {statement}
+            </p>
+          </div>
+        )}
+
         <div>
           <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Submitted
@@ -98,30 +114,28 @@ export default async function VerifyMentorPage({
         </div>
       </div>
 
-      {/* Submitted Documents */}
-      <div className="mb-6 rounded-xl border border-border bg-card p-6">
-        <p className="mb-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Submitted Documents
-        </p>
-        <div className="space-y-3">
-          {[
-            { icon: CreditCard, label: "Government ID", status: "Uploaded" },
-            { icon: FileText, label: "CV / Resume", status: "Uploaded" },
-          ].map((doc) => (
-            <div
-              key={doc.label}
-              className="flex items-center gap-3 rounded-lg border border-border p-3"
-            >
-              <doc.icon className="size-5 text-muted-foreground" />
-              <span className="flex-1 text-sm font-medium text-foreground">
-                {doc.label}
-              </span>
-              <span className="flex items-center gap-1 text-xs font-semibold text-primary">
-                <Check className="size-3" />
-                {doc.status}
-              </span>
-            </div>
-          ))}
+      {/* Submitted Documents.
+          This card used to render a hardcoded array claiming "Government ID —
+          ✓ Uploaded" and "CV — ✓ Uploaded" for EVERY mentor. No document
+          storage exists in this codebase, so nothing had ever been uploaded and
+          there was nothing behind the checkmarks. On the screen where an admin
+          decides whether to approve an adult who will be paired with a child,
+          that is fabricated compliance evidence: an admin checking that ID was
+          submitted before approving was told yes, always.
+          Until the real upload flow lands, this states the truth instead. */}
+      <div className="mb-6 rounded-xl border border-earth/30 bg-earth-light/10 p-6">
+        <div className="flex items-start gap-3">
+          <AlertTriangle className="mt-0.5 size-5 shrink-0 text-earth" />
+          <div>
+            <p className="text-sm font-semibold text-foreground">
+              No documents on file
+            </p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Document upload isn&apos;t built yet — mentors are told at
+              onboarding that our team will contact them by email. Verify this
+              mentor&apos;s ID and CV through that channel before approving.
+            </p>
+          </div>
         </div>
       </div>
 

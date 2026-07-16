@@ -44,6 +44,7 @@ type OnboardingData = {
     availability: string[];
   };
   verificationSubmitted?: boolean;
+  personalStatement?: string;
   parentProfile?: {
     relationship: string;
     phone: string;
@@ -64,6 +65,8 @@ async function getUser() {
   if (!user) throw new Error("User not found");
   return user;
 }
+
+const MAX_STATEMENT = 2_000;
 
 async function patchOnboardingData(
   clerkId: string,
@@ -223,10 +226,22 @@ export async function saveMentorPricing(data: {
   redirect("/onboarding/mentor/verification");
 }
 
-export async function submitMentorVerification() {
+// The personal statement is the ONLY thing a mentor applicant actually submits
+// — document upload isn't built yet. It used to be dropped on the floor: the
+// textarea was uncontrolled and this action took no arguments, so an applicant
+// wrote their statement, hit Submit, and was redirected to a success page while
+// the text went nowhere. It reaches the admin's review screen now.
+export async function submitMentorVerification(personalStatement: string) {
   const { userId } = await auth();
   if (!userId) throw new Error("Unauthenticated");
-  await patchOnboardingData(userId, { verificationSubmitted: true });
+  const statement =
+    typeof personalStatement === "string"
+      ? personalStatement.trim().slice(0, MAX_STATEMENT)
+      : "";
+  await patchOnboardingData(userId, {
+    verificationSubmitted: true,
+    personalStatement: statement,
+  });
   redirect("/dashboard");
 }
 

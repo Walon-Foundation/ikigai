@@ -48,7 +48,7 @@ export function SettingsClient({ user }: { user: DbUser }) {
   const [journalPrivacy, setJournalPrivacy] = useState(true);
   const [isSigningOut, startSignOutTransition] = useTransition();
   const { signOut } = useClerk();
-  const { prompt, isIOS, isInstalled, install } = usePwaInstall();
+  const { prompt, isIOS, isInstalled, dismissed, install } = usePwaInstall();
 
   function handlePushToggle(next: boolean) {
     setPushError(null);
@@ -184,8 +184,10 @@ export function SettingsClient({ user }: { user: DbUser }) {
           </button>
         </div>
 
-        {/* Install app */}
-        {!isInstalled && (
+        {/* Install app — `=== false`, not `!isInstalled`: until the browser has
+            been asked this is null, and rendering the card on null would show it
+            to installed users for a frame before it disappeared. */}
+        {isInstalled === false && (
           <div className="mb-4 rounded-2xl border border-border bg-card p-5">
             <div className="flex items-center gap-3">
               <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary">
@@ -220,6 +222,11 @@ export function SettingsClient({ user }: { user: DbUser }) {
                   <Download className="size-4" />
                   Install App
                 </button>
+              ) : dismissed ? (
+                <p className="text-sm text-muted-foreground">
+                  Install cancelled. Reload this page to try again, or use your
+                  browser&apos;s menu.
+                </p>
               ) : (
                 <p className="text-sm text-muted-foreground">
                   Open this page in Chrome or Safari to install.
