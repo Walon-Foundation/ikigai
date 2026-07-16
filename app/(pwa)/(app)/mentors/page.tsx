@@ -1,4 +1,4 @@
-import { and, avg, count, eq, isNotNull } from "drizzle-orm";
+import { and, avg, count, eq, isNotNull, sql } from "drizzle-orm";
 import { MapPin, Star } from "lucide-react";
 import Link from "next/link";
 import { Avatar } from "@/components/avatar";
@@ -32,7 +32,15 @@ export default async function MentorsMarketplacePage({
         avatarUrl: users.avatarUrl,
         bio: users.bio,
         interestTags: users.interestTags,
-        onboardingData: users.onboardingData,
+        // Just the one branch of the blob, extracted in Postgres.
+        //
+        // This used to select `onboardingData` whole, for 60 mentors, to read
+        // three fields off `mentorProfile`. The rest of the document — the
+        // assessment, values ranking, personality sliders, purpose profile,
+        // life vision — was pulled across the wire and thrown away on every
+        // load of this page, and it grew with every field ever added to
+        // onboarding. Data costs money for the people using this app.
+        mentorProfile: sql<MentorProfile | null>`${users.onboardingData} -> 'mentorProfile'`,
       })
       .from(users)
       // Only ikigai-approved mentors (verifiedAt set by admin) are browsable.
@@ -57,8 +65,7 @@ export default async function MentorsMarketplacePage({
   );
 
   const mentors = mentorRows.map((m) => {
-    const profile = (m.onboardingData as { mentorProfile?: MentorProfile })
-      ?.mentorProfile;
+    const profile = m.mentorProfile ?? undefined;
     const r = ratings.get(m.id);
     return {
       id: m.id,

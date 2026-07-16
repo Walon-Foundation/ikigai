@@ -14,10 +14,16 @@ const dmSans = DM_Sans({
   display: "swap",
 });
 
+// Not preloaded. next/font preloads by default, which put a 40KB woff2 on the
+// critical path of every page in the app — including all seven marketing pages,
+// where `font-mono` renders not one glyph. It's used in exactly three places,
+// all deep inside the PWA, all pairing codes. It still loads there, just when
+// something actually needs it rather than ahead of first paint everywhere.
 const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
   variable: "--font-jetbrains-mono",
   display: "swap",
+  preload: false,
 });
 
 export const metadata: Metadata = {

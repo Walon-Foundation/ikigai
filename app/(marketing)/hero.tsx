@@ -1,11 +1,13 @@
-"use client";
-
-import { motion } from "framer-motion";
-import { GrowthTree } from "@/components/growth-tree";
 import { clientEnv } from "@/lib/env.client";
+import { HeroTree } from "./hero-tree";
 
 const APP_URL = clientEnv.appUrl;
 
+// A server component. This was `"use client"` so that framer-motion could fade
+// four elements in on load — ~46KB gzipped of JavaScript, on the page every
+// first-time visitor lands on, to do what four CSS keyframes do. The CSS
+// version also starts at first paint rather than waiting for a bundle, which
+// matters most on exactly the slow connections where the JS looked worst.
 export function Hero() {
   return (
     <section className="relative overflow-hidden bg-background pb-24 pt-40">
@@ -26,27 +28,16 @@ export function Hero() {
           {/* Left: text */}
           <div>
             {/* Eyebrow — yellow dot + label */}
-            <motion.div
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-              className="mb-6 flex items-center gap-2"
-            >
+            <div className="mb-6 flex animate-fade-up items-center gap-2">
               <span className="h-2 w-2 shrink-0 rounded-full bg-accent" />
               <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
                 Sierra Leone · Youth Platform
               </span>
-            </motion.div>
+            </div>
 
-            <motion.h1
-              initial={{ opacity: 0, y: 24 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{
-                duration: 0.7,
-                delay: 0.15,
-                ease: [0.16, 1, 0.3, 1],
-              }}
-              className="font-display mb-6 text-5xl font-black leading-[1.05] tracking-tight text-foreground sm:text-6xl"
+            <h1
+              className="font-display mb-6 animate-fade-up text-5xl font-black leading-[1.05] tracking-tight text-foreground sm:text-6xl"
+              style={{ animationDelay: "0.15s" }}
             >
               To build a generation of confident,{" "}
               <span className="relative inline">
@@ -57,31 +48,19 @@ export function Hero() {
                 />
               </span>{" "}
               young people across Africa.
-            </motion.h1>
+            </h1>
 
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{
-                duration: 0.7,
-                delay: 0.3,
-                ease: [0.16, 1, 0.3, 1],
-              }}
-              className="mb-10 max-w-xl text-xl leading-relaxed text-muted-foreground"
+            <p
+              className="mb-10 max-w-xl animate-fade-up text-xl leading-relaxed text-muted-foreground"
+              style={{ animationDelay: "0.3s" }}
             >
               Ikigai connects youth with verified mentors, purpose tools, and a
               community built for their future.
-            </motion.p>
+            </p>
 
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{
-                duration: 0.6,
-                delay: 0.45,
-                ease: [0.16, 1, 0.3, 1],
-              }}
-              className="flex flex-wrap gap-4"
+            <div
+              className="flex animate-fade-up flex-wrap gap-4"
+              style={{ animationDelay: "0.45s" }}
             >
               <a
                 href={APP_URL}
@@ -95,15 +74,13 @@ export function Hero() {
               >
                 How It Works <span aria-hidden>→</span>
               </a>
-            </motion.div>
+            </div>
           </div>
 
           {/* Right: Growth Tree panel — desktop only */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.94 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.9, delay: 0.5, ease: [0.16, 1, 0.3, 1] }}
-            className="hidden lg:flex lg:justify-center"
+          <div
+            className="hidden animate-fade-up lg:flex lg:justify-center"
+            style={{ animationDelay: "0.5s" }}
           >
             <div className="relative w-full max-w-sm">
               <div className="relative overflow-hidden rounded-2xl border border-border bg-card p-8 shadow-sm">
@@ -116,7 +93,7 @@ export function Hero() {
                       "radial-gradient(ellipse at 50% 100%, oklch(0.35 0.095 154 / 0.06) 0%, transparent 70%)",
                   }}
                 />
-                <GrowthTree completedCount={6} level={3} />
+                <HeroTree />
                 <div className="mt-4 flex justify-center gap-8 border-t border-border pt-4">
                   <div className="text-center">
                     <p className="text-lg font-black text-primary">6</p>
@@ -133,7 +110,7 @@ export function Hero() {
                 </div>
               </div>
             </div>
-          </motion.div>
+          </div>
         </div>
       </div>
     </section>

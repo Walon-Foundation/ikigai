@@ -48,15 +48,20 @@ export default function ResourceMap() {
     import("leaflet").then((L) => {
       import("leaflet/dist/leaflet.css");
 
-      // Fix default icon path broken by webpack/turbopack
+      // Fix default icon path broken by webpack/turbopack.
+      //
+      // Served from /public, not unpkg. These three images ship inside the
+      // leaflet package we already install, so fetching them from a CDN bought
+      // nothing and cost a DNS lookup, a TLS handshake and three cross-origin
+      // requests to a host we don't control — on connections where that is the
+      // difference between a map appearing and a map not appearing. Copied by
+      // hand into public/leaflet/ (see that folder).
       // biome-ignore lint/suspicious/noExplicitAny: Leaflet internal property
       delete (L.Icon.Default.prototype as any)._getIconUrl;
       L.Icon.Default.mergeOptions({
-        iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-        iconRetinaUrl:
-          "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-        shadowUrl:
-          "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+        iconUrl: "/leaflet/marker-icon.png",
+        iconRetinaUrl: "/leaflet/marker-icon-2x.png",
+        shadowUrl: "/leaflet/marker-shadow.png",
       });
 
       if (!mapRef.current) return;

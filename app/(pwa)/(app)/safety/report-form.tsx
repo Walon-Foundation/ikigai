@@ -1,0 +1,109 @@
+"use client";
+
+import { AlertTriangle, Send, Shield } from "lucide-react";
+import { useState, useTransition } from "react";
+import { BusyLabel } from "@/components/spinner";
+import { submitSafetyReport } from "./actions";
+
+// The only interactive part of the Safety page. Split out so the crisis banner
+// and the helpline list — which are static, and are the things someone in
+// trouble actually needs to reach — render as plain server-rendered HTML
+// instead of waiting on this form's JavaScript.
+export function ReportForm() {
+  const [reportType, setReportType] = useState<"inappropriate" | "concern">(
+    "inappropriate",
+  );
+  const [reportNotes, setReportNotes] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const [isPending, startTransition] = useTransition();
+
+  function submitReport() {
+    if (!reportNotes.trim()) return;
+    setFailed(false);
+    startTransition(async () => {
+      try {
+        await submitSafetyReport({ type: reportType, notes: reportNotes });
+        setSubmitted(true);
+        setReportNotes("");
+      } catch {
+        // A safety report that fails must say so. Previously the throw was
+        // unhandled: the button simply returned to its resting state and the
+        // person was left to guess whether anyone had been told.
+        setFailed(true);
+      }
+    });
+  }
+
+  return (
+    <div className="rounded-2xl border border-border bg-card p-5">
+      <div className="mb-4 flex items-center gap-2">
+        <Shield className="size-5 text-primary" />
+        <p className="font-semibold text-foreground">Anonymous Report</p>
+      </div>
+      <p className="mb-4 text-sm text-muted-foreground">
+        Report inappropriate behaviour or safety concerns. Your identity remains
+        anonymous. Our admin team reviews every report.
+      </p>
+
+      {submitted ? (
+        <div className="rounded-xl border border-primary-muted/40 bg-primary-muted/10 p-4 text-center">
+          <p className="font-semibold text-primary">Report submitted</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Our team will review your report within 24 hours.
+          </p>
+        </div>
+      ) : (
+        <>
+          <div className="mb-3 flex gap-2">
+            {(["inappropriate", "concern"] as const).map((type) => (
+              <button
+                key={type}
+                type="button"
+                onClick={() => setReportType(type)}
+                className={`flex-1 rounded-xl border py-2 text-sm font-medium capitalize transition-all ${
+                  reportType === type
+                    ? "border-primary bg-primary-muted/10 text-primary"
+                    : "border-border text-muted-foreground"
+                }`}
+              >
+                {type === "inappropriate" ? "Inappropriate" : "Safety Concern"}
+              </button>
+            ))}
+          </div>
+          <textarea
+            value={reportNotes}
+            onChange={(e) => setReportNotes(e.target.value)}
+            placeholder="Describe what happened..."
+            rows={4}
+            className="w-full resize-none rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none placeholder:text-muted-foreground focus:border-primary"
+          />
+          <div className="mt-3 flex items-center gap-2">
+            <AlertTriangle className="size-3.5 text-muted-foreground" />
+            <p className="text-xs text-muted-foreground">
+              Your identity will not be revealed.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={submitReport}
+            disabled={!reportNotes.trim() || isPending}
+            aria-busy={isPending}
+            className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-earth py-3 text-sm font-semibold text-white disabled:opacity-40"
+          >
+            <BusyLabel pending={isPending} busy="Submitting…">
+              <Send className="size-4" />
+              Submit Report
+            </BusyLabel>
+          </button>
+          {failed && (
+            <p className="mt-2 text-center text-sm font-semibold text-destructive">
+              Couldn&apos;t send your report — it has not reached our team. Your
+              text is still here. If this is urgent, use a helpline above.
+            </p>
+          )}
+        </>
+      )}
+    </div>
+  );
+}

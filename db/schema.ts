@@ -218,7 +218,12 @@ export const journalEntries = pgTable(
     createdAt: timestamp("created_at").defaultNow(),
   },
   // One person's entries, newest first (journal page + dashboard latest-entry).
-  (t) => [index("journal_entries_user_idx").on(t.userId, t.createdAt)],
+  (t) => [
+    index("journal_entries_user_idx").on(t.userId, t.createdAt),
+    // Same reason as messages_created_at_idx: the index above leads with
+    // userId, so a platform-wide date range can't use it.
+    index("journal_entries_created_at_idx").on(t.createdAt),
+  ],
 );
 
 // Mentor feedback on a (shared) journal entry — part of the growth archive.
@@ -331,6 +336,11 @@ export const messages = pgTable(
   (t) => [
     index("messages_mentorship_idx").on(t.mentorshipId, t.createdAt),
     index("messages_group_idx").on(t.groupId, t.createdAt),
+    // Admin analytics counts messages platform-wide in a date range. The two
+    // indexes above lead with a scope id, so neither can serve a global
+    // `created_at >= x` — without this it is a seq scan of the largest table in
+    // the app on every analytics load.
+    index("messages_created_at_idx").on(t.createdAt),
   ],
 );
 
