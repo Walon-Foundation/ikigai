@@ -50,6 +50,16 @@ export const users = pgTable(
       "private",
     ),
     verifiedAt: timestamp("verified_at"),
+    // Set when the user asks for their account to be deleted. The account is
+    // scrubbed by the purge job after a grace period, during which the user can
+    // change their mind from Settings. Deletion is deliberately not instant: a
+    // distressed teenager erasing their account at 2am is a foreseeable
+    // scenario on this platform, and that tap should be recoverable.
+    // A purged account keeps this row (scrubbed) rather than dropping it: safety
+    // reports point at users.id, and someone reported for harming a child must
+    // not be able to erase the report by deleting themselves. See lib/purge.ts.
+    deletionRequestedAt: timestamp("deletion_requested_at"),
+    deletedAt: timestamp("deleted_at"),
     pushSubscription: jsonb("push_subscription"), // Web Push subscription object
     onboardingData: jsonb("onboarding_data"),
     createdAt: timestamp("created_at").defaultNow(),

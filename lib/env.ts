@@ -33,6 +33,10 @@ const schema = z
     VAPID_SUBJECT: z.string().default("mailto:hello@findingyourikigai.org"),
     // UploadThing (profile photos). Required for avatar uploads to work.
     UPLOADTHING_TOKEN: z.string().optional(),
+    // Shared secret for the scheduled purge endpoint. Optional so dev and
+    // preview boot without it — the route refuses to run when it's unset
+    // rather than running unauthenticated.
+    CRON_SECRET: z.string().optional(),
   })
   .refine(
     (e) =>
@@ -69,6 +73,7 @@ export const env = {
   vapidPrivateKey: parsed.data.VAPID_PRIVATE_KEY,
   vapidSubject: parsed.data.VAPID_SUBJECT,
   uploadthingToken: parsed.data.UPLOADTHING_TOKEN,
+  cronSecret: parsed.data.CRON_SECRET,
   // appHostname, appUrl, marketingUrl, vapidPublicKey — public values shared
   // with the client.
   ...clientEnv,

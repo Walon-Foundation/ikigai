@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getDbUser } from "@/lib/db-user";
+import { DELETION_GRACE_DAYS } from "@/lib/purge";
 import { SettingsClient } from "./settings-client";
 
 export default async function SettingsPage() {
@@ -17,6 +18,8 @@ export default async function SettingsPage() {
         interestTags: user.interestTags,
         pushEnabled: !!user.pushSubscription,
         journalMentorDefault: user.journalDefaultVisibility === "mentor_only",
+        deletionRequestedAt: user.deletionRequestedAt?.toISOString() ?? null,
+        deletionGraceDays: DELETION_GRACE_DAYS,
       }}
     />
   );

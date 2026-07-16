@@ -20,6 +20,10 @@ import {
   updateJournalDefault,
   updateProfile,
 } from "@/app/(pwa)/(app)/settings/actions";
+import {
+  cancelAccountDeletion,
+  requestAccountDeletion,
+} from "@/app/(pwa)/(app)/settings/deletion-actions";
 import { AvatarUpload } from "@/components/avatar-upload";
 import { PageHeader } from "@/components/page-header";
 import { BusyLabel, Spinner } from "@/components/spinner";
@@ -37,6 +41,8 @@ type DbUser = {
   interestTags: string[] | null;
   pushEnabled?: boolean;
   journalMentorDefault?: boolean;
+  deletionRequestedAt?: string | null;
+  deletionGraceDays?: number;
 };
 
 const PUSH_ERROR: Record<string, string> = {
@@ -180,17 +186,10 @@ export function SettingsClient({ user }: { user: DbUser }) {
               Couldn&apos;t save that — your journal setting is unchanged.
             </p>
           )}
-          <div className="mt-3 flex items-center justify-between rounded-xl border border-border p-3">
-            <div>
-              <p className="text-sm font-medium text-foreground">
-                Data &amp; Privacy
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Download or delete your data
-              </p>
-            </div>
-            <ChevronRight className="size-4 text-muted-foreground" />
-          </div>
+          <DataPrivacy
+            deletionRequestedAt={user.deletionRequestedAt ?? null}
+            graceDays={user.deletionGraceDays ?? 30}
+          />
         </SettingsSection>
 
         {/* Accessibility */}
@@ -314,6 +313,148 @@ export function SettingsClient({ user }: { user: DbUser }) {
         </button>
       </div>
     </>
+  );
+}
+
+// "Download or delete your data" — the row that has always had a chevron and
+// no behaviour behind it.
+function DataPrivacy({
+  deletionRequestedAt,
+  graceDays,
+}: {
+  deletionRequestedAt: string | null;
+  graceDays: number;
+}) {
+  const router = useRouter();
+  const [confirming, setConfirming] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const [pending, startTransition] = useTransition();
+
+  function requestDeletion() {
+    setFailed(false);
+    startTransition(async () => {
+      try {
+        await requestAccountDeletion();
+        setConfirming(false);
+        router.refresh();
+      } catch {
+        setFailed(true);
+      }
+    });
+  }
+
+  function cancelDeletion() {
+    setFailed(false);
+    startTransition(async () => {
+      try {
+        await cancelAccountDeletion();
+        router.refresh();
+      } catch {
+        setFailed(true);
+      }
+    });
+  }
+
+  if (deletionRequestedAt) {
+    const deletesOn = new Date(
+      new Date(deletionRequestedAt).getTime() + graceDays * 86_400_000,
+    );
+    return (
+      <div className="mt-3 rounded-xl border border-destructive/40 bg-destructive/5 p-4">
+        <p className="text-sm font-semibold text-destructive">
+          Your account is scheduled for deletion
+        </p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Everything will be erased on{" "}
+          {deletesOn.toLocaleDateString("en-GB", {
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+          })}
+          . You can still change your mind until then.
+        </p>
+        <button
+          type="button"
+          onClick={cancelDeletion}
+          disabled={pending}
+          aria-busy={pending}
+          className="mt-3 rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-40"
+        >
+          <BusyLabel pending={pending} busy="Cancelling…">
+            Keep my account
+          </BusyLabel>
+        </button>
+        {failed && (
+          <p className="mt-2 text-xs font-semibold text-destructive">
+            Couldn&apos;t do that — try again.
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-3 rounded-xl border border-border p-3">
+      <p className="text-sm font-medium text-foreground">Data &amp; Privacy</p>
+      <p className="text-xs text-muted-foreground">
+        Download or delete your data
+      </p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {/* A plain link, not fetch(): lets the browser handle the download and
+            keeps the file out of JS memory entirely. */}
+        <a
+          href="/api/me/export"
+          download
+          className="inline-flex items-center gap-1.5 rounded-full border border-border px-4 py-2 text-xs font-semibold text-foreground hover:bg-muted"
+        >
+          <Download className="size-3.5" />
+          Download my data
+        </a>
+        <button
+          type="button"
+          onClick={() => setConfirming(true)}
+          className="rounded-full border border-destructive px-4 py-2 text-xs font-semibold text-destructive hover:bg-destructive/10"
+        >
+          Delete my account
+        </button>
+      </div>
+
+      {confirming && (
+        <div className="mt-3 rounded-xl border border-destructive/40 bg-destructive/5 p-3">
+          <p className="text-xs text-foreground">
+            Your profile, journal and goals will be erased after {graceDays}{" "}
+            days. Your messages stay in your mentor&apos;s chat history, shown
+            as &ldquo;Deleted user&rdquo;. You can cancel any time before then.
+          </p>
+          <div className="mt-3 flex gap-2">
+            <button
+              type="button"
+              onClick={requestDeletion}
+              disabled={pending}
+              aria-busy={pending}
+              className="rounded-full bg-destructive px-4 py-2 text-xs font-semibold text-white disabled:opacity-40"
+            >
+              <BusyLabel pending={pending} busy="Scheduling…">
+                Yes, delete my account
+              </BusyLabel>
+            </button>
+            <button
+              type="button"
+              onClick={() => setConfirming(false)}
+              disabled={pending}
+              className="rounded-full border border-border px-4 py-2 text-xs font-semibold text-muted-foreground disabled:opacity-40"
+            >
+              Cancel
+            </button>
+          </div>
+          {failed && (
+            <p className="mt-2 text-xs font-semibold text-destructive">
+              Couldn&apos;t do that — try again.
+            </p>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 

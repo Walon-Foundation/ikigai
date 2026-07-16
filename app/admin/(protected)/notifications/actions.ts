@@ -1,6 +1,6 @@
 "use server";
 
-import { eq, inArray, isNotNull } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, isNull } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db/db";
 import { schools, users } from "@/db/schema";
@@ -33,12 +33,15 @@ async function recipientsFor(audience: Audience) {
       .selectDistinct(select)
       .from(users)
       .innerJoin(schools, eq(schools.clubLeadId, users.id))
-      .where(isNotNull(schools.verifiedAt));
+      .where(and(isNotNull(schools.verifiedAt), isNull(users.deletedAt)));
   }
 
   if (audience === "mentees" || audience === "mentors") {
     const role = audience === "mentees" ? "mentee" : "mentor";
-    return db.select(select).from(users).where(eq(users.role, role));
+    return db
+      .select(select)
+      .from(users)
+      .where(and(eq(users.role, role), isNull(users.deletedAt)));
   }
 
   // "all" means everyone who can actually receive it — admins included, since
@@ -46,7 +49,14 @@ async function recipientsFor(audience: Audience) {
   return db
     .select(select)
     .from(users)
-    .where(inArray(users.role, ["mentee", "mentor", "parent", "admin"]));
+    .where(
+      and(
+        inArray(users.role, ["mentee", "mentor", "parent", "admin"]),
+        // Purged accounts are tombstones, not people. They keep their row so
+        // safety reports still point somewhere; they must not be broadcast to.
+        isNull(users.deletedAt),
+      ),
+    );
 }
 
 /**
