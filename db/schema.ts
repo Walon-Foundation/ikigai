@@ -209,6 +209,12 @@ export const schools = pgTable("schools", {
   region: text("region"), // 'freetown' | 'western_rural'
   clubLeadId: uuid("club_lead_id"),
   verifiedAt: timestamp("verified_at"),
+  // A school an admin turned down. Without this there was nowhere to record a
+  // rejection, so the vetting route simply had no else branch: "Reject" wrote
+  // nothing, reported success, and left the school in the pending queue for the
+  // next admin to review again. Pending is (verified_at IS NULL AND
+  // rejected_at IS NULL) — see admin/schools/page.tsx.
+  rejectedAt: timestamp("rejected_at"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -228,7 +234,13 @@ export const safetyReports = pgTable("safety_reports", {
   reporterId: uuid("reporter_id").references(() => users.id),
   reportedId: uuid("reported_id").references(() => users.id),
   type: text("type"), // 'inappropriate' | 'concern'
+  // The REPORTER's account of what happened. Not the admin's.
   notes: text("notes"),
+  // What the admin did about it. The review screen has always had a notes
+  // textarea, but there was no column behind it — the text was captured into
+  // React state and dropped on navigation, so the record of what action was
+  // taken on a safeguarding report was lost every time.
+  adminNotes: text("admin_notes"),
   resolvedAt: timestamp("resolved_at"),
   createdAt: timestamp("created_at").defaultNow(),
 });

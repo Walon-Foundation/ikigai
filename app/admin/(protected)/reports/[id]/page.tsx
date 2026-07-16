@@ -22,6 +22,7 @@ export default async function AdminReportDetailPage({
       id: safetyReports.id,
       type: safetyReports.type,
       notes: safetyReports.notes,
+      adminNotes: safetyReports.adminNotes,
       resolvedAt: safetyReports.resolvedAt,
       createdAt: safetyReports.createdAt,
       reporterName: reporterUser.displayName,
@@ -127,6 +128,7 @@ export default async function AdminReportDetailPage({
         reportId={id}
         initialResolved={isResolved}
         resolvedAt={report.resolvedAt?.toISOString() ?? null}
+        initialNotes={report.adminNotes ?? ""}
       />
     </div>
   );

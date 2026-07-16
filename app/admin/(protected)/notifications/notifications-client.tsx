@@ -1,7 +1,10 @@
 "use client";
 
 import { Bell, Send } from "lucide-react";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
+import { BusyLabel } from "@/components/spinner";
+import { sendBroadcast } from "./actions";
 
 const AUDIENCES = [
   { value: "all", label: "All Users" },
@@ -19,17 +22,35 @@ type NotifHistory = {
 };
 
 export function NotificationsClient({ history }: { history: NotifHistory[] }) {
+  const router = useRouter();
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [audience, setAudience] = useState("all");
-  const [sent, setSent] = useState(false);
+  const [sentCount, setSentCount] = useState<number | null>(null);
+  const [failed, setFailed] = useState(false);
+  const [pending, startTransition] = useTransition();
 
   function handleSend() {
     if (!title.trim() || !body.trim()) return;
-    setSent(true);
-    setTitle("");
-    setBody("");
-    setTimeout(() => setSent(false), 3000);
+    setFailed(false);
+    setSentCount(null);
+    startTransition(async () => {
+      try {
+        // This used to be `setSent(true)` and nothing else — no request, no
+        // write, no delivery. The button said "Sent! ✓" and not one person
+        // received anything.
+        const { sent } = await sendBroadcast({ title, body, audience });
+        setSentCount(sent);
+        // Clear only after it actually went, so a failure doesn't destroy a
+        // message the admin may have spent a while composing.
+        setTitle("");
+        setBody("");
+        // The history panel below is server-rendered from push_notifications.
+        router.refresh();
+      } catch {
+        setFailed(true);
+      }
+    });
   }
 
   return (
@@ -120,12 +141,26 @@ export function NotificationsClient({ history }: { history: NotifHistory[] }) {
           <button
             type="button"
             onClick={handleSend}
-            disabled={!title.trim() || !body.trim()}
-            className="flex w-full items-center justify-center gap-2 rounded-full bg-primary py-3 font-semibold text-primary-foreground hover:bg-primary-light disabled:opacity-40 transition-colors"
+            disabled={pending || !title.trim() || !body.trim()}
+            aria-busy={pending}
+            className="flex w-full items-center justify-center gap-2 rounded-full bg-primary py-3 font-semibold text-primary-foreground transition-colors hover:bg-primary-light disabled:opacity-40"
           >
-            <Send className="size-4" />
-            {sent ? "Sent! ✓" : "Send Notification"}
+            <BusyLabel pending={pending} busy="Sending…">
+              <Send className="size-4" />
+              Send Notification
+            </BusyLabel>
           </button>
+
+          {sentCount !== null && (
+            <p className="text-center text-sm font-semibold text-primary">
+              Sent to {sentCount} {sentCount === 1 ? "person" : "people"} ✓
+            </p>
+          )}
+          {failed && (
+            <p className="text-center text-sm font-semibold text-destructive">
+              Couldn&apos;t send — your message is still here, try again.
+            </p>
+          )}
         </div>
       </div>
 

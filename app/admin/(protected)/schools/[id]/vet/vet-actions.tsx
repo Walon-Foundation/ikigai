@@ -2,7 +2,9 @@
 
 import { Check, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { BusyLabel } from "@/components/spinner";
+import { vetSchool } from "./actions";
 
 export function VetActions({
   schoolId,
@@ -15,17 +17,26 @@ export function VetActions({
   const [decision, setDecision] = useState<"approved" | "rejected" | null>(
     null,
   );
-  const [loading, setLoading] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const [pending, startTransition] = useTransition();
+  const [busy, setBusy] = useState<"approved" | "rejected" | null>(null);
 
-  async function handleDecision(action: "approved" | "rejected") {
-    setLoading(true);
-    await fetch("/admin/api/verify-school", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ schoolId, action }),
+  function decide(action: "approved" | "rejected") {
+    setFailed(false);
+    setBusy(action);
+    startTransition(async () => {
+      try {
+        await vetSchool({ schoolId, action });
+        // Set from the write's result, not from the click. This screen used to
+        // announce "rejected — the club lead has been notified" on top of a
+        // request that wrote nothing and notified nobody.
+        setDecision(action);
+      } catch {
+        setFailed(true);
+      } finally {
+        setBusy(null);
+      }
     });
-    setDecision(action);
-    setLoading(false);
   }
 
   if (decision) {
@@ -41,7 +52,7 @@ export function VetActions({
         </h2>
         <p className="mt-2 text-muted-foreground">
           {decision === "approved"
-            ? "The school clubhouse is now active."
+            ? "The clubhouse is active and the club lead has been notified."
             : "The club lead has been notified."}
         </p>
         <button
@@ -56,25 +67,38 @@ export function VetActions({
   }
 
   return (
-    <div className="flex gap-4">
-      <button
-        type="button"
-        onClick={() => handleDecision("approved")}
-        disabled={loading}
-        className="flex flex-1 items-center justify-center gap-2 rounded-full bg-primary py-4 font-semibold text-primary-foreground hover:bg-primary-light transition-colors disabled:opacity-50"
-      >
-        <Check className="size-5" />
-        Approve School
-      </button>
-      <button
-        type="button"
-        onClick={() => handleDecision("rejected")}
-        disabled={loading}
-        className="flex flex-1 items-center justify-center gap-2 rounded-full border border-destructive py-4 font-semibold text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50"
-      >
-        <X className="size-5" />
-        Reject
-      </button>
-    </div>
+    <>
+      <div className="flex gap-4">
+        <button
+          type="button"
+          onClick={() => decide("approved")}
+          disabled={pending}
+          aria-busy={busy === "approved"}
+          className="flex flex-1 items-center justify-center gap-2 rounded-full bg-primary py-4 font-semibold text-primary-foreground transition-colors hover:bg-primary-light disabled:opacity-50"
+        >
+          <BusyLabel pending={busy === "approved"} busy="Approving…">
+            <Check className="size-5" />
+            Approve School
+          </BusyLabel>
+        </button>
+        <button
+          type="button"
+          onClick={() => decide("rejected")}
+          disabled={pending}
+          aria-busy={busy === "rejected"}
+          className="flex flex-1 items-center justify-center gap-2 rounded-full border border-destructive py-4 font-semibold text-destructive transition-colors hover:bg-destructive/10 disabled:opacity-50"
+        >
+          <BusyLabel pending={busy === "rejected"} busy="Rejecting…">
+            <X className="size-5" />
+            Reject
+          </BusyLabel>
+        </button>
+      </div>
+      {failed && (
+        <p className="mt-3 text-center text-sm font-semibold text-destructive">
+          Couldn&apos;t save that decision — nothing was changed. Try again.
+        </p>
+      )}
+    </>
   );
 }

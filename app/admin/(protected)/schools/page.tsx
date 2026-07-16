@@ -1,4 +1,4 @@
-import { count, eq, isNotNull, isNull } from "drizzle-orm";
+import { and, count, eq, isNotNull, isNull } from "drizzle-orm";
 import { CheckCircle, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { db } from "@/db/db";
@@ -16,7 +16,10 @@ export default async function AdminSchoolsPage() {
       })
       .from(schools)
       .leftJoin(users, eq(schools.clubLeadId, users.id))
-      .where(isNull(schools.verifiedAt)),
+      // Pending means undecided — not merely unverified. A rejected school is
+      // decided, and before `rejected_at` existed there was nowhere to say so,
+      // so rejections sat here forever waiting to be re-reviewed.
+      .where(and(isNull(schools.verifiedAt), isNull(schools.rejectedAt))),
     db
       .select({
         id: schools.id,
