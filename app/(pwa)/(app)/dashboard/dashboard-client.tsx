@@ -20,6 +20,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { PageHeader } from "@/components/page-header";
 import { BusyLabel } from "@/components/spinner";
+import { useToast } from "@/components/toast";
 import { stageName } from "@/lib/growth";
 import { GuardianConsent, type GuardianRequest } from "./guardian-consent";
 import { completeMyTask } from "./task-actions";
@@ -41,6 +42,7 @@ type OpenTask = {
 // anything about it, while tasks are what drive growth points and tree health.
 function TaskCard({ task }: { task: OpenTask }) {
   const router = useRouter();
+  const toast = useToast();
   const [failed, setFailed] = useState(false);
   const [pending, startTransition] = useTransition();
 
@@ -49,6 +51,13 @@ function TaskCard({ task }: { task: OpenTask }) {
     startTransition(async () => {
       try {
         await completeMyTask(task.id);
+        // A toast earns its place here: finishing a task grows the tree, and
+        // the tree is on another page. Without this the card just vanishes and
+        // the reward for doing the work is invisible.
+        toast({
+          title: "Task complete",
+          description: "Your tree grew. See it on your Journey.",
+        });
         router.refresh();
       } catch {
         setFailed(true);

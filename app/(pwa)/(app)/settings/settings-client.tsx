@@ -27,6 +27,7 @@ import {
 import { AvatarUpload } from "@/components/avatar-upload";
 import { PageHeader } from "@/components/page-header";
 import { BusyLabel, Spinner } from "@/components/spinner";
+import { useToast } from "@/components/toast";
 import { INTEREST_TAGS } from "@/lib/constants";
 import { subscribeToPush, unsubscribeFromPush } from "@/lib/push-client";
 import { usePwaInstall } from "@/lib/use-pwa-install";
@@ -468,6 +469,7 @@ function ProfileForm({
   onDone: () => void;
 }) {
   const router = useRouter();
+  const toast = useToast();
   const [name, setName] = useState(initialName);
   const [bio, setBio] = useState(initialBio);
   const [failed, setFailed] = useState(false);
@@ -479,6 +481,8 @@ function ProfileForm({
     startTransition(async () => {
       try {
         await updateProfile({ displayName: name, bio });
+        // The form closes on success, taking any inline confirmation with it.
+        toast({ title: "Profile saved" });
         router.refresh();
         onDone();
       } catch {
@@ -560,6 +564,7 @@ function InterestsForm({
   onDone: () => void;
 }) {
   const router = useRouter();
+  const toast = useToast();
   const [tags, setTags] = useState<string[]>(initialTags);
   const [failed, setFailed] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -577,6 +582,10 @@ function InterestsForm({
     startTransition(async () => {
       try {
         await updateInterests(tags);
+        toast({
+          title: "Interests saved",
+          description: "We'll use these to suggest mentors.",
+        });
         router.refresh();
         onDone();
       } catch {

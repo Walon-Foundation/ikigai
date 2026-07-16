@@ -5,6 +5,7 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { LiteModeInit } from "@/components/lite-mode-init";
 import { NavProgressProvider } from "@/components/nav-progress";
 import { NotificationsProvider } from "@/components/notifications";
+import { ToastProvider } from "@/components/toast";
 import { getOrCreateDbUser } from "@/lib/db-user";
 
 type OnboardingData = {
@@ -67,17 +68,19 @@ export default async function AppLayout({
   }
 
   return (
-    <NotificationsProvider>
-      <NavProgressProvider>
-        <div className="min-h-screen bg-background lg:flex">
-          <LiteModeInit />
-          <AppSidebar role={user.role} displayName={user.displayName} />
-          <div className="min-w-0 flex-1 pb-16 lg:overflow-y-auto lg:pb-0">
-            {children}
+    <ToastProvider>
+      <NotificationsProvider>
+        <NavProgressProvider>
+          <div className="min-h-screen bg-background lg:flex">
+            <LiteModeInit />
+            <AppSidebar role={user.role} displayName={user.displayName} />
+            <div className="min-w-0 flex-1 pb-16 lg:overflow-y-auto lg:pb-0">
+              {children}
+            </div>
+            <AppNav role={user.role} />
           </div>
-          <AppNav role={user.role} />
-        </div>
-      </NavProgressProvider>
-    </NotificationsProvider>
+        </NavProgressProvider>
+      </NotificationsProvider>
+    </ToastProvider>
   );
 }
