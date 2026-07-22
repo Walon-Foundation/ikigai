@@ -6,6 +6,8 @@ import {
   BarChart3,
   Bell,
   CalendarDays,
+  Globe,
+  Inbox,
   LayoutDashboard,
   LogOut,
   School,
@@ -29,6 +31,8 @@ const NAV_ITEMS = [
   { href: "/admin/reports", label: "Reports", icon: AlertTriangle },
   { href: "/admin/notifications", label: "Notifications", icon: Bell },
   { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
+  { href: "/admin/cms", label: "Website", icon: Globe },
+  { href: "/admin/enquiries", label: "Enquiries", icon: Inbox },
 ];
 
 export function AdminSidebar({

@@ -1,6 +1,20 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  images: {
+    // CMS photography (programme heroes, story covers, the gallery) is served
+    // through next/image so it arrives resized and in a modern format. This
+    // audience is on metered mobile data — an unoptimised 4MB campaign photo is
+    // a real cost to the person looking at it.
+    //
+    // Note this is only for CMS content. Avatars stay on a plain <img> by
+    // design; see components/avatar.tsx.
+    remotePatterns: [
+      { protocol: "https", hostname: "*.ufs.sh" },
+      { protocol: "https", hostname: "utfs.io" },
+    ],
+  },
+
   async headers() {
     return [
       {

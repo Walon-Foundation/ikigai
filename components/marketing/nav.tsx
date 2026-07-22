@@ -1,14 +1,46 @@
 "use client";
 
+import { ChevronDown } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { clientEnv } from "@/lib/env.client";
 import { cn } from "@/lib/utils";
+
+// The primary nav for the public organisation site. The information
+// architecture is deliberately shallow: six items a visitor scans in one pass,
+// with the three "what we run" pages (Programmes, Gallery, Partners) tucked
+// under a What We Do dropdown rather than spending six more slots on the top
+// bar. The old "Install the App" CTA is gone from here — the app is one
+// programme now, reached from the Mentorship page, not the whole site's point.
+
+const PRIMARY = [
+  { href: "/about", label: "About" },
+  { href: "/events", label: "Events" },
+  { href: "/stories", label: "Stories" },
+];
+
+const WHAT_WE_DO = [
+  { href: "/what-we-do", label: "Overview" },
+  { href: "/programmes", label: "Programmes" },
+  { href: "/gallery", label: "Gallery" },
+  { href: "/partners", label: "Partners" },
+];
+
+// The flat list the mobile drawer shows — every destination, no nesting.
+const ALL_LINKS = [
+  { href: "/about", label: "About" },
+  { href: "/what-we-do", label: "What We Do" },
+  { href: "/programmes", label: "Programmes" },
+  { href: "/events", label: "Events" },
+  { href: "/stories", label: "Stories" },
+  { href: "/gallery", label: "Gallery" },
+  { href: "/partners", label: "Partners" },
+  { href: "/contact", label: "Contact" },
+];
 
 export function Nav() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
-  const appUrl = clientEnv.appUrl;
+  const [dropdown, setDropdown] = useState(false);
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 8);
@@ -28,44 +60,66 @@ export function Nav() {
     >
       <div className="mx-auto max-w-7xl px-6">
         <div className="flex h-16 items-center justify-between">
-          {/* Logo */}
           <Link href="/" className="flex flex-col leading-none">
             <span className="font-display text-2xl font-black tracking-tight text-foreground">
               Ikigai
             </span>
           </Link>
 
-          {/* Desktop nav */}
-          <nav className="hidden items-center gap-8 md:flex">
-            <Link
-              href="/how-it-works"
-              className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+          <nav className="hidden items-center gap-7 md:flex">
+            {PRIMARY.map((l) => (
+              <Link
+                key={l.href}
+                href={l.href}
+                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              >
+                {l.label}
+              </Link>
+            ))}
+
+            {/* What We Do — hover/focus dropdown. The hover is a pointer-only
+                enhancement; the button below toggles the same state on click and
+                is fully keyboard-operable, so this wrapper carries no
+                accessibility weight of its own. */}
+            {/* biome-ignore lint/a11y/noStaticElementInteractions: pointer-only hover convenience over a keyboard-operable button. */}
+            <div
+              className="relative"
+              onMouseEnter={() => setDropdown(true)}
+              onMouseLeave={() => setDropdown(false)}
             >
-              How It Works
-            </Link>
-            <Link
-              href="/about"
-              className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-            >
-              About
-            </Link>
-            <Link
-              href="/contact"
-              className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-            >
-              Contact
-            </Link>
+              <button
+                type="button"
+                onClick={() => setDropdown((v) => !v)}
+                className="flex items-center gap-1 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                aria-expanded={dropdown}
+                aria-haspopup="menu"
+              >
+                What We Do
+                <ChevronDown className="size-3.5" />
+              </button>
+              {dropdown && (
+                <div className="absolute left-0 top-full min-w-44 rounded-xl border border-border bg-card p-1.5 shadow-lg">
+                  {WHAT_WE_DO.map((l) => (
+                    <Link
+                      key={l.href}
+                      href={l.href}
+                      className="block rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                    >
+                      {l.label}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
           </nav>
 
-          {/* Right: Install CTA + mobile hamburger */}
           <div className="flex items-center gap-3">
-            <a
-              href={appUrl}
+            <Link
+              href="/get-involved"
               className="hidden items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-transform hover:scale-[1.03] active:scale-[0.98] sm:inline-flex"
             >
-              Install the App
-            </a>
-            {/* Hamburger */}
+              Join A Programme
+            </Link>
             <button
               type="button"
               onClick={() => setOpen(!open)}
@@ -95,36 +149,25 @@ export function Nav() {
         </div>
       </div>
 
-      {/* Mobile drawer */}
       {open && (
-        <div className="flex flex-col gap-4 border-t border-border bg-background px-6 pb-6 pt-4 md:hidden">
+        <div className="flex flex-col gap-1 border-t border-border bg-background px-6 pb-6 pt-2 md:hidden">
+          {ALL_LINKS.map((l) => (
+            <Link
+              key={l.href}
+              href={l.href}
+              onClick={() => setOpen(false)}
+              className="border-b border-border py-3 text-base font-medium text-foreground"
+            >
+              {l.label}
+            </Link>
+          ))}
           <Link
-            href="/how-it-works"
+            href="/get-involved"
             onClick={() => setOpen(false)}
-            className="border-b border-border py-2 text-base font-medium text-foreground"
+            className="mt-3 inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground"
           >
-            How It Works
+            Join A Programme
           </Link>
-          <Link
-            href="/about"
-            onClick={() => setOpen(false)}
-            className="border-b border-border py-2 text-base font-medium text-foreground"
-          >
-            About
-          </Link>
-          <Link
-            href="/contact"
-            onClick={() => setOpen(false)}
-            className="border-b border-border py-2 text-base font-medium text-foreground"
-          >
-            Contact
-          </Link>
-          <a
-            href={appUrl}
-            className="mt-2 inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground"
-          >
-            Install the App
-          </a>
         </div>
       )}
     </header>

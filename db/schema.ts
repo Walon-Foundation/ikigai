@@ -8,6 +8,7 @@ import {
   text,
   timestamp,
   unique,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 
@@ -429,9 +430,36 @@ export const events = pgTable(
     unlockAtPercent: integer("unlock_at_percent").default(0),
     createdBy: uuid("created_by").references(() => users.id),
     createdAt: timestamp("created_at").defaultNow(),
+
+    // --- Public site fields (added with the marketing CMS) ---------------
+    // Deliberately nullable/defaulted: the app reads this table with
+    // `db.select().from(events)` and must keep working untouched.
+    //
+    // isPublic defaults to FALSE so no internal activity — a safeguarding
+    // session, a mentor training — appears on the public website because
+    // somebody forgot a checkbox. Publishing is a decision, not a default.
+    // Uniqueness is enforced by a unique INDEX in the table config below, not by
+    // .unique() here. Adding a unique *constraint* to a table that already has
+    // rows makes drizzle-kit push offer to truncate it — and this table holds
+    // live event and attendance data for the app. A unique index gets the same
+    // guarantee with no such offer. NULLs are distinct in Postgres, so existing
+    // rows without a slug do not collide.
+    slug: text("slug"),
+    imageUrl: text("image_url"),
+    isPublic: boolean("is_public").default(false),
+    // The post-event report the public Events page shows for past events.
+    reportSummary: text("report_summary"),
+    reportPartners: text("report_partners"),
+    reportImpact: text("report_impact"),
   },
   // The activities list is always ordered by start time.
-  (t) => [index("events_starts_at_idx").on(t.startsAt)],
+  (t) => [
+    index("events_starts_at_idx").on(t.startsAt),
+    // The public Events page filters on isPublic and orders by start time; the
+    // trailing column lets one index satisfy both.
+    index("events_public_idx").on(t.isPublic, t.startsAt),
+    uniqueIndex("events_slug_idx").on(t.slug),
+  ],
 );
 
 // One row per user signed up to an event. `status` tracks attendance so admins
@@ -488,6 +516,245 @@ export const meetingVerifications = pgTable(
     createdAt: timestamp("created_at").defaultNow(),
   },
   (t) => [unique().on(t.mentorshipId, t.meetingNumber)],
+);
+
+// ---------------------------------------------------------------------------
+// Public website content (CMS)
+//
+// Everything below backs findingyourikigai.org and is edited from /admin/cms.
+// None of it is read by the PWA.
+//
+// Two conventions hold across every table here:
+//
+//   published  — defaults to FALSE. The public readers in lib/cms.ts filter on
+//                it; the admin screens ignore it. Nothing reaches the website
+//                because somebody saved a half-written draft.
+//   orderIndex — the site is a curated page, not a feed. Which programme leads
+//                the homepage is an editorial decision, so ordering is stored
+//                rather than derived from createdAt.
+//
+// Reads are cached by tag and invalidated on write — see lib/cms.ts. The
+// indexes below are therefore for the admin screens and cache misses, not for
+// every visitor.
+// ---------------------------------------------------------------------------
+
+// The four pillars every programme sits under: Discover, Thrive, Build, Lead.
+// Structural rather than editorial, but editable so the organisation can grow a
+// fifth without a deploy.
+export const pillars = pgTable(
+  "pillars",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    slug: text("slug").notNull().unique(),
+    name: text("name").notNull(),
+    tagline: text("tagline"),
+    description: text("description"),
+    icon: text("icon"), // emoji shown on the pillar card
+    // One of the GlowCard variants already in components/marketing/glow-card.tsx:
+    // 'green' | 'amber' | 'earth' | 'sage'. Kept as a token name, not a colour,
+    // so pillars stay inside the design system when the palette changes.
+    accent: text("accent").default("green"),
+    orderIndex: integer("order_index").default(0),
+    published: boolean("published").default(false),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  },
+  (t) => [index("pillars_published_idx").on(t.published, t.orderIndex)],
+);
+
+// An initiative: PadHer, Spark The STEM, Mentorship, and so on.
+export const programmes = pgTable(
+  "programmes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    slug: text("slug").notNull().unique(),
+    pillarId: uuid("pillar_id").references(() => pillars.id),
+    name: text("name").notNull(),
+    summary: text("summary"), // one-liner for cards
+    heroImageUrl: text("hero_image_url"),
+    about: text("about"), // why this programme exists
+    objectives: jsonb("objectives"), // string[] — what participants gain
+    activities: jsonb("activities"), // string[] — what actually happens
+    // Impact is text, not a number: "2,000+" and "Multiple" are both real
+    // answers on this site, and rounding them into an integer would force the
+    // CMS to lie about precision the organisation does not have.
+    impactValue: text("impact_value"),
+    impactLabel: text("impact_label"),
+    ctaLabel: text("cta_label"),
+    ctaUrl: text("cta_url"),
+    featured: boolean("featured").default(false), // surfaces on the homepage
+    orderIndex: integer("order_index").default(0),
+    published: boolean("published").default(false),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  },
+  (t) => [
+    index("programmes_published_idx").on(t.published, t.orderIndex),
+    index("programmes_pillar_idx").on(t.pillarId),
+  ],
+);
+
+// Participant, volunteer, partner and impact stories — the blog.
+export const stories = pgTable(
+  "stories",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    slug: text("slug").notNull().unique(),
+    title: text("title").notNull(),
+    // 'participant' | 'volunteer' | 'partner' | 'impact'
+    category: text("category").notNull().default("impact"),
+    excerpt: text("excerpt"),
+    body: text("body"),
+    coverImageUrl: text("cover_image_url"),
+    authorName: text("author_name"),
+    programmeId: uuid("programme_id").references(() => programmes.id),
+    // When it went live, which is not when the row was created — a story can be
+    // drafted for weeks. The public list orders on this.
+    publishedAt: timestamp("published_at"),
+    published: boolean("published").default(false),
+    orderIndex: integer("order_index").default(0),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  },
+  (t) => [
+    index("stories_published_idx").on(t.published, t.publishedAt),
+    index("stories_category_idx").on(t.category),
+  ],
+);
+
+// The photo archive. An item belongs to a named album ("PadHer Initiative",
+// "School Outreach") and optionally to a programme, so a programme page can
+// show its own photos without the albums being duplicated per programme.
+export const galleryItems = pgTable(
+  "gallery_items",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    album: text("album").notNull(),
+    programmeId: uuid("programme_id").references(() => programmes.id),
+    imageUrl: text("image_url").notNull(),
+    caption: text("caption"),
+    orderIndex: integer("order_index").default(0),
+    published: boolean("published").default(false),
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (t) => [
+    index("gallery_album_idx").on(t.album, t.orderIndex),
+    index("gallery_programme_idx").on(t.programmeId),
+  ],
+);
+
+export const partners = pgTable(
+  "partners",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: text("name").notNull(),
+    logoUrl: text("logo_url"),
+    websiteUrl: text("website_url"),
+    description: text("description"),
+    orderIndex: integer("order_index").default(0),
+    published: boolean("published").default(false),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  },
+  (t) => [index("partners_published_idx").on(t.published, t.orderIndex)],
+);
+
+// The homepage impact dashboard. Text values for the same reason as
+// programmes.impactValue.
+export const impactStats = pgTable(
+  "impact_stats",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    value: text("value").notNull(), // "2,000+"
+    label: text("label").notNull(), // "Girls Reached"
+    orderIndex: integer("order_index").default(0),
+    published: boolean("published").default(false),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  },
+  (t) => [index("impact_stats_published_idx").on(t.published, t.orderIndex)],
+);
+
+export const teamMembers = pgTable(
+  "team_members",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: text("name").notNull(),
+    role: text("role"),
+    bio: text("bio"),
+    photoUrl: text("photo_url"),
+    orderIndex: integer("order_index").default(0),
+    published: boolean("published").default(false),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  },
+  (t) => [index("team_members_published_idx").on(t.published, t.orderIndex)],
+);
+
+// Singleton copy blocks: the homepage hero, the mission, the vision, the values
+// list. Keyed rather than one row per field so adding an editable block is a
+// CMS entry, not a migration. `value` is jsonb because some blocks are a single
+// string and others (values, hero with headline + sub + two CTAs) are shaped.
+//
+// No `published` column: these are edits to live copy, not drafts. There is no
+// sensible "unpublished homepage headline" — the page would render a hole.
+export const siteCopy = pgTable("site_copy", {
+  key: text("key").primaryKey(), // 'hero' | 'mission' | 'vision' | 'values' | 'about_intro'
+  value: jsonb("value").notNull(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// A shared media library. Images uploaded here are not tied to any one record —
+// the admin builds up a stock of campaign photos and logos as they come in, and
+// pastes a URL into whichever programme, story or partner needs it later. This
+// is why the CMS image fields also accept a pasted URL, not only a fresh
+// upload: the same photo often belongs to several places.
+//
+// Only the URL is stored (bytes live in UploadThing, uploaded browser-direct).
+export const mediaAssets = pgTable(
+  "media_assets",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    url: text("url").notNull(),
+    label: text("label"),
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (t) => [index("media_assets_created_idx").on(t.createdAt)],
+);
+
+// Everything submitted through the public site: the four Get Involved forms and
+// the contact form.
+//
+// This exists because the contact form never stored anything — it built a
+// `mailto:` link and handed the visitor to their own mail client, so every
+// enquiry that did not survive that handoff was simply lost, with nobody aware
+// it had been sent. A volunteer offering their time deserves better than that.
+export const enquiries = pgTable(
+  "enquiries",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    // 'volunteer' | 'mentor' | 'partner' | 'programme' | 'contact'
+    type: text("type").notNull(),
+    name: text("name").notNull(),
+    email: text("email").notNull(),
+    phone: text("phone"),
+    organization: text("organization"),
+    message: text("message"),
+    // Type-specific answers — skills and interest area for a volunteer,
+    // availability for a mentor, chosen programme for a registration. Kept as
+    // jsonb so a new form field does not need a migration and an unrelated
+    // form does not carry a column it never fills.
+    details: jsonb("details"),
+    status: text("status").notNull().default("new"), // 'new' | 'in_progress' | 'handled'
+    handledBy: uuid("handled_by").references(() => users.id),
+    handledAt: timestamp("handled_at"),
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  // The inbox is filtered by status and type, newest first.
+  (t) => [
+    index("enquiries_status_idx").on(t.status, t.createdAt),
+    index("enquiries_type_idx").on(t.type),
+  ],
 );
 
 // Mentee/parent reviews of a mentor — powers marketplace ratings + testimonials.
