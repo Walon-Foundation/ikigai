@@ -30,6 +30,22 @@ async function requireMentorUpload() {
   return { userId: user.id };
 }
 
+/** Authenticate, and confirm the caller is an admin. */
+async function requireAdminUpload() {
+  const { userId } = await auth();
+  if (!userId) throw new UploadThingError("Unauthorized");
+
+  const [user] = await db
+    .select({ id: users.id, role: users.role })
+    .from(users)
+    .where(eq(users.clerkId, userId))
+    .limit(1);
+
+  if (!user) throw new UploadThingError("Unauthorized");
+  if (user.role !== "admin") throw new UploadThingError("Forbidden");
+  return { userId: user.id };
+}
+
 /**
  * Store a vetting document, and make it private.
  *
@@ -127,6 +143,24 @@ export const ourFileRouter = {
     .onUploadComplete(async ({ metadata, file }) =>
       storeDocument(metadata.userId, "cv", file),
     ),
+
+  // Photos for the public website, uploaded from /admin/cms.
+  //
+  // Deliberately NOT flipped to a private ACL like the vetting documents above:
+  // these are published photographs on a public marketing site, and a signed
+  // URL that expires would break every cached page that embeds one. The
+  // protection here is on WRITE — only an admin can put a file in this bucket —
+  // not on read.
+  //
+  // Nothing is written to the database on completion. The URL is returned to
+  // the admin form, which saves it as part of the row being edited; a photo
+  // uploaded for a story the admin then abandons should not leave an orphan
+  // record behind.
+  cmsImage: f({
+    image: { maxFileSize: "8MB", maxFileCount: 1 },
+  })
+    .middleware(async () => requireAdminUpload())
+    .onUploadComplete(async ({ file }) => ({ url: file.ufsUrl })),
 } satisfies FileRouter;
 
 export type OurFileRouter = typeof ourFileRouter;
