@@ -1,143 +1,126 @@
+import { Avatar } from "@/components/avatar";
 import { Footer } from "@/components/marketing/footer";
-import { InstallCta } from "@/components/marketing/install-cta";
 import { Nav } from "@/components/marketing/nav";
+import { SectionHeading } from "@/components/marketing/section-heading";
 import { SectionReveal } from "@/components/marketing/section-reveal";
+import { getCopy, getTeam } from "@/lib/cms";
 
-const WHO_WE_SERVE = [
-  {
-    title: "Mentees",
-    body: "Youth seeking purpose, guidance, and personal growth. Complete the Ikigai assessment, follow your structured roadmap, connect with a verified mentor, and build the confidence to become who you are meant to be.",
-    accent: "border-primary",
-  },
-  {
-    title: "Mentors",
-    body: "Experienced professionals and community leaders ready to guide the next generation. You are carefully verified, thoughtfully matched, and given the tools to make a measurable difference in a young person's life.",
-    accent: "border-accent",
-  },
-  {
-    title: "Schools & Clubs",
-    body: "Student leaders and teachers setting up Ikigai clubs on campus. Bring structured mentorship, purpose discovery, and personal development to your entire school community.",
-    accent: "border-earth",
-  },
-] as const;
+// Server-rendered per request so CMS edits appear immediately; see lib/cms.ts.
+export const dynamic = "force-dynamic";
 
-export default function AboutPage() {
+export const metadata = {
+  title: "About · Ikigai",
+  description:
+    "Ikigai is a youth-led organization helping young people in Sierra Leone discover purpose, build skills, and lead change.",
+};
+
+export default async function AboutPage() {
+  const [mission, vision, values, team] = await Promise.all([
+    getCopy("mission"),
+    getCopy("vision"),
+    getCopy("values"),
+    getTeam(),
+  ]);
+
+  const valueItems = Array.isArray(values?.items)
+    ? (values.items as string[])
+    : ["Purpose", "Growth", "Community", "Inclusion", "Empowerment"];
+
   return (
     <div className="min-h-screen bg-background">
       <Nav />
       <main>
-        {/* Vision & Mission */}
-        <section className="bg-primary pb-24 pt-40">
-          <div className="mx-auto max-w-4xl px-6">
+        {/* Header */}
+        <section className="bg-primary pb-20 pt-40">
+          <div className="mx-auto max-w-3xl px-6">
             <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-primary-muted">
               About Ikigai
             </p>
-            <h1 className="font-display mb-8 text-5xl font-black leading-[1.05] text-primary-foreground sm:text-6xl">
-              Our Vision
+            <h1 className="font-display text-5xl font-black leading-[1.05] text-primary-foreground sm:text-6xl">
+              A youth movement built on purpose.
             </h1>
-            <blockquote className="mb-10 border-l-4 border-accent pl-6">
-              <p className="font-display text-2xl font-bold leading-snug text-primary-foreground sm:text-3xl">
-                "To build a generation of confident, emotionally healthy,
-                purpose-driven, and socially responsible young people across
-                Africa."
-              </p>
-            </blockquote>
-            <div className="grid gap-6 sm:grid-cols-2">
-              <div>
-                <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-primary-muted">
-                  Our Mission
-                </p>
-                <p className="text-lg leading-relaxed text-primary-foreground/80">
-                  To connect young people with the guidance, opportunities,
-                  tools, and community they need to discover who they are and
-                  become who they are meant to be.
-                </p>
-              </div>
-              <div>
-                <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-primary-muted">
-                  Where We Are
-                </p>
-                <p className="text-lg leading-relaxed text-primary-foreground/80">
-                  Ikigai is based in Sierra Leone, building technology for
-                  African youth. We serve youth, mentors, parents, schools, and
-                  organisations across Freetown and Western Rural Area.
-                </p>
-              </div>
-            </div>
           </div>
         </section>
 
-        {/* Who We Serve */}
-        <section className="bg-background py-24">
-          <div className="mx-auto max-w-7xl px-6">
+        {/* Mission & Vision */}
+        <section className="py-24">
+          <div className="mx-auto grid max-w-5xl gap-12 px-6 sm:grid-cols-2">
             <SectionReveal>
-              <div className="mb-12">
+              <div>
                 <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-primary">
-                  Who We Serve
+                  Our mission
                 </p>
-                <h2 className="font-display text-4xl font-black text-foreground sm:text-5xl">
-                  Three ways to join the movement.
-                </h2>
+                <p className="text-lg leading-relaxed text-foreground">
+                  {(mission?.body as string) ??
+                    "To help young people discover who they are, develop their abilities, improve their wellbeing, and become leaders who transform their communities."}
+                </p>
               </div>
             </SectionReveal>
-            <div className="grid gap-4 sm:grid-cols-3">
-              {WHO_WE_SERVE.map((item, i) => (
-                <SectionReveal key={item.title} delay={i * 0.1}>
-                  <div
-                    className={`rounded-r-2xl border-l-4 bg-card px-6 py-6 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${item.accent}`}
-                  >
-                    <h3 className="font-display mb-3 text-xl font-bold text-foreground">
-                      {item.title}
-                    </h3>
-                    <p className="text-sm leading-relaxed text-muted-foreground">
-                      {item.body}
-                    </p>
-                  </div>
-                </SectionReveal>
+            <SectionReveal delay={0.1}>
+              <div>
+                <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-accent">
+                  Our vision
+                </p>
+                <p className="text-lg leading-relaxed text-foreground">
+                  {(vision?.body as string) ??
+                    "A Sierra Leone where every young person knows their purpose and has the support, skills and confidence to pursue it."}
+                </p>
+              </div>
+            </SectionReveal>
+          </div>
+        </section>
+
+        {/* Values */}
+        <section className="bg-secondary py-24">
+          <div className="mx-auto max-w-5xl px-6">
+            <SectionHeading
+              eyebrow="What we stand for"
+              title="Our values."
+              center
+            />
+            <div className="flex flex-wrap justify-center gap-3">
+              {valueItems.map((v) => (
+                <span
+                  key={v}
+                  className="rounded-full border border-border bg-card px-6 py-3 font-display text-lg font-bold text-foreground"
+                >
+                  {v}
+                </span>
               ))}
             </div>
           </div>
         </section>
 
-        {/* The Platform */}
-        <section className="bg-secondary py-24">
-          <SectionReveal>
-            <div className="mx-auto max-w-3xl px-6">
-              <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-primary">
-                The Platform
-              </p>
-              <h2 className="font-display mb-6 text-4xl font-black text-foreground">
-                Technology meets human connection.
-              </h2>
-              <div className="space-y-4 text-base leading-relaxed text-muted-foreground">
-                <p>
-                  Ikigai combines artificial intelligence, mentorship,
-                  self-discovery, structured learning, wellness tools, and
-                  community engagement into a single ecosystem designed for
-                  African youth.
-                </p>
-                <p>
-                  Unlike traditional mentorship programmes that rely on informal
-                  relationships and manual matching, Ikigai creates a
-                  structured, accountable, and scalable experience through
-                  AI-powered matching, developmental roadmaps, activity
-                  participation, and progress tracking.
-                </p>
-                <p>
-                  Every interaction — a mentorship session, a journal entry, a
-                  workshop, a community project — is tracked, visualised, and
-                  celebrated. We believe that when young people can see their
-                  growth, they keep growing.
-                </p>
+        {/* Team */}
+        {team.length > 0 && (
+          <section className="py-24">
+            <div className="mx-auto max-w-6xl px-6">
+              <SectionHeading eyebrow="Our people" title="The team." center />
+              <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+                {team.map((m) => (
+                  <div key={m.id} className="text-center">
+                    <div className="mx-auto mb-4 w-fit">
+                      <Avatar name={m.name} src={m.photoUrl} size={96} />
+                    </div>
+                    <h3 className="font-display text-lg font-bold text-foreground">
+                      {m.name}
+                    </h3>
+                    {m.role && (
+                      <p className="text-sm font-medium text-primary">
+                        {m.role}
+                      </p>
+                    )}
+                    {m.bio && (
+                      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                        {m.bio}
+                      </p>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
-          </SectionReveal>
-        </section>
-
-        <InstallCta
-          headline="Be part of the movement."
-          body="Join hundreds of youth, mentors, and schools already building the next generation of African leaders."
-        />
+          </section>
+        )}
       </main>
       <Footer />
     </div>
