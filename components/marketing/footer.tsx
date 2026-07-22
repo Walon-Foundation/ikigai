@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { clientEnv } from "@/lib/env.client";
 
 const COLUMNS = [
   {
@@ -17,6 +18,8 @@ const COLUMNS = [
       { href: "/get-involved#volunteer", label: "Volunteer" },
       { href: "/get-involved#partner", label: "Partner with us" },
       { href: "/contact", label: "Contact" },
+      // The app lives on another subdomain, so this is a plain external link.
+      { href: clientEnv.appUrl, label: "Sign in to the app", external: true },
     ],
   },
   {
@@ -50,15 +53,25 @@ export function Footer() {
                 {col.heading}
               </p>
               <div className="flex flex-col gap-3">
-                {col.links.map((l) => (
-                  <Link
-                    key={l.href}
-                    href={l.href}
-                    className="text-sm text-muted-foreground transition-colors hover:text-foreground"
-                  >
-                    {l.label}
-                  </Link>
-                ))}
+                {col.links.map((l) =>
+                  "external" in l && l.external ? (
+                    <a
+                      key={l.href}
+                      href={l.href}
+                      className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                    >
+                      {l.label}
+                    </a>
+                  ) : (
+                    <Link
+                      key={l.href}
+                      href={l.href}
+                      className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                    >
+                      {l.label}
+                    </Link>
+                  ),
+                )}
               </div>
             </div>
           ))}
