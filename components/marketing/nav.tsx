@@ -3,6 +3,7 @@
 import { ChevronDown } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { clientEnv } from "@/lib/env.client";
 import { cn } from "@/lib/utils";
 
 // The primary nav for the public organisation site. The information
@@ -114,6 +115,15 @@ export function Nav() {
           </nav>
 
           <div className="flex items-center gap-3">
+            {/* A quiet way back into the app for people who already have an
+                account — the loud CTA stays "Join A Programme". Points at the
+                app subdomain; the proxy takes it to the dashboard / sign-in. */}
+            <a
+              href={clientEnv.appUrl}
+              className="hidden text-sm font-medium text-muted-foreground transition-colors hover:text-foreground sm:inline-flex"
+            >
+              Sign in
+            </a>
             <Link
               href="/get-involved"
               className="hidden items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-transform hover:scale-[1.03] active:scale-[0.98] sm:inline-flex"
@@ -168,6 +178,12 @@ export function Nav() {
           >
             Join A Programme
           </Link>
+          <a
+            href={clientEnv.appUrl}
+            className="inline-flex items-center justify-center rounded-full border border-border px-6 py-3 text-sm font-semibold text-foreground"
+          >
+            Sign in to the app
+          </a>
         </div>
       )}
     </header>

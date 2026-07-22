@@ -1,4 +1,4 @@
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Smartphone } from "lucide-react";
 import Link from "next/link";
 import {
   EventCard,
@@ -21,6 +21,7 @@ import {
   getStories,
   getUpcomingPublicEvents,
 } from "@/lib/cms";
+import { clientEnv } from "@/lib/env.client";
 
 // The public organisation homepage. Every section reads from the CMS through
 // lib/cms.ts, with a code fallback for copy so an empty database still renders a
@@ -265,6 +266,35 @@ export default async function Home() {
             </div>
           </section>
         )}
+
+        {/* The app. The organisation is the front door; the app is where a
+            matched mentee and mentor actually do the work — so it is introduced
+            as one of the things Ikigai offers, not as the site's whole point. */}
+        <section className="bg-background py-24">
+          <div className="mx-auto max-w-5xl px-6">
+            <div className="flex flex-col items-center gap-8 rounded-3xl border border-border bg-secondary/50 p-10 text-center sm:flex-row sm:p-12 sm:text-left">
+              <div className="flex size-16 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                <Smartphone className="size-8" />
+              </div>
+              <div className="flex-1">
+                <h2 className="font-display text-2xl font-black text-foreground sm:text-3xl">
+                  There's an app for your journey.
+                </h2>
+                <p className="mt-2 max-w-xl text-muted-foreground">
+                  Mentees and mentors use the Ikigai app to track goals, meet,
+                  and grow together. Join a programme first, then sign in — it
+                  installs to your phone like any other app.
+                </p>
+              </div>
+              <a
+                href={clientEnv.appUrl}
+                className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-primary px-7 py-3.5 font-semibold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98]"
+              >
+                Open the app <ArrowRight className="size-4" />
+              </a>
+            </div>
+          </div>
+        </section>
 
         {/* Final CTA */}
         <section className="bg-primary py-24">
