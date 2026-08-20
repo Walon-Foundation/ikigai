@@ -4,6 +4,7 @@ import { after } from "next/server";
 import { PageHeader } from "@/components/page-header";
 import { db } from "@/db/db";
 import { milestones } from "@/db/schema";
+import { getAppCopy } from "@/lib/app-copy";
 import { SAFETY_RESOURCES } from "@/lib/constants";
 import { requireRole } from "@/lib/db-user";
 import { ReportForm } from "./report-form";
@@ -25,6 +26,11 @@ export default async function SafetyPage() {
       .onConflictDoNothing();
   });
 
+  const banner = await getAppCopy("safety_crisis_banner");
+  const bannerTitle = (banner?.title as string) ?? "Need immediate help?";
+  const bannerBody =
+    (banner?.body as string) ?? "View crisis helplines — always available";
+
   return (
     <>
       <PageHeader title="Safety" />
@@ -37,10 +43,8 @@ export default async function SafetyPage() {
           <div className="flex items-center gap-3">
             <Phone className="size-6 text-earth-light" />
             <div>
-              <p className="font-semibold">Need immediate help?</p>
-              <p className="text-sm text-earth-light">
-                View crisis helplines — always available
-              </p>
+              <p className="font-semibold">{bannerTitle}</p>
+              <p className="text-sm text-earth-light">{bannerBody}</p>
             </div>
           </div>
           <ChevronRight className="size-5 text-earth-light" />

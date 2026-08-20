@@ -9,7 +9,9 @@ import {
   Globe,
   Inbox,
   LayoutDashboard,
+  LayoutTemplate,
   LogOut,
+  MessageSquareText,
   School,
   ShieldAlert,
   Sprout,
@@ -34,6 +36,8 @@ const NAV_ITEMS = [
   { href: "/admin/notifications", label: "Notifications", icon: Bell },
   { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/admin/cms", label: "Website", icon: Globe },
+  { href: "/admin/page-builder", label: "Page Builder", icon: LayoutTemplate },
+  { href: "/admin/app-copy", label: "App Copy", icon: MessageSquareText },
   { href: "/admin/enquiries", label: "Enquiries", icon: Inbox },
 ];
 
