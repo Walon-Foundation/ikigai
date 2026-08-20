@@ -6,18 +6,77 @@ import { BusyLabel } from "@/components/spinner";
 import { cn } from "@/lib/utils";
 import { saveMenteeAssessment } from "../../actions";
 
-const LOVE_TAGS = [
-  "Writing",
-  "Art",
-  "Technology",
-  "Public Speaking",
-  "Music",
-  "Entrepreneurship",
-  "Sports",
-  "Teaching",
-  "Design",
-  "Research",
+const LOVE_GROUPS: { category: string; items: string[] }[] = [
+  {
+    category: "Creative",
+    items: [
+      "Writing",
+      "Art & Design",
+      "Fashion",
+      "Photography",
+      "Music & Performance",
+      "Film & Video",
+      "Content Creation",
+      "Craft & Making",
+    ],
+  },
+  {
+    category: "Technology",
+    items: ["Coding & Software", "AI & Innovation", "Digital Skills", "Gaming"],
+  },
+  {
+    category: "People & Communication",
+    items: [
+      "Public Speaking",
+      "Teaching & Mentoring",
+      "Leadership",
+      "Communication",
+      "Storytelling",
+      "Advocacy & Community",
+    ],
+  },
+  {
+    category: "Business & Career",
+    items: [
+      "Entrepreneurship",
+      "Business",
+      "Marketing",
+      "Sales",
+      "Finance",
+      "Career Development",
+    ],
+  },
+  {
+    category: "Learning & Discovery",
+    items: [
+      "Research",
+      "Science",
+      "Problem Solving",
+      "Reading & Literature",
+      "Journalism",
+    ],
+  },
+  {
+    category: "Practical Skills",
+    items: [
+      "Fashion & Tailoring",
+      "Beauty & Hair",
+      "Cooking",
+      "Agriculture",
+      "Building & Engineering",
+      "Repair & Technical Skills",
+    ],
+  },
+  {
+    category: "Wellness & Lifestyle",
+    items: ["Sports", "Fitness", "Wellness", "Personal Development"],
+  },
+  {
+    category: "Other",
+    items: [],
+  },
 ];
+const LOVE_TAGS = LOVE_GROUPS.flatMap((g) => g.items);
 const SKILLS_TAGS = [
   "Leadership",
   "Communication",
