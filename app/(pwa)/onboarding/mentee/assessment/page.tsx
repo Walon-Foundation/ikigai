@@ -1,23 +1,83 @@
 "use client";
 
-import { ArrowRight, ChevronLeft } from "lucide-react";
+import { ArrowRight, ChevronLeft, Plus } from "lucide-react";
 import { useState, useTransition } from "react";
 import { BusyLabel } from "@/components/spinner";
 import { cn } from "@/lib/utils";
 import { saveMenteeAssessment } from "../../actions";
 
-const LOVE_TAGS = [
-  "Writing",
-  "Art",
-  "Technology",
-  "Public Speaking",
-  "Music",
-  "Entrepreneurship",
-  "Sports",
-  "Teaching",
-  "Design",
-  "Research",
+const LOVE_GROUPS: { category: string; items: string[] }[] = [
+  {
+    category: "Creative",
+    items: [
+      "Writing",
+      "Art & Design",
+      "Fashion",
+      "Photography",
+      "Music & Performance",
+      "Film & Video",
+      "Content Creation",
+      "Craft & Making",
+    ],
+  },
+  {
+    category: "Technology",
+    items: ["Coding & Software", "AI & Innovation", "Digital Skills", "Gaming"],
+  },
+  {
+    category: "People & Communication",
+    items: [
+      "Public Speaking",
+      "Teaching & Mentoring",
+      "Leadership",
+      "Communication",
+      "Storytelling",
+      "Advocacy & Community",
+    ],
+  },
+  {
+    category: "Business & Career",
+    items: [
+      "Entrepreneurship",
+      "Business",
+      "Marketing",
+      "Sales",
+      "Finance",
+      "Career Development",
+    ],
+  },
+  {
+    category: "Learning & Discovery",
+    items: [
+      "Research",
+      "Science",
+      "Problem Solving",
+      "Reading & Literature",
+      "Journalism",
+    ],
+  },
+  {
+    category: "Practical Skills",
+    items: [
+      "Fashion & Tailoring",
+      "Beauty & Hair",
+      "Cooking",
+      "Agriculture",
+      "Building & Engineering",
+      "Repair & Technical Skills",
+    ],
+  },
+  {
+    category: "Wellness & Lifestyle",
+    items: ["Sports", "Fitness", "Wellness", "Personal Development"],
+  },
+  {
+    category: "Other",
+    items: [],
+  },
 ];
+const LOVE_TAGS = LOVE_GROUPS.flatMap((g) => g.items);
+const CUSTOM_LOVE_MAX_LENGTH = 40;
 const SKILLS_TAGS = [
   "Leadership",
   "Communication",
@@ -101,6 +161,7 @@ export default function AssessmentPage() {
     community: "",
     opportunity: "",
   });
+  const [customLoveInput, setCustomLoveInput] = useState("");
   const [isPending, startTransition] = useTransition();
 
   const section = SECTIONS[sectionIdx];
@@ -117,6 +178,22 @@ export default function AssessmentPage() {
       };
     });
   }
+
+  function addCustomLove() {
+    const trimmed = customLoveInput.trim().slice(0, CUSTOM_LOVE_MAX_LENGTH);
+    if (!trimmed) return;
+    setSelected((prev) => {
+      const alreadySelected = prev.love.some(
+        (t) => t.toLowerCase() === trimmed.toLowerCase(),
+      );
+      return alreadySelected
+        ? prev
+        : { ...prev, love: [...prev.love, trimmed] };
+    });
+    setCustomLoveInput("");
+  }
+
+  const customLoveItems = selected.love.filter((t) => !LOVE_TAGS.includes(t));
 
   function handleNext() {
     if (isLast) {
@@ -157,23 +234,89 @@ export default function AssessmentPage() {
       </h2>
       <p className="mb-6 text-muted-foreground">{section.question}</p>
 
-      <div className="mb-4 flex flex-wrap gap-2">
-        {section.tags.map((tag) => (
-          <button
-            key={tag}
-            type="button"
-            onClick={() => toggleTag(tag)}
-            className={cn(
-              "rounded-full border px-4 py-2 text-sm font-medium transition-all",
-              selected[section.key].includes(tag)
-                ? "border-primary bg-primary text-primary-foreground"
-                : "border-border bg-card text-foreground hover:border-primary/40",
-            )}
-          >
-            {tag}
-          </button>
-        ))}
-      </div>
+      {section.key === "love" ? (
+        <div className="mb-4 space-y-4">
+          {LOVE_GROUPS.map((group) => (
+            <div key={group.category}>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                {group.category}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {group.items.map((tag) => (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => toggleTag(tag)}
+                    className={cn(
+                      "rounded-full border px-4 py-2 text-sm font-medium transition-all",
+                      selected.love.includes(tag)
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-border bg-card text-foreground hover:border-primary/40",
+                    )}
+                  >
+                    {tag}
+                  </button>
+                ))}
+                {group.category === "Other" &&
+                  customLoveItems.map((tag) => (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => toggleTag(tag)}
+                      className="rounded-full border border-primary bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-all"
+                    >
+                      {tag} ✕
+                    </button>
+                  ))}
+              </div>
+              {group.category === "Other" && (
+                <div className="mt-2 flex gap-2">
+                  <input
+                    type="text"
+                    value={customLoveInput}
+                    onChange={(e) => setCustomLoveInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        addCustomLove();
+                      }
+                    }}
+                    maxLength={CUSTOM_LOVE_MAX_LENGTH}
+                    placeholder="Something else you love..."
+                    className="flex-1 rounded-full border border-border bg-card px-4 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={addCustomLove}
+                    disabled={!customLoveInput.trim()}
+                    className="flex items-center gap-1 rounded-full border border-border bg-card px-4 py-2 text-sm font-medium text-foreground hover:border-primary/40 disabled:opacity-40"
+                  >
+                    <Plus className="size-4" /> Add
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="mb-4 flex flex-wrap gap-2">
+          {section.tags.map((tag) => (
+            <button
+              key={tag}
+              type="button"
+              onClick={() => toggleTag(tag)}
+              className={cn(
+                "rounded-full border px-4 py-2 text-sm font-medium transition-all",
+                selected[section.key].includes(tag)
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-border bg-card text-foreground hover:border-primary/40",
+              )}
+            >
+              {tag}
+            </button>
+          ))}
+        </div>
+      )}
 
       <textarea
         value={texts[section.key]}
