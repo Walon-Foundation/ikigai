@@ -876,6 +876,53 @@ export const enquiries = pgTable(
   ],
 );
 
+// ---------------------------------------------------------------------------
+// Page builder — drag-and-drop block ordering for marketing pages.
+//
+// A page (keyed by a route string, e.g. "home") is an ordered stack of blocks.
+// `type` looks up a renderer and an admin field schema in
+// lib/blocks/registry.ts; `config` is that block's own shape — a hero's
+// headline/body/CTAs, a dynamic section's optional heading override, and so
+// on — kept as jsonb because every block type has a different shape and a new
+// block type must not need a migration.
+//
+// Same conventions as the CMS tables above: `published` defaults to true here
+// (unlike the CMS defaulting to false) because a block is placed on a live
+// page by an admin who is already looking at where it lands, not drafted in
+// isolation the way a story or programme is — but it still exists so a block
+// can be hidden without deleting and losing its configured copy. `orderIndex`
+// is curated, not derived from createdAt, same reasoning as everywhere else.
+export const pageBlocks = pgTable(
+  "page_blocks",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    page: text("page").notNull(),
+    type: text("type").notNull(),
+    config: jsonb("config").notNull().default({}),
+    orderIndex: integer("order_index").notNull().default(0),
+    published: boolean("published").notNull().default(true),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  },
+  // The renderer always reads one page's blocks in display order.
+  (t) => [index("page_blocks_page_order_idx").on(t.page, t.orderIndex)],
+);
+
+// Singleton copy blocks for the authenticated app (PWA) — the app_copy
+// counterpart to siteCopy above. A separate table rather than reusing
+// siteCopy because these are two different products with two different admin
+// screens (/admin/cms/copy vs /admin/app-copy), and a key typo should not be
+// able to make a website edit land in the app or vice versa. Same shape and
+// the same reasoning: `value` is jsonb because some blocks are a single
+// string and others are shaped objects, and there's no `published` column
+// because these are edits to live app copy, not drafts — a missing key falls
+// back to the code default in lib/app-copy.ts rather than rendering a hole.
+export const appCopy = pgTable("app_copy", {
+  key: text("key").primaryKey(),
+  value: jsonb("value").notNull(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Mentee/parent reviews of a mentor — powers marketplace ratings + testimonials.
 // One review per author per mentor.
 export const mentorReviews = pgTable(
