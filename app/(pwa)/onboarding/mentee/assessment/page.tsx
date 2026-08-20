@@ -216,23 +216,52 @@ export default function AssessmentPage() {
       </h2>
       <p className="mb-6 text-muted-foreground">{section.question}</p>
 
-      <div className="mb-4 flex flex-wrap gap-2">
-        {section.tags.map((tag) => (
-          <button
-            key={tag}
-            type="button"
-            onClick={() => toggleTag(tag)}
-            className={cn(
-              "rounded-full border px-4 py-2 text-sm font-medium transition-all",
-              selected[section.key].includes(tag)
-                ? "border-primary bg-primary text-primary-foreground"
-                : "border-border bg-card text-foreground hover:border-primary/40",
-            )}
-          >
-            {tag}
-          </button>
-        ))}
-      </div>
+      {section.key === "love" ? (
+        <div className="mb-4 space-y-4">
+          {LOVE_GROUPS.map((group) => (
+            <div key={group.category}>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                {group.category}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {group.items.map((tag) => (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => toggleTag(tag)}
+                    className={cn(
+                      "rounded-full border px-4 py-2 text-sm font-medium transition-all",
+                      selected.love.includes(tag)
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-border bg-card text-foreground hover:border-primary/40",
+                    )}
+                  >
+                    {tag}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="mb-4 flex flex-wrap gap-2">
+          {section.tags.map((tag) => (
+            <button
+              key={tag}
+              type="button"
+              onClick={() => toggleTag(tag)}
+              className={cn(
+                "rounded-full border px-4 py-2 text-sm font-medium transition-all",
+                selected[section.key].includes(tag)
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-border bg-card text-foreground hover:border-primary/40",
+              )}
+            >
+              {tag}
+            </button>
+          ))}
+        </div>
+      )}
 
       <textarea
         value={texts[section.key]}
