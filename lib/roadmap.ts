@@ -22,7 +22,7 @@ export type RoadmapStep = {
 };
 
 export type RoadmapPhase = {
-  key: "finding" | "building" | "discovering" | "creating";
+  key: "discover" | "thrive" | "build" | "lead";
   name: string;
   blurb: string;
   focus: string[];
@@ -33,10 +33,10 @@ export type RoadmapPhase = {
 
 export const ROADMAP: RoadmapPhase[] = [
   {
-    key: "finding",
-    name: "Finding Yourself",
-    blurb: "Identity, values, confidence and self-awareness.",
-    focus: ["Identity", "Values", "Confidence", "Self-Awareness"],
+    key: "discover",
+    name: "Discover",
+    blurb: "Understand yourself and find your purpose.",
+    focus: ["Identity", "Values", "Purpose", "Self-Awareness"],
     stage: 1,
     stageName: "Seed",
     steps: [
@@ -58,15 +58,10 @@ export const ROADMAP: RoadmapPhase[] = [
     ],
   },
   {
-    key: "building",
-    name: "Building Yourself",
-    blurb: "Communication, leadership, emotional intelligence, productivity.",
-    focus: [
-      "Communication",
-      "Leadership",
-      "Emotional Intelligence",
-      "Productivity",
-    ],
+    key: "thrive",
+    name: "Thrive",
+    blurb: "Look after your mind, body and wellbeing.",
+    focus: ["Wellbeing", "Mental Health", "Confidence", "Balance"],
     stage: 2,
     stageName: "Sprout",
     steps: [
@@ -88,10 +83,10 @@ export const ROADMAP: RoadmapPhase[] = [
     ],
   },
   {
-    key: "discovering",
-    name: "Discovering Purpose",
-    blurb: "Career exploration, goal setting and vision planning.",
-    focus: ["Career Exploration", "Goal Setting", "Vision Planning"],
+    key: "build",
+    name: "Build",
+    blurb: "Gain the skills and confidence to go further.",
+    focus: ["Skills", "Goal Setting", "Opportunity", "Confidence"],
     stage: 3,
     stageName: "Tree",
     steps: [
@@ -113,10 +108,10 @@ export const ROADMAP: RoadmapPhase[] = [
     ],
   },
   {
-    key: "creating",
-    name: "Creating Impact",
-    blurb: "Community service, advocacy and social innovation.",
-    focus: ["Community Service", "Advocacy", "Social Innovation"],
+    key: "lead",
+    name: "Lead",
+    blurb: "Speak up and change your community.",
+    focus: ["Leadership", "Advocacy", "Community", "Impact"],
     stage: 4,
     stageName: "Bloom",
     steps: [
