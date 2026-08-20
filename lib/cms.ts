@@ -5,6 +5,7 @@ import {
   events,
   galleryItems,
   impactStats,
+  pageBlocks,
   partners,
   pillars,
   programmes,
@@ -223,6 +224,15 @@ export async function getPublicEvent(slug: string) {
     .where(and(eq(events.slug, slug), eq(events.isPublic, true)))
     .limit(1);
   return row ?? null;
+}
+
+/** Published page-builder blocks for one page, in display order. */
+export async function getPageBlocks(page: string) {
+  return db
+    .select()
+    .from(pageBlocks)
+    .where(and(eq(pageBlocks.page, page), eq(pageBlocks.published, true)))
+    .orderBy(asc(pageBlocks.orderIndex));
 }
 
 /**
