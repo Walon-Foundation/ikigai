@@ -12,6 +12,9 @@ import {
   growthTrees,
   meetingVerifications,
   mentorships,
+  milestoneTemplates,
+  skillMilestones,
+  skillTracks,
   tasks,
   users,
 } from "@/db/schema";
@@ -20,6 +23,7 @@ import { stageName } from "@/lib/growth";
 import { getSharedJournals } from "./feedback-actions";
 import { FeedbackForm } from "./feedback-client";
 import { MenteeTasks, type TaskItem } from "./mentee-tasks";
+import { SkillReview } from "./skill-review";
 
 export default async function MenteeDetailPage({
   params,
@@ -58,6 +62,7 @@ export default async function MenteeDetailPage({
     curriculumRows,
     verifiedMeetings,
     sharedJournals,
+    pendingReviewRows,
   ] = await Promise.all([
     db
       .select({ id: mentorships.id, status: mentorships.status })
@@ -108,6 +113,23 @@ export default async function MenteeDetailPage({
         ),
       ),
     getSharedJournals(menteeId, user.id),
+    db
+      .select({
+        milestoneId: skillMilestones.id,
+        label: milestoneTemplates.label,
+        interestTag: skillTracks.interestTag,
+      })
+      .from(skillMilestones)
+      .innerJoin(
+        milestoneTemplates,
+        eq(skillMilestones.templateId, milestoneTemplates.id),
+      )
+      .innerJoin(skillTracks, eq(skillMilestones.skillTrackId, skillTracks.id))
+      .innerJoin(
+        mentorships,
+        and(eq(skillTracks.mentorshipId, mentorships.id), isMyActiveMentee),
+      )
+      .where(eq(skillMilestones.status, "submitted")),
   ]);
 
   const mentorship = mentorshipRows[0];
@@ -204,6 +226,9 @@ export default async function MenteeDetailPage({
               : "Completing tasks grows the tree; failed tasks make it wilt."}
           </p>
         </div>
+
+        {/* Skill milestones this mentee submitted for review */}
+        <SkillReview menteeId={menteeId} items={pendingReviewRows} />
 
         {/* Shared journey — starts with the Finding Yourself Picnic */}
         <SharedMilestones

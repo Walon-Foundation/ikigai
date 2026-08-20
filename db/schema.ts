@@ -179,6 +179,125 @@ export const growthTrees = pgTable("growth_trees", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const skillStageEnum = pgEnum("skill_stage", [
+  "discover",
+  "thrive",
+  "build",
+  "lead",
+]);
+
+// A category of skill (Advocacy, Software Engineering, Fashion & Tailoring,
+// ...) with the milestone templates that define its automatic DISCOVER→
+// THRIVE→BUILD→LEAD track. Admin-managed at /admin/skills — unlike the
+// marketing CMS tables below, these ARE read by the PWA. `aliases` classifies
+// a mentee's free-text users.interestTags entry into a category (see
+// lib/skill-classifier.ts); a tag matching nothing falls back to whichever
+// category has isFallback = true.
+export const skillCategories = pgTable(
+  "skill_categories",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    slug: text("slug").notNull().unique(),
+    name: text("name").notNull(),
+    description: text("description"),
+    aliases: text("aliases").array(),
+    isFallback: boolean("is_fallback").notNull().default(false),
+    orderIndex: integer("order_index").default(0),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  },
+  (t) => [index("skill_categories_order_idx").on(t.orderIndex)],
+);
+
+// One generated milestone in a category's track — the content library behind
+// automatic milestone generation, written once per category instead of
+// hand-built per mentee. `dimension` is one of the seven formula dimensions
+// ('knowledge'|'tools'|'practice'|'output'|'feedback'|'real_world'|'impact').
+// `requiresMentorReview` splits that formula into what a mentee can self-check
+// (knowledge/tools/practice) and what needs a mentor's sign-off before it
+// counts (output/feedback/real_world/impact).
+export const milestoneTemplates = pgTable(
+  "milestone_templates",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    categoryId: uuid("category_id")
+      .notNull()
+      .references(() => skillCategories.id),
+    stage: skillStageEnum("stage").notNull(),
+    dimension: text("dimension").notNull(),
+    label: text("label").notNull(),
+    requiresMentorReview: boolean("requires_mentor_review")
+      .notNull()
+      .default(false),
+    growthPoints: integer("growth_points").notNull().default(10),
+    orderIndex: integer("order_index").default(0),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  },
+  // A category's full track, read in stage/order to instantiate a mentee's
+  // track and to render the admin list grouped the same way.
+  (t) => [
+    index("milestone_templates_category_idx").on(
+      t.categoryId,
+      t.stage,
+      t.orderIndex,
+    ),
+  ],
+);
+
+// One mentee's auto-generated track for one of their interest tags — created
+// lazily the first time they view Journey (see lib/skill-tracks.ts).
+// `mentorshipId` is whichever active mentorship it's reviewed under, if any: a
+// mentee can be tracking a skill before being matched with a mentor for it.
+export const skillTracks = pgTable(
+  "skill_tracks",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    menteeId: uuid("mentee_id")
+      .notNull()
+      .references(() => users.id),
+    interestTag: text("interest_tag").notNull(), // the raw tag this was generated from
+    categoryId: uuid("category_id")
+      .notNull()
+      .references(() => skillCategories.id),
+    mentorshipId: uuid("mentorship_id").references(() => mentorships.id),
+    currentStage: skillStageEnum("current_stage").notNull().default("discover"),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  },
+  (t) => [
+    unique().on(t.menteeId, t.interestTag),
+    index("skill_tracks_mentorship_idx").on(t.mentorshipId),
+  ],
+);
+
+// A skillTrack's instantiated copy of one milestoneTemplate — what the mentee
+// actually sees and checks off, and what a mentor reviews. Status progression:
+// 'locked' (a future stage) → 'available' → 'submitted' (mentor-review items
+// only) → 'done'. Completing one awards its growthPoints via the same
+// lib/growth-tree.ts applyTaskComplete tasks already use.
+export const skillMilestones = pgTable(
+  "skill_milestones",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    skillTrackId: uuid("skill_track_id")
+      .notNull()
+      .references(() => skillTracks.id),
+    templateId: uuid("template_id")
+      .notNull()
+      .references(() => milestoneTemplates.id),
+    status: text("status").notNull().default("locked"),
+    mentorFeedback: text("mentor_feedback"),
+    submittedAt: timestamp("submitted_at"),
+    completedAt: timestamp("completed_at"),
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (t) => [
+    unique().on(t.skillTrackId, t.templateId),
+    index("skill_milestones_track_idx").on(t.skillTrackId, t.status),
+  ],
+);
+
 // Parent ↔ child relationship, gated by the child's in-app consent. The parent
 // sees nothing about the child until status = 'accepted'.
 export const guardianLinks = pgTable(
