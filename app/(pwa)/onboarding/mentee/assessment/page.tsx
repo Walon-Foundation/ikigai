@@ -257,7 +257,44 @@ export default function AssessmentPage() {
                     {tag}
                   </button>
                 ))}
+                {group.category === "Other" &&
+                  customLoveItems.map((tag) => (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => toggleTag(tag)}
+                      className="rounded-full border border-primary bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-all"
+                    >
+                      {tag} ✕
+                    </button>
+                  ))}
               </div>
+              {group.category === "Other" && (
+                <div className="mt-2 flex gap-2">
+                  <input
+                    type="text"
+                    value={customLoveInput}
+                    onChange={(e) => setCustomLoveInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        addCustomLove();
+                      }
+                    }}
+                    maxLength={CUSTOM_LOVE_MAX_LENGTH}
+                    placeholder="Something else you love..."
+                    className="flex-1 rounded-full border border-border bg-card px-4 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={addCustomLove}
+                    disabled={!customLoveInput.trim()}
+                    className="flex items-center gap-1 rounded-full border border-border bg-card px-4 py-2 text-sm font-medium text-foreground hover:border-primary/40 disabled:opacity-40"
+                  >
+                    <Plus className="size-4" /> Add
+                  </button>
+                </div>
+              )}
             </div>
           ))}
         </div>
