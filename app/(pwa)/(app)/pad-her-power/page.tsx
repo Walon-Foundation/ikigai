@@ -3,6 +3,7 @@ import { after } from "next/server";
 import { PageHeader } from "@/components/page-header";
 import { db } from "@/db/db";
 import { milestones } from "@/db/schema";
+import { getAppCopy } from "@/lib/app-copy";
 import { PAD_HER_POWER_RESOURCES } from "@/lib/constants";
 import { requireRole } from "@/lib/db-user";
 import { PAD_HER_POWER_LINKS } from "@/lib/resource-links";
@@ -26,6 +27,12 @@ export default async function PadHerPowerPage() {
       .values({ userId: user.id, type: "pad_her_power" })
       .onConflictDoNothing();
   });
+  const intro = await getAppCopy("pad_her_power_intro");
+  const introTitle =
+    (intro?.title as string) ?? "Reproductive Health Resources";
+  const introBody =
+    (intro?.body as string) ??
+    "Evidence-based health information for young women in Sierra Leone. Everything here is private and for you.";
   const grouped = CATEGORIES.map((cat) => ({
     category: cat,
     resources: PAD_HER_POWER_RESOURCES.filter((r) => r.category === cat),
@@ -44,12 +51,9 @@ export default async function PadHerPowerPage() {
             </span>
           </div>
           <h1 className="font-display text-2xl font-black mb-2">
-            Reproductive Health Resources
+            {introTitle}
           </h1>
-          <p className="text-sm text-earth-light/80">
-            Evidence-based health information for young women in Sierra Leone.
-            Everything here is private and for you.
-          </p>
+          <p className="text-sm text-earth-light/80">{introBody}</p>
         </div>
 
         {/* Resource Map */}

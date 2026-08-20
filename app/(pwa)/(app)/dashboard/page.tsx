@@ -10,6 +10,7 @@ import {
   tasks,
   users,
 } from "@/db/schema";
+import { getAppCopy } from "@/lib/app-copy";
 import { getDbUser } from "@/lib/db-user";
 import {
   acceptedChildForParent,
@@ -74,6 +75,8 @@ export default async function DashboardPage() {
       treeRows,
       guardianRequests,
       allOpenTasks,
+      noMentorCopy,
+      activeModulesCopy,
     ] = await Promise.all([
       activeMentorship,
       db
@@ -97,6 +100,10 @@ export default async function DashboardPage() {
         .limit(1),
       pendingRequestsForChild({ id: user.id, email: user.email }),
       openTaskRows,
+      // See lib/app-copy.ts — these two blocks are the proof-of-pattern for
+      // making PWA display copy admin-editable from /admin/app-copy.
+      getAppCopy("dashboard_no_mentor"),
+      getAppCopy("dashboard_active_modules_heading"),
     ]);
 
     const mentorshipRow = activeMentorshipRows[0] ?? null;
@@ -152,6 +159,14 @@ export default async function DashboardPage() {
           },
           tasks: openTasks,
           guardianRequests,
+          copy: {
+            noMentorTitle: (noMentorCopy?.title as string) ?? "Mentorship",
+            noMentorBody:
+              (noMentorCopy?.body as string) ?? "You don't have a mentor yet.",
+            noMentorCta: (noMentorCopy?.cta as string) ?? "Find a Mentor",
+            activeModulesLabel:
+              (activeModulesCopy?.label as string) ?? "Active Modules",
+          },
         }}
       />
     );

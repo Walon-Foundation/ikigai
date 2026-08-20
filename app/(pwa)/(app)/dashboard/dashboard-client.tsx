@@ -111,6 +111,13 @@ type MenteeData = {
   tree: { health: number; stage: number };
   tasks: OpenTask[];
   guardianRequests: GuardianRequest[];
+  // Admin-editable via /admin/app-copy — see lib/app-copy.ts.
+  copy: {
+    noMentorTitle: string;
+    noMentorBody: string;
+    noMentorCta: string;
+    activeModulesLabel: string;
+  };
 };
 
 type MentorData = {
@@ -301,23 +308,23 @@ function MenteeView({
           ) : (
             <div className="rounded-2xl border border-border bg-card p-5">
               <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Mentorship
+                {data.copy.noMentorTitle}
               </p>
               <p className="text-sm text-muted-foreground">
-                You don&apos;t have a mentor yet.
+                {data.copy.noMentorBody}
               </p>
               <Link
                 href="/mentorship"
                 className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground"
               >
-                Find a Mentor
+                {data.copy.noMentorCta}
               </Link>
             </div>
           )}
 
           <div>
             <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Active Modules
+              {data.copy.activeModulesLabel}
             </p>
             <div className="space-y-3">
               {[
