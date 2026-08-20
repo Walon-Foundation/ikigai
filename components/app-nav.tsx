@@ -3,7 +3,6 @@
 import {
   BookOpen,
   Calendar,
-  CreditCard,
   Heart,
   LayoutDashboard,
   MessageCircle,
@@ -36,7 +35,6 @@ const PARENT_NAV: NavItem[] = [
   { href: "/dashboard", label: "Home", icon: LayoutDashboard },
   { href: "/parent-portal", label: "My Child", icon: Heart },
   { href: "/parent-portal/mentors", label: "Mentors", icon: Star },
-  { href: "/parent-portal/payments", label: "Payments", icon: CreditCard },
 ];
 
 function navItemsForRole(role: string | null): NavItem[] {
