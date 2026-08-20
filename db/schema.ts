@@ -908,6 +908,24 @@ export const pageBlocks = pgTable(
   (t) => [index("page_blocks_page_order_idx").on(t.page, t.orderIndex)],
 );
 
+// A marketing page an admin created from scratch — content that wasn't part
+// of the original site design and has no dedicated route file. Rendered by
+// the catch-all app/(marketing)/[slug]/page.tsx, which looks up a published
+// row here and then renders `<PageBlocks page={slug} />` — the exact same
+// block system the coded pages use, so nothing about page_blocks or the
+// registry needed to change for this to work. The 14 built-in routes (home +
+// the 13 named pages) do NOT get a row here; they're real files and don't
+// need a URL to be resolved at request time.
+export const marketingPages = pgTable("marketing_pages", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  slug: text("slug").notNull().unique(),
+  title: text("title").notNull(),
+  metaDescription: text("meta_description"),
+  published: boolean("published").notNull().default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Singleton copy blocks for the authenticated app (PWA) — the app_copy
 // counterpart to siteCopy above. A separate table rather than reusing
 // siteCopy because these are two different products with two different admin
