@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, ChevronLeft } from "lucide-react";
+import { ArrowRight, ChevronLeft, Plus } from "lucide-react";
 import { useState, useTransition } from "react";
 import { BusyLabel } from "@/components/spinner";
 import { cn } from "@/lib/utils";
@@ -77,6 +77,7 @@ const LOVE_GROUPS: { category: string; items: string[] }[] = [
   },
 ];
 const LOVE_TAGS = LOVE_GROUPS.flatMap((g) => g.items);
+const CUSTOM_LOVE_MAX_LENGTH = 40;
 const SKILLS_TAGS = [
   "Leadership",
   "Communication",
@@ -160,6 +161,7 @@ export default function AssessmentPage() {
     community: "",
     opportunity: "",
   });
+  const [customLoveInput, setCustomLoveInput] = useState("");
   const [isPending, startTransition] = useTransition();
 
   const section = SECTIONS[sectionIdx];
@@ -176,6 +178,22 @@ export default function AssessmentPage() {
       };
     });
   }
+
+  function addCustomLove() {
+    const trimmed = customLoveInput.trim().slice(0, CUSTOM_LOVE_MAX_LENGTH);
+    if (!trimmed) return;
+    setSelected((prev) => {
+      const alreadySelected = prev.love.some(
+        (t) => t.toLowerCase() === trimmed.toLowerCase(),
+      );
+      return alreadySelected
+        ? prev
+        : { ...prev, love: [...prev.love, trimmed] };
+    });
+    setCustomLoveInput("");
+  }
+
+  const customLoveItems = selected.love.filter((t) => !LOVE_TAGS.includes(t));
 
   function handleNext() {
     if (isLast) {
