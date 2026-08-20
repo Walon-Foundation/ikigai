@@ -1,3 +1,4 @@
+import { desc, eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { Webhook } from "svix";
 import { db } from "@/db/db";
@@ -68,17 +69,34 @@ export async function POST(request: Request) {
     const displayName =
       [first_name, last_name].filter(Boolean).join(" ") || "User";
 
-    await db
-      .insert(users)
-      .values({
-        clerkId,
-        email: primaryEmail,
-        displayName,
-        role: "mentee",
-        growthLevel: 1,
-        interestTags: [],
-      })
-      .onConflictDoNothing({ target: users.clerkId });
+    // Same re-link as lib/db-user.ts's getOrCreateDbUser: if this email
+    // already has a row under a different (now-stale) clerkId, point that row
+    // at the new one instead of inserting a second account for the same
+    // person. See that file for why this happens.
+    const [byEmail] = primaryEmail
+      ? await db
+          .select({ id: users.id })
+          .from(users)
+          .where(eq(users.email, primaryEmail))
+          .orderBy(desc(users.createdAt))
+          .limit(1)
+      : [];
+
+    if (byEmail) {
+      await db.update(users).set({ clerkId }).where(eq(users.id, byEmail.id));
+    } else {
+      await db
+        .insert(users)
+        .values({
+          clerkId,
+          email: primaryEmail,
+          displayName,
+          role: "mentee",
+          growthLevel: 1,
+          interestTags: [],
+        })
+        .onConflictDoNothing({ target: users.clerkId });
+    }
   }
 
   return Response.json({ received: true });

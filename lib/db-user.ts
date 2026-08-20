@@ -1,6 +1,6 @@
 import "server-only";
 import { auth, currentUser } from "@clerk/nextjs/server";
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { cache } from "react";
 import { db } from "@/db/db";
@@ -41,6 +41,28 @@ export async function getOrCreateDbUser(): Promise<DbUser> {
     )?.emailAddress ??
     clerkUser?.emailAddresses[0]?.emailAddress ??
     null;
+
+  // Clerk can issue a new clerkId for someone who already has a row here (a
+  // dev→prod key swap orphans every existing id; signing up again does the
+  // same). Re-link that row by email instead of inserting a second account —
+  // otherwise the same person silently ends up with two disconnected users
+  // rows, neither of which has the other's history.
+  if (email) {
+    const [byEmail] = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, email))
+      .orderBy(desc(users.createdAt))
+      .limit(1);
+    if (byEmail) {
+      const [relinked] = await db
+        .update(users)
+        .set({ clerkId: userId })
+        .where(eq(users.id, byEmail.id))
+        .returning();
+      return relinked;
+    }
+  }
 
   // Use ON CONFLICT DO NOTHING to handle concurrent inserts safely
   await db
