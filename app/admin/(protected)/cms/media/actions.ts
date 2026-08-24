@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db/db";
 import { mediaAssets } from "@/db/schema";
-import { text } from "@/lib/cms-admin";
+import { requiredImageUrl, text } from "@/lib/cms-admin";
 import { requireAdmin } from "@/lib/db-user";
 
 const PATH = "/admin/cms/media";
@@ -14,8 +14,7 @@ const PATH = "/admin/cms/media";
 // be found and pasted later.
 export async function addMedia(url: string, label: string) {
   await requireAdmin();
-  const clean = text(url, 500);
-  if (!clean) throw new Error("No image to save");
+  const clean = requiredImageUrl(url, 500, "Image");
   await db.insert(mediaAssets).values({ url: clean, label: text(label, 120) });
   revalidatePath(PATH);
 }

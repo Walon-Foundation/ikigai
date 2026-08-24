@@ -3,7 +3,7 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/db/db";
 import { events } from "@/db/schema";
-import { requiredText, slugify, text } from "@/lib/cms-admin";
+import { imageUrl, requiredText, slugify, text } from "@/lib/cms-admin";
 import { cmsInvalidate } from "@/lib/cms-crud";
 import { requireAdmin } from "@/lib/db-user";
 
@@ -36,7 +36,7 @@ export async function save(id: string | null, v: Record<string, string>) {
     title,
     startsAt,
     location: text(v.location, 200),
-    imageUrl: text(v.imageUrl, 500),
+    imageUrl: imageUrl(v.imageUrl, 500),
     reportSummary: text(v.reportSummary, 4_000),
     reportPartners: text(v.reportPartners, 500),
     reportImpact: text(v.reportImpact, 500),

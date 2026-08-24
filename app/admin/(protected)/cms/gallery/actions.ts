@@ -3,7 +3,7 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/db/db";
 import { galleryItems } from "@/db/schema";
-import { requiredText, text } from "@/lib/cms-admin";
+import { requiredImageUrl, requiredText, text } from "@/lib/cms-admin";
 import {
   cmsInvalidate,
   cmsMove,
@@ -24,7 +24,7 @@ const cols = {
 export async function save(id: string | null, v: Record<string, string>) {
   await requireAdmin();
   const album = requiredText(v.album, 120, "Album");
-  const imageUrl = requiredText(v.imageUrl, 500, "Image");
+  const imageUrl = requiredImageUrl(v.imageUrl, 500, "Image");
   const fields = {
     album,
     imageUrl,

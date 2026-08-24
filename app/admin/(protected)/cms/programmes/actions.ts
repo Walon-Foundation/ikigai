@@ -3,7 +3,14 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/db/db";
 import { programmes } from "@/db/schema";
-import { bool, lines, requiredText, slugify, text } from "@/lib/cms-admin";
+import {
+  bool,
+  imageUrl,
+  lines,
+  requiredText,
+  slugify,
+  text,
+} from "@/lib/cms-admin";
 import {
   cmsInvalidate,
   cmsMove,
@@ -28,7 +35,7 @@ export async function save(id: string | null, v: Record<string, string>) {
     name,
     pillarId: v.pillarId || null,
     summary: text(v.summary, 300),
-    heroImageUrl: text(v.heroImageUrl, 500),
+    heroImageUrl: imageUrl(v.heroImageUrl, 500),
     about: text(v.about, 4_000),
     objectives: lines(v.objectives),
     activities: lines(v.activities),
