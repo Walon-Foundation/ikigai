@@ -10,7 +10,7 @@ const APP_URL = clientEnv.appUrl;
 // matters most on exactly the slow connections where the JS looked worst.
 export function Hero() {
   return (
-    <section className="relative overflow-hidden bg-background pb-24 pt-40">
+    <section className="hero-mesh relative overflow-hidden bg-background pb-24 pt-40">
       {/* Watermark */}
       <span
         aria-hidden

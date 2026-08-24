@@ -149,6 +149,17 @@
   }
   html {
     @apply font-sans;
+    scroll-behavior: smooth;
+    scrollbar-gutter: stable;
+  }
+  /* Smooth theme switch — quick enough to feel native, slow enough to notice */
+  html {
+    transition:
+      color 180ms ease,
+      background-color 180ms ease;
+  }
+  ::selection {
+    background: oklch(0.76 0.17 68 / 0.25);
   }
 }
 
@@ -206,6 +217,35 @@
   }
 }
 
+/* Marketing hero mesh — CSS-only, Lite Mode hidden */
+.hero-mesh {
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 100%, oklch(0.82 0.068 155 / 0.18) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 95% 10%, oklch(0.76 0.17 68 / 0.10) 0%, transparent 50%),
+    radial-gradient(ellipse 70% 50% at 50% -10%, oklch(0.52 0.12 35 / 0.07) 0%, transparent 60%);
+}
+.dark .hero-mesh {
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 100%, oklch(0.53 0.11 155 / 0.12) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 95% 10%, oklch(0.76 0.17 68 / 0.08) 0%, transparent 50%);
+}
+
+/* Card polish — lift on hover, focus ring visible in both themes */
+.card-lift {
+  transition:
+    transform 220ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 220ms ease,
+    border-color 180ms ease;
+}
+.card-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px -12px oklch(0.35 0.095 154 / 0.15);
+  border-color: oklch(0.35 0.095 154 / 0.20);
+}
+.dark .card-lift:hover {
+  box-shadow: 0 8px 24px -12px oklch(0 / 0 0 / 0.4);
+}
+
 /* Lite Mode — hide decorative/media content to save data */
 html[data-lite="true"] .lite-hidden {
   /* biome-ignore lint/complexity/noImportantStyles: lite mode must override all display rules */
@@ -218,4 +258,7 @@ html[data-lite="true"] img:not([data-essential]) {
 html[data-lite="true"] [data-decorative] {
   /* biome-ignore lint/complexity/noImportantStyles: lite mode must override all display rules */
   display: none !important;
+}
+html[data-lite="true"] .hero-mesh {
+  background: none !important;
 }
