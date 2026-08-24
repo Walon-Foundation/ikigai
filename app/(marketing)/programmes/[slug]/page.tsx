@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Footer } from "@/components/marketing/footer";
 import { Nav } from "@/components/marketing/nav";
+import { canJoin, canVolunteer, isPast } from "@/lib/cms";
 import { getProgramme } from "@/lib/cms";
 
 // Rendered per request so an edit to a programme's copy or photos is live
@@ -35,6 +36,21 @@ export default async function ProgrammePage({
 
   const ctaHref = programme.ctaUrl || "/get-involved";
   const ctaLabel = programme.ctaLabel || "Join this programme";
+  // Unified lifecycle: volunteering/joining blocked when past (endsAt < now)
+  // or when the admin explicitly closed it via allowVolunteer. This keeps the
+  // detail page and the Get Involved dropdown consistent.
+  const past = isPast(programme as { startsAt: Date | null; endsAt: Date | null });
+  const volunteerOpen = canVolunteer(
+    programme as { startsAt: Date | null; endsAt: Date | null; allowVolunteer: boolean | null },
+  );
+  const joinOpen = canJoin(
+    programme as {
+      startsAt: Date | null;
+      endsAt: Date | null;
+      allowVolunteer: boolean | null;
+    },
+  );
+  const showCta = !past && joinOpen && volunteerOpen;
 
   return (
     <div className="min-h-screen bg-background">
@@ -162,15 +178,34 @@ export default async function ProgrammePage({
             </div>
           )}
 
-          {/* CTA */}
-          <div className="mt-16 text-center">
-            <Link
-              href={ctaHref}
-              className="inline-flex items-center gap-2 rounded-lg bg-primary px-8 py-4 text-base font-semibold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98]"
-            >
-              {ctaLabel} <ArrowRight className="size-4" />
-            </Link>
-          </div>
+          {/* CTA — hidden when past or admin-closed */}
+          {showCta ? (
+            <div className="mt-16 text-center">
+              <Link
+                href={ctaHref}
+                className="inline-flex items-center gap-2 rounded-lg bg-primary px-8 py-4 text-base font-semibold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98]"
+              >
+                {ctaLabel} <ArrowRight className="size-4" />
+              </Link>
+            </div>
+          ) : (
+            <div className="mt-16 rounded-2xl border border-border bg-secondary p-8 text-center">
+              <p className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                {past ? "This programme has ended" : "Volunteering is currently closed for this programme"}
+              </p>
+              <p className="mt-2 text-sm text-muted-foreground">
+                {past
+                  ? "You can still explore other active programmes or volunteer for upcoming events."
+                  : "Please check back later or contact us for more information."}
+              </p>
+              <Link
+                href="/programmes"
+                className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline"
+              >
+                Browse programmes <ArrowRight className="size-4" />
+              </Link>
+            </div>
+          )}
         </div>
       </main>
       <Footer />

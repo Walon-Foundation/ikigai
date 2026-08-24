@@ -10,12 +10,14 @@ export function RsvpButton({
   checkedIn,
   locked,
   lockLabel,
+  ended,
 }: {
   eventId: string;
   registered: boolean;
   checkedIn: boolean;
   locked: boolean;
   lockLabel?: string;
+  ended?: boolean;
 }) {
   const [pending, startTransition] = useTransition();
   // Check in / Cancel RSVP / RSVP fire independently, so a single shared
@@ -37,6 +39,14 @@ export function RsvpButton({
         setBusyAction(null);
       }
     });
+  }
+
+  if (ended && !registered) {
+    return (
+      <span className="inline-flex rounded-full bg-muted px-4 py-2 text-sm font-medium text-muted-foreground">
+        Ended
+      </span>
+    );
   }
 
   if (checkedIn) {

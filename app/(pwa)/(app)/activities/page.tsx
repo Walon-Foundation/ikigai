@@ -1,4 +1,4 @@
-import { eq, gte } from "drizzle-orm";
+import { and, eq, gte, isNotNull, isNull, or } from "drizzle-orm";
 import { CalendarDays, Lock, MapPin, PartyPopper } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -28,7 +28,15 @@ export default async function ActivitiesPage() {
     db
       .select()
       .from(events)
-      .where(gte(events.startsAt, now))
+      // Ongoing events (started but not yet ended) are still joinable — an
+      // event that began yesterday and ends tomorrow is "in progress", not past.
+      // Past is: endsAt < now (or startsAt < now when endsAt is null).
+      .where(
+        or(
+          and(isNotNull(events.endsAt), gte(events.endsAt, now)),
+          and(isNull(events.endsAt), gte(events.startsAt, now)),
+        ),
+      )
       .orderBy(events.startsAt),
     db
       .select({

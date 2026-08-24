@@ -2,6 +2,10 @@ import { ArrowRight, CalendarDays, MapPin } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
+// Unified lifecycle helpers live in lib/cms.ts; cards keep a tiny inline
+// copy to stay server-renderable without an extra import cycle, but the
+// rule is identical: effectiveEnd = endsAt ?? startsAt, ongoing = started && not ended.
+
 // Reusable cards for the public site. Kept presentational and server-rendered —
 // they take plain row data and render links. Images go through next/image so
 // the campaign photography arrives resized rather than as multi-megabyte
@@ -31,7 +35,7 @@ export function ProgrammeCard({
   return (
     <Link
       href={`/programmes/${programme.slug}`}
-      className="group flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card transition-transform duration-200 hover:-translate-y-1 hover:shadow-lg"
+      className="card-lift group flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card"
     >
       <div className="relative aspect-[16/10] overflow-hidden bg-secondary">
         {programme.heroImageUrl ? (
@@ -91,6 +95,7 @@ export function EventCard({
     location: string | null;
     imageUrl: string | null;
     startsAt: Date | null;
+    endsAt?: Date | null;
   };
 }) {
   const dateLabel = event.startsAt
@@ -101,6 +106,9 @@ export function EventCard({
         year: "numeric",
       })
     : null;
+  const now = Date.now();
+  const ends = (event as { endsAt?: Date | null }).endsAt?.getTime() ?? event.startsAt?.getTime() ?? 0;
+  const ongoing = event.startsAt ? event.startsAt.getTime() <= now && ends >= now : false;
 
   const inner = (
     <>
@@ -142,7 +150,7 @@ export function EventCard({
   );
 
   const className =
-    "group block h-full overflow-hidden rounded-2xl border border-border bg-card transition-transform duration-200 hover:-translate-y-1 hover:shadow-lg";
+    "card-lift group block h-full overflow-hidden rounded-2xl border border-border bg-card";
 
   return event.slug ? (
     <Link href={`/events/${event.slug}`} className={className}>
@@ -168,7 +176,7 @@ export function StoryCard({
   return (
     <Link
       href={`/stories/${story.slug}`}
-      className="group flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card transition-transform duration-200 hover:-translate-y-1 hover:shadow-lg"
+      className="card-lift group flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card"
     >
       <div className="relative aspect-[16/10] overflow-hidden bg-secondary">
         {story.coverImageUrl ? (

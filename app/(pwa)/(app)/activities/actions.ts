@@ -18,12 +18,19 @@ async function loadEvent(eventId: string) {
   return event;
 }
 
-// Register / RSVP for an event. Enforces capacity and the roadmap-completion
-// unlock gate (e.g. the Finding Yourself Picnic unlocks at 50% for mentees).
+// Register / RSVP for an event. Enforces capacity, the roadmap-completion
+// unlock gate (e.g. the Finding Yourself Picnic unlocks at 50% for mentees),
+// and the "only ongoing events" rule — a past event must not be joinable
+// even if someone posts the id directly.
 export async function rsvp(eventId: string) {
   const me = await getDbUser();
   if (!me) throw new Error("Unauthenticated");
   const event = await loadEvent(eventId);
+
+  // Past / completed events are not joinable.
+  const now = Date.now();
+  const ends = event.endsAt?.getTime() ?? event.startsAt?.getTime() ?? 0;
+  if (ends < now) throw new Error("This event has ended and is no longer open for registration");
 
   // Unlock gate applies to mentees (mentors aren't on the roadmap).
   if (me.role === "mentee" && (event.unlockAtPercent ?? 0) > 0) {

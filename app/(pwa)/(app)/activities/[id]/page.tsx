@@ -56,6 +56,8 @@ export default async function ActivityDetailPage({
   const percent = progress?.percent ?? 100;
   const unlockAt = event.unlockAtPercent ?? 0;
   const locked = user.role === "mentee" && unlockAt > 0 && percent < unlockAt;
+  const ends = event.endsAt?.getTime() ?? event.startsAt?.getTime() ?? 0;
+  const ended = ends < Date.now();
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-6">
@@ -96,15 +98,22 @@ export default async function ActivityDetailPage({
           </p>
         )}
 
-        <div className="mt-6">
-          <RsvpButton
-            eventId={event.id}
-            registered={!!mine}
-            checkedIn={mine?.status === "attended"}
-            locked={locked}
-            lockLabel={`Unlocks at ${unlockAt}% roadmap completion`}
-          />
-        </div>
+        {ended && !mine ? (
+          <div className="mt-6 rounded-xl border border-border bg-muted p-4 text-center text-sm text-muted-foreground">
+            This event has ended — registration is closed.
+          </div>
+        ) : (
+          <div className="mt-6">
+            <RsvpButton
+              eventId={event.id}
+              registered={!!mine}
+              checkedIn={mine?.status === "attended"}
+              locked={locked}
+              lockLabel={`Unlocks at ${unlockAt}% roadmap completion`}
+              ended={ended}
+            />
+          </div>
+        )}
       </div>
     </div>
   );
