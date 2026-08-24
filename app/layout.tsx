@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { DM_Sans, Fraunces, JetBrains_Mono } from "next/font/google";
+import { ThemeInit } from "@/components/theme-init";
 import "./globals.css";
 
 const fraunces = Fraunces({
@@ -26,17 +27,50 @@ const jetbrainsMono = JetBrains_Mono({
   preload: false,
 });
 
+const siteUrl =
+  process.env.NEXT_PUBLIC_MARKETING_URL ?? "https://findingyourikigai.org";
+
 export const metadata: Metadata = {
-  title: "Ikigai — Find your reason to wake up every morning",
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: "Ikigai — Find your reason to wake up every morning",
+    template: "%s · Ikigai",
+  },
   description:
     "Ikigai connects youth in Sierra Leone with mentors, growth tools, and a community built for their future.",
   manifest: "/manifest.webmanifest",
+  icons: {
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/icon", type: "image/png", sizes: "32x32" },
+    ],
+    apple: [{ url: "/apple-icon", sizes: "180x180", type: "image/png" }],
+  },
+  openGraph: {
+    type: "website",
+    locale: "en_SL",
+    siteName: "Ikigai",
+    title: "Ikigai — Find your reason to wake up every morning",
+    description:
+      "A purpose-discovery and mentorship platform for youth in Sierra Leone. Journal, grow, and get matched with verified mentors.",
+    url: siteUrl,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Ikigai — Find your reason to wake up every morning",
+    description:
+      "A purpose-discovery and mentorship platform for youth in Sierra Leone.",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
     title: "Ikigai",
   },
   formatDetection: { telephone: false },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export const viewport: Viewport = {
@@ -58,6 +92,9 @@ export default function RootLayout({
       className={`${fraunces.variable} ${dmSans.variable} ${jetbrainsMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
+      <head>
+        <ThemeInit />
+      </head>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );
