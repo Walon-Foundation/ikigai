@@ -20,7 +20,8 @@ const FIELDS: Field[] = [
   {
     type: "text",
     name: "slug",
-    label: "URL slug (findingyourikigai.org/slug — auto-generated from title if blank, permanent once created)",
+    label:
+      "URL slug (findingyourikigai.org/slug — auto-generated from title if blank, permanent once created)",
     placeholder: "spring-fundraiser",
   },
   {
