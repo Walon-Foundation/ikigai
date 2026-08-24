@@ -97,6 +97,16 @@ export default clerkMiddleware(async (auth, request) => {
 
   // --- ADMIN SUBDOMAIN ---------------------------------------------------
   if (isAdmin) {
+    // Static assets and metadata routes must not be rewritten — they live at the
+    // root (app/favicon.ico, app/icon.tsx, app/apple-icon.tsx, app/manifest.ts,
+    // app/sitemap.ts, app/robots.ts). Without this bypass a request for
+    // admin.host/favicon.ico would be rewriten to /admin/favicon.ico and 404,
+    // which is exactly why the favicon was missing on admin pages.
+    const ADMIN_ASSET_RE =
+      /^\/(favicon\.ico|icon|apple-icon|manifest\.webmanifest|sitemap\.xml|robots\.txt|sw\.js|icon-\d+x\d+\.png)$/;
+    if (ADMIN_ASSET_RE.test(pathname) || pathname.startsWith("/icon?") || pathname.startsWith("/apple-icon?")) {
+      return NextResponse.next();
+    }
     // No self-service sign-up for admins.
     if (pathname === "/sign-up" || pathname.startsWith("/sign-up/")) {
       const signIn = url.clone();
