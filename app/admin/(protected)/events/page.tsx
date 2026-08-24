@@ -41,12 +41,14 @@ export default async function AdminEventsPage() {
   }
 
   const now = Date.now();
-  const upcoming = eventRows.filter(
-    (e) => e.startsAt && e.startsAt.getTime() >= now,
-  );
-  const past = eventRows.filter(
-    (e) => !e.startsAt || e.startsAt.getTime() < now,
-  );
+  const upcoming = eventRows.filter((e) => {
+    const ends = e.endsAt?.getTime() ?? e.startsAt?.getTime() ?? 0;
+    return ends >= now;
+  });
+  const past = eventRows.filter((e) => {
+    const ends = e.endsAt?.getTime() ?? e.startsAt?.getTime() ?? 0;
+    return ends < now;
+  });
 
   return (
     <div>
