@@ -196,26 +196,141 @@ export async function getCopy(key: string) {
   return (row?.value as Record<string, unknown> | undefined) ?? null;
 }
 
+// ---------------------------------------------------------------------------
+// Unified date-lifecycle helpers — shared by events and programmes.
+//
+// A volunteer must not be able to volunteer for something that has already
+// ended (user request: "a volunteer can't volunteer for a past thing").
+// Both tables use the same rule:
+//   - if endsAt exists, it is authoritative;
+//   - else if startsAt exists, a single-day thing ends at startsAt;
+//   - else (no dates at all) the item is considered dateless → never past
+//     (so seeded rows without dates stay active).
+// ongoing = started && not yet ended; upcoming = not yet started; past = ended.
+// allowVolunteer / allowJoin are manual admin kill-switches on top of dates.
+// ---------------------------------------------------------------------------
+
+type Dated = {
+  startsAt?: Date | null;
+  endsAt?: Date | null;
+  allowVolunteer?: boolean | null;
+  allowJoin?: boolean | null;
+};
+
+function effectiveEnd(item: Dated): number | null {
+  if (item.endsAt) return item.endsAt.getTime();
+  if (item.startsAt) return item.startsAt.getTime();
+  return null; // dateless → no end
+}
+
+export function isPast(item: Dated, now = Date.now()): boolean {
+  const end = effectiveEnd(item);
+  if (end === null) return false;
+  return end < now;
+}
+
+export function isOngoing(item: Dated, now = Date.now()): boolean {
+  if (!item.startsAt) return false;
+  const start = item.startsAt.getTime();
+  const end = effectiveEnd(item) ?? start;
+  return start <= now && end >= now;
+}
+
+export function isUpcoming(item: Dated, now = Date.now()): boolean {
+  if (isPast(item, now)) return false;
+  if (!item.startsAt) return false;
+  return item.startsAt.getTime() > now;
+}
+
+export type ItemStatus = "upcoming" | "ongoing" | "past" | "dateless";
+
+export function getItemStatus(item: Dated, now = Date.now()): ItemStatus {
+  if (effectiveEnd(item) === null) return "dateless";
+  if (isPast(item, now)) return "past";
+  if (isOngoing(item, now)) return "ongoing";
+  return "upcoming";
+}
+
+// Programme-specific aliases (same logic, clearer call sites)
+export const isProgrammePast = isPast;
+export const isProgrammeOngoing = isOngoing;
+export const isProgrammeActive = (p: Dated, now = Date.now()) =>
+  !isPast(p, now);
+export const programmeStatus = getItemStatus;
+export const isEventPast = isPast;
+export const isEventOngoing = isOngoing;
+export const eventStatus = getItemStatus;
+
+/** Whether volunteering / joining should be allowed for this item right now. */
+export function canVolunteer(item: Dated, now = Date.now()): boolean {
+  if (item.allowVolunteer === false) return false;
+  return !isPast(item, now);
+}
+
+export function canJoin(item: Dated, now = Date.now()): boolean {
+  // programmes gate join via allowVolunteer; events have a dedicated allowJoin.
+  // If allowJoin is explicitly false, block; otherwise fall back to allowVolunteer + dates.
+  if (item.allowJoin === false) return false;
+  if (item.allowVolunteer === false) return false;
+  return !isPast(item, now);
+}
+
+/**
+ * Filter for the volunteer dropdown: only published, not past, and not
+ * manually closed via allowVolunteer. Mirrors canVolunteer but at the row
+ * level for the CMS read.
+ */
+export async function getActiveProgrammesForVolunteer() {
+  const rows = await db
+    .select()
+    .from(programmes)
+    .where(eq(programmes.published, true))
+    .orderBy(asc(programmes.orderIndex));
+  const now = Date.now();
+  return rows.filter((p) => canVolunteer(p as Dated, now));
+}
+
+/** Upcoming + ongoing public events that are still volunteerable. */
+export async function getActiveEventsForVolunteer() {
+  const rows = await db
+    .select()
+    .from(events)
+    .where(eq(events.isPublic, true))
+    .orderBy(asc(events.startsAt));
+  const now = Date.now();
+  return rows.filter((e) => canVolunteer(e as Dated, now));
+}
+
 /**
  * Public events only. `isPublic` defaults to false, so an internal activity
  * created by an admin for the app never appears here by omission.
+ *
+ * An event that has started but not yet ended is still joinable ("ongoing"),
+ * so upcoming means endsAt (or startsAt if no end) is still in the future —
+ * not just startsAt. Otherwise an event that began yesterday but ends
+ * tomorrow would flip to "Past" while you can still join it.
  */
 export async function getUpcomingPublicEvents(limit?: number) {
-  const query = db
+  // Work in JS filter for cross-driver null handling; the table is small for
+  // public listing. For larger tables this would be a coalesce SQL predicate.
+  const rows = await db
     .select()
     .from(events)
-    .where(and(eq(events.isPublic, true), gte(events.startsAt, new Date())))
+    .where(eq(events.isPublic, true))
     .orderBy(asc(events.startsAt));
-  return limit ? query.limit(limit) : query;
+  const now = Date.now();
+  const upcoming = rows.filter((e) => !isPast(e as Dated, now));
+  return limit ? upcoming.slice(0, limit) : upcoming;
 }
 
 export async function getPastPublicEvents(limit = 24) {
-  return db
+  const rows = await db
     .select()
     .from(events)
-    .where(and(eq(events.isPublic, true), lt(events.startsAt, new Date())))
-    .orderBy(desc(events.startsAt))
-    .limit(limit);
+    .where(eq(events.isPublic, true))
+    .orderBy(desc(events.startsAt));
+  const now = Date.now();
+  return rows.filter((e) => isPast(e as Dated, now)).slice(0, limit);
 }
 
 export async function getPublicEvent(slug: string) {
