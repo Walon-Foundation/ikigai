@@ -91,13 +91,13 @@ export default async function AboutPage() {
           </div>
         </section>
 
-        {/* Team */}
+        {/* Team preview — links to dedicated /team page so the CMS list has a real home */}
         {team.length > 0 && (
           <section className="py-24">
             <div className="mx-auto max-w-6xl px-6">
               <SectionHeading eyebrow="Our people" title="The team." center />
               <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-                {team.map((m) => (
+                {team.slice(0, 6).map((m) => (
                   <div key={m.id} className="text-center">
                     <div className="mx-auto mb-4 w-fit">
                       <Avatar name={m.name} src={m.photoUrl} size={96} />
@@ -111,13 +111,33 @@ export default async function AboutPage() {
                       </p>
                     )}
                     {m.bio && (
-                      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                      <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-muted-foreground">
                         {m.bio}
                       </p>
                     )}
                   </div>
                 ))}
               </div>
+              {team.length > 6 && (
+                <div className="mt-10 text-center">
+                  <a
+                    href="/team"
+                    className="inline-flex items-center gap-2 rounded-full border border-border px-6 py-3 text-sm font-semibold text-foreground hover:bg-muted"
+                  >
+                    Meet the full team
+                  </a>
+                </div>
+              )}
+              {team.length <= 6 && team.length > 0 && (
+                <div className="mt-10 text-center">
+                  <a
+                    href="/team"
+                    className="text-sm font-semibold text-primary hover:underline"
+                  >
+                    View all →
+                  </a>
+                </div>
+              )}
             </div>
           </section>
         )}
