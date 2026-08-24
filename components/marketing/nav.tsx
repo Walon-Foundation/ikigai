@@ -3,6 +3,7 @@
 import { ChevronDown } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { clientEnv } from "@/lib/env.client";
 import { cn } from "@/lib/utils";
 
@@ -115,6 +116,7 @@ export function Nav() {
           </nav>
 
           <div className="flex items-center gap-3">
+            <ThemeToggle className="hidden sm:inline-flex" />
             {/* A quiet way back into the app for people who already have an
                 account — the loud CTA stays "Join A Programme". Points at the
                 app subdomain; the proxy takes it to the dashboard / sign-in. */}
@@ -171,6 +173,9 @@ export function Nav() {
               {l.label}
             </Link>
           ))}
+          <div className="mt-3 flex items-center gap-3">
+            <ThemeToggle variant="full" className="flex-1 justify-center" />
+          </div>
           <Link
             href="/get-involved"
             onClick={() => setOpen(false)}

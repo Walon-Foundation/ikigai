@@ -11,7 +11,7 @@ export default function AdminSignOutPage() {
   }, [signOut]);
 
   return (
-    <div className="dark flex min-h-screen items-center justify-center bg-background text-foreground">
+    <div className="flex min-h-screen items-center justify-center bg-background text-foreground">
       <p className="text-sm text-muted-foreground">Signing out…</p>
     </div>
   );

@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
@@ -88,8 +89,12 @@ export function AdminSidebar({
         </div>
       </nav>
 
-      <div className="border-t border-border p-4">
-        <div className="mb-3 min-w-0">
+      <div className="border-t border-border p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-medium text-muted-foreground">Theme</span>
+          <ThemeToggle />
+        </div>
+        <div className="min-w-0">
           <p className="truncate text-sm font-medium text-foreground">
             {displayName ?? "Admin"}
           </p>

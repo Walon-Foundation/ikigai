@@ -9,7 +9,7 @@ export default function AdminUnauthorizedPage() {
   const marketingUrl = clientEnv.marketingUrl;
 
   return (
-    <div className="dark flex min-h-screen items-center justify-center bg-background p-6 text-foreground">
+    <div className="flex min-h-screen items-center justify-center bg-background p-6 text-foreground">
       <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 text-center">
         <div className="mx-auto mb-5 flex size-14 items-center justify-center rounded-2xl bg-destructive/10">
           <ShieldX className="size-7 text-destructive" />

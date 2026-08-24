@@ -8,6 +8,7 @@ import {
   Lock,
   LogOut,
   Monitor,
+  Moon,
   Share,
   Smartphone,
   User,
@@ -57,6 +58,16 @@ export function SettingsClient({ user }: { user: DbUser }) {
   const [liteMode, setLiteMode] = useState(() => {
     if (typeof window === "undefined") return false;
     return localStorage.getItem("liteMode") === "true";
+  });
+  const [darkMode, setDarkMode] = useState(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      const t = localStorage.getItem("theme");
+      if (t === "dark" || t === "light") return t === "dark";
+      return window.matchMedia("(prefers-color-scheme: dark)").matches;
+    } catch {
+      return false;
+    }
   });
   const [pushEnabled, setPushEnabled] = useState(user.pushEnabled ?? false);
   const [pushError, setPushError] = useState<string | null>(null);
@@ -190,6 +201,24 @@ export function SettingsClient({ user }: { user: DbUser }) {
           <DataPrivacy
             deletionRequestedAt={user.deletionRequestedAt ?? null}
             graceDays={user.deletionGraceDays ?? 30}
+          />
+        </SettingsSection>
+
+        {/* Appearance */}
+        <SettingsSection title="Appearance" icon={Moon}>
+          <ToggleRow
+            label="Dark Mode"
+            desc="Easier on the eyes in low light"
+            value={darkMode}
+            onChange={(v) => {
+              setDarkMode(v);
+              const next = v ? "dark" : "light";
+              document.documentElement.classList.toggle("dark", v);
+              document.documentElement.style.colorScheme = next;
+              try {
+                localStorage.setItem("theme", next);
+              } catch {}
+            }}
           />
         </SettingsSection>
 

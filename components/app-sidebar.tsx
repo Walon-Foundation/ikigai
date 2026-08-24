@@ -23,6 +23,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LinkPending } from "@/components/nav-progress";
 import { useNotifications } from "@/components/notifications";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { cn } from "@/lib/utils";
 
 type NavItem = { href: string; label: string; icon: React.ElementType };
@@ -184,7 +185,11 @@ export function AppSidebar({
         )}
       </nav>
 
-      <div className="border-t border-border p-3">
+      <div className="border-t border-border p-3 space-y-2">
+        <div className="flex items-center justify-between px-3 py-1">
+          <span className="text-xs font-medium text-muted-foreground">Theme</span>
+          <ThemeToggle />
+        </div>
         <button
           type="button"
           onClick={() => signOut({ redirectUrl: "/" })}
