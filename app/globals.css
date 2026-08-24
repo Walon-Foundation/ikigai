@@ -57,6 +57,14 @@
 }
 
 :root {
+  /* Tells the browser which native form-control rendering to use — the
+     dropdown list a <select> pops open, checkboxes, scrollbars, date
+     pickers. Our Tailwind classes only style the elements themselves; that
+     native chrome ignores them and follows color-scheme instead, so without
+     this a <select>'s option list renders with the OS light-mode default
+     (black text on white) even while everything else here is dark-themed.
+     That mismatch is what made admin dropdown text unreadable. */
+  color-scheme: light dark;
   /* ── Core semantic tokens (Ikigai palette) ── */
   --background: oklch(0.99 0.004 90); /* #FAFAF7 */
   --foreground: oklch(0.145 0.004 110); /* #1C1C1A */
@@ -103,6 +111,7 @@
 }
 
 .dark {
+  color-scheme: dark;
   --background: oklch(0.1 0.02 154); /* #0F1A14 */
   --foreground: oklch(0.94 0.008 75); /* #F0EDE8 */
   --card: oklch(0.14 0.025 154); /* #162010 */

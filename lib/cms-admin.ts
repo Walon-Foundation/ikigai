@@ -16,6 +16,46 @@ export function text(value: unknown, max: number): string | null {
   return trimmed.length > 0 ? trimmed : null;
 }
 
+/**
+ * An image/photo/logo URL field. Every one of these ultimately lands in an
+ * <img> (or next/image, which only resolves the *.ufs.sh / utfs.io hosts
+ * configured in next.config.ts) on the public site — so beyond the max-length
+ * clamp `text()` already does, this rejects anything that isn't a well-formed
+ * http(s) URL. The UploadThing flow (ImageField's file picker) never produces
+ * anything else, but ImageField also has a "paste a URL" fallback for reusing
+ * a Media Library photo, and that field accepts arbitrary typed input with no
+ * upload step behind it — this is the actual enforcement point for that path,
+ * not a redundant check.
+ */
+export function imageUrl(value: unknown, max: number): string | null {
+  const trimmed = text(value, max);
+  if (!trimmed) return null;
+  return requireHttpUrl(trimmed);
+}
+
+/** Same validation as imageUrl(), but for a required (non-nullable) column. */
+export function requiredImageUrl(
+  value: unknown,
+  max: number,
+  label: string,
+): string {
+  const result = text(value, max);
+  if (!result) throw new Error(`${label} is required`);
+  return requireHttpUrl(result);
+}
+
+function requireHttpUrl(value: string): string {
+  try {
+    const parsed = new URL(value);
+    if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+      throw new Error("not http(s)");
+    }
+    return value;
+  } catch {
+    throw new Error("Image URL must be a valid http(s) link");
+  }
+}
+
 /** A required string field. Throws with the field's name when empty. */
 export function requiredText(
   value: unknown,

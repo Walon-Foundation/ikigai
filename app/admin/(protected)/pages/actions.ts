@@ -51,7 +51,10 @@ export async function save(id: string | null, v: Record<string, string>) {
   };
 
   if (id) {
-    await db.update(marketingPages).set(fields).where(eq(marketingPages.id, id));
+    await db
+      .update(marketingPages)
+      .set(fields)
+      .where(eq(marketingPages.id, id));
   } else {
     const [existing] = await db
       .select({ id: marketingPages.id })

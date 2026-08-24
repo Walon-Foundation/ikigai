@@ -5,6 +5,7 @@ import {
   events,
   galleryItems,
   impactStats,
+  marketingPages,
   pageBlocks,
   partners,
   pillars,
@@ -233,6 +234,18 @@ export async function getPageBlocks(page: string) {
     .from(pageBlocks)
     .where(and(eq(pageBlocks.page, page), eq(pageBlocks.published, true)))
     .orderBy(asc(pageBlocks.orderIndex));
+}
+
+/** A published admin-created page (app/(marketing)/[slug]/page.tsx). */
+export async function getMarketingPage(slug: string) {
+  const [row] = await db
+    .select()
+    .from(marketingPages)
+    .where(
+      and(eq(marketingPages.slug, slug), eq(marketingPages.published, true)),
+    )
+    .limit(1);
+  return row ?? null;
 }
 
 /**

@@ -3,7 +3,7 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/db/db";
 import { partners } from "@/db/schema";
-import { requiredText, text } from "@/lib/cms-admin";
+import { imageUrl, requiredText, text } from "@/lib/cms-admin";
 import {
   cmsInvalidate,
   cmsMove,
@@ -26,7 +26,7 @@ export async function save(id: string | null, v: Record<string, string>) {
   const name = requiredText(v.name, 160, "Name");
   const fields = {
     name,
-    logoUrl: text(v.logoUrl, 500),
+    logoUrl: imageUrl(v.logoUrl, 500),
     websiteUrl: text(v.websiteUrl, 300),
     description: text(v.description, 600),
     updatedAt: new Date(),
