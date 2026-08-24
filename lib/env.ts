@@ -21,11 +21,6 @@ const schema = z
     // Optional: the Clerk webhook route returns 500 at runtime when unset.
     CLERK_WEBHOOK_SECRET: z.string().optional(),
     ADMIN_HOSTNAME: z.string().default("admin.localhost:3000"),
-    // "stub" settles payments instantly with no network — the dev default.
-    PAYMENT_PROVIDER: z.enum(["stub", "monime"]).default("stub"),
-    MONIME_SPACE_ID: z.string().optional(),
-    MONIME_ACCESS_TOKEN: z.string().optional(),
-    MONIME_FINANCIAL_ACCOUNT_ID: z.string().optional(),
     // Web Push (VAPID). The public key is exposed via NEXT_PUBLIC_VAPID_PUBLIC_KEY
     // (see env.client.ts). When keys are unset, push send is a no-op — the in-app
     // notification feed still works. Generate with `web-push generate-vapid-keys`.
@@ -37,16 +32,15 @@ const schema = z
     // preview boot without it — the route refuses to run when it's unset
     // rather than running unauthenticated.
     CRON_SECRET: z.string().optional(),
-  })
-  .refine(
-    (e) =>
-      e.PAYMENT_PROVIDER !== "monime" ||
-      (e.MONIME_SPACE_ID && e.MONIME_ACCESS_TOKEN),
-    {
-      message:
-        'PAYMENT_PROVIDER is "monime" but MONIME_SPACE_ID / MONIME_ACCESS_TOKEN are not set',
-    },
-  );
+    // Email (nodemailer) — all optional so dev boots without SMTP. When unset,
+    // sendMail logs to console instead of sending — see lib/email.ts.
+    SMTP_HOST: z.string().optional(),
+    SMTP_PORT: z.coerce.number().optional(),
+    SMTP_USER: z.string().optional(),
+    SMTP_PASS: z.string().optional(),
+    SMTP_FROM: z.string().optional(),
+    SMTP_SECURE: z.coerce.boolean().optional(),
+  });
 
 // Empty strings (e.g. `MONIME_SPACE_ID=` in .env) should behave like unset.
 const raw = Object.fromEntries(
@@ -66,14 +60,16 @@ export const env = {
   clerkSecretKey: parsed.data.CLERK_SECRET_KEY,
   clerkWebhookSecret: parsed.data.CLERK_WEBHOOK_SECRET,
   adminHostname: parsed.data.ADMIN_HOSTNAME,
-  paymentProvider: parsed.data.PAYMENT_PROVIDER,
-  monimeSpaceId: parsed.data.MONIME_SPACE_ID,
-  monimeAccessToken: parsed.data.MONIME_ACCESS_TOKEN,
-  monimeFinancialAccountId: parsed.data.MONIME_FINANCIAL_ACCOUNT_ID,
   vapidPrivateKey: parsed.data.VAPID_PRIVATE_KEY,
   vapidSubject: parsed.data.VAPID_SUBJECT,
   uploadthingToken: parsed.data.UPLOADTHING_TOKEN,
   cronSecret: parsed.data.CRON_SECRET,
+  smtpHost: parsed.data.SMTP_HOST,
+  smtpPort: parsed.data.SMTP_PORT,
+  smtpUser: parsed.data.SMTP_USER,
+  smtpPass: parsed.data.SMTP_PASS,
+  smtpFrom: parsed.data.SMTP_FROM,
+  smtpSecure: parsed.data.SMTP_SECURE,
   // appHostname, appUrl, marketingUrl, vapidPublicKey — public values shared
   // with the client.
   ...clientEnv,
