@@ -570,6 +570,12 @@ export const events = pgTable(
     reportSummary: text("report_summary"),
     reportPartners: text("report_partners"),
     reportImpact: text("report_impact"),
+    // Admin toggle — when false the event is still listed as upcoming/ongoing
+    // but volunteering/joining is blocked (same semantics as programmes.allowVolunteer).
+    // Defaults to true so existing rows remain joinable. Date lifecycle via
+    // endsAt is the primary gate; this is the manual override.
+    allowVolunteer: boolean("allow_volunteer").default(true),
+    allowJoin: boolean("allow_join").default(true),
   },
   // The activities list is always ordered by start time.
   (t) => [
@@ -704,6 +710,15 @@ export const programmes = pgTable(
     featured: boolean("featured").default(false), // surfaces on the homepage
     orderIndex: integer("order_index").default(0),
     published: boolean("published").default(false),
+    // Date lifecycle — a volunteer must not be able to volunteer for a past
+    // programme. When both are null the programme is considered date-less and
+    // therefore always active (backwards-compat for seeded rows). Otherwise
+    // endsAt is the authoritative end; startsAt alone means a single-day or
+    // start-only programme. allowVolunteer lets an admin close volunteering
+    // even when the date is still in the future (and also gates the Join CTA).
+    startsAt: timestamp("starts_at"),
+    endsAt: timestamp("ends_at"),
+    allowVolunteer: boolean("allow_volunteer").default(true),
     createdAt: timestamp("created_at").defaultNow(),
     updatedAt: timestamp("updated_at").defaultNow(),
   },
