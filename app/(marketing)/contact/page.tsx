@@ -1,6 +1,13 @@
+import type { Metadata } from "next";
 import { Footer } from "@/components/marketing/footer";
 import { Nav } from "@/components/marketing/nav";
 import { ContactForm } from "./contact-form";
+
+export const metadata: Metadata = {
+  title: "Contact · Ikigai",
+  description:
+    "Get in touch with Ikigai — questions, partnerships, or bringing Ikigai to your school in Sierra Leone.",
+};
 
 export default function ContactPage() {
   return (

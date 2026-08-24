@@ -1,5 +1,12 @@
+import type { Metadata } from "next";
 import { Footer } from "@/components/marketing/footer";
 import { Nav } from "@/components/marketing/nav";
+
+export const metadata: Metadata = {
+  title: "Terms of Service · Ikigai",
+  description:
+    "Terms of Service for the Ikigai platform — rules for mentorship, community conduct, and accounts for youth and mentors in Sierra Leone.",
+};
 
 export default function TermsPage() {
   return (

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Footer } from "@/components/marketing/footer";
 import { Nav } from "@/components/marketing/nav";
+import { canJoin, isPast as isPastCheck } from "@/lib/cms";
 import { getPublicEvent } from "@/lib/cms";
 import { clientEnv } from "@/lib/env.client";
 
@@ -30,7 +31,13 @@ export default async function EventPage({
   const event = await getPublicEvent(slug);
   if (!event) notFound();
 
-  const isPast = event.startsAt ? event.startsAt.getTime() < Date.now() : false;
+  // Unified lifecycle — an event that has started but not yet ended is
+  // still joinable ("ongoing"), so past means effectiveEnd < now, not just
+  // startsAt < now. This matches lib/cms.ts and cards.tsx.
+  const isPast = isPastCheck(event as { startsAt: Date | null; endsAt: Date | null });
+  const joinOpen = canJoin(
+    event as { startsAt: Date | null; endsAt: Date | null; allowVolunteer: boolean | null; allowJoin: boolean | null },
+  );
   const dateLabel = event.startsAt
     ? event.startsAt.toLocaleString("en-GB", {
         weekday: "long",
@@ -94,7 +101,7 @@ export default async function EventPage({
             </p>
           )}
 
-          {/* Post-event report */}
+          {/* Post-event report / CTA — unified with programme lifecycle */}
           {isPast && event.reportSummary ? (
             <div className="rounded-2xl border border-border bg-secondary p-8">
               <h2 className="font-display mb-4 text-2xl font-bold text-foreground">
@@ -127,15 +134,32 @@ export default async function EventPage({
               </div>
             </div>
           ) : !isPast ? (
-            <div className="text-center">
-              <a
-                href={clientEnv.appUrl}
-                className="inline-flex items-center gap-2 rounded-lg bg-primary px-8 py-4 text-base font-semibold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98]"
-              >
-                Register in the app
-              </a>
-            </div>
+            joinOpen ? (
+              <div className="text-center">
+                <a
+                  href={clientEnv.appUrl}
+                  className="inline-flex items-center gap-2 rounded-lg bg-primary px-8 py-4 text-base font-semibold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  Register in the app
+                </a>
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-border bg-secondary p-8 text-center">
+                <p className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                  Registration is currently closed for this event
+                </p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Please check back later or contact us for more information.
+                </p>
+              </div>
+            )
           ) : null}
+          {/* Fallback for past events without a report */}
+          {isPast && !event.reportSummary && (
+            <p className="mt-8 text-center text-sm text-muted-foreground">
+              This event has ended.
+            </p>
+          )}
         </div>
       </main>
       <Footer />

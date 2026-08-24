@@ -1,5 +1,11 @@
+import type { Metadata } from "next";
 import { AdminSidebar } from "@/components/admin-sidebar";
 import { requireAdmin } from "@/lib/db-user";
+
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+  title: "Admin · Ikigai",
+};
 
 export default async function AdminLayout({
   children,
@@ -11,7 +17,7 @@ export default async function AdminLayout({
   const dbUser = await requireAdmin();
 
   return (
-    <div className="dark flex h-screen overflow-hidden bg-background text-foreground">
+    <div className="flex h-screen overflow-hidden bg-background text-foreground">
       <AdminSidebar
         displayName={dbUser?.displayName ?? "Admin"}
         email={dbUser?.email ?? ""}

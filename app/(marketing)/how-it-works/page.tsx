@@ -1,8 +1,15 @@
+import type { Metadata } from "next";
 import { Footer } from "@/components/marketing/footer";
 import { InstallCta } from "@/components/marketing/install-cta";
 import { Nav } from "@/components/marketing/nav";
 import { StepItem } from "./step-item";
 import { STEPS } from "./steps";
+
+export const metadata: Metadata = {
+  title: "How It Works · Ikigai",
+  description:
+    "How Ikigai works — from self-discovery and Ikigai assessment to mentor matching, growth roadmap, and community impact.",
+};
 
 export default function HowItWorksPage() {
   return (
