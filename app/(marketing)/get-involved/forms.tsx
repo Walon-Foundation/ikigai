@@ -39,7 +39,8 @@ type Pathway = {
   tab: string;
   title: string;
   blurb: string;
-  fields: (programmes: string[]) => FieldDef[];
+  // programmes = joinable programme names; volunteerOptions = active programmes + active events
+  fields: (programmes: string[], volunteerOptions: string[]) => FieldDef[];
 };
 
 const PATHWAYS: Pathway[] = [
@@ -71,16 +72,23 @@ const PATHWAYS: Pathway[] = [
     key: "volunteer",
     tab: "Volunteer",
     title: "Volunteer with us",
-    blurb: "Give your time and skills to young people in your community.",
-    fields: () => [
+    blurb:
+      "Give your time and skills — pick an active programme or upcoming event to volunteer for.",
+    fields: (_programmes, volunteerOptions) => [
       NAME,
       EMAIL,
       PHONE,
       { name: "skills", label: "What skills can you offer?", type: "text" },
       {
-        name: "interestArea",
-        label: "Which area interests you?",
-        type: "text",
+        // Filtered to only ongoing/upcoming + allowVolunteer=true, so a
+        // volunteer cannot pick a past programme (user request).
+        // Empty list means nothing is currently volunteerable — the select
+        // will show a disabled placeholder and the admin can reopen via CMS.
+        name: "volunteerFor",
+        label: "I want to volunteer for",
+        type: "select",
+        options: volunteerOptions,
+        required: true,
       },
       { name: "message", label: "Tell us a bit more", type: "textarea" },
     ],
@@ -89,7 +97,8 @@ const PATHWAYS: Pathway[] = [
     key: "mentor",
     tab: "Mentor",
     title: "Become a mentor",
-    blurb: "Guide a young person through the things you've learned.",
+    blurb:
+      "Guide a young person through the things you've learned. Please watch your email inbox after you apply — approval includes your PWA install link.",
     fields: () => [
       NAME,
       EMAIL,
@@ -104,8 +113,8 @@ const PATHWAYS: Pathway[] = [
     key: "partner",
     tab: "Partner",
     title: "Partner with us",
-    blurb: "Work with Ikigai to reach more young people.",
-    fields: () => [
+    blurb: "Sponsor a programme or event and reach more young people.",
+    fields: (_programmes, volunteerOptions) => [
       NAME,
       EMAIL,
       PHONE,
@@ -116,6 +125,13 @@ const PATHWAYS: Pathway[] = [
         required: true,
       },
       {
+        name: "sponsorFor",
+        label: "I want to sponsor",
+        type: "select",
+        options: volunteerOptions,
+        required: false,
+      },
+      {
         name: "partnershipInterest",
         label: "How would you like to partner?",
         type: "textarea",
@@ -124,7 +140,13 @@ const PATHWAYS: Pathway[] = [
   },
 ];
 
-export function GetInvolvedForms({ programmes }: { programmes: string[] }) {
+export function GetInvolvedForms({
+  programmes,
+  volunteerOptions,
+}: {
+  programmes: string[];
+  volunteerOptions: string[];
+}) {
   const [activeKey, setActiveKey] = useState<Pathway["key"]>("programme");
 
   // Deep links: /get-involved#partner opens the Partner tab.
@@ -160,7 +182,7 @@ export function GetInvolvedForms({ programmes }: { programmes: string[] }) {
       <PathwayForm
         key={active.key}
         pathway={active}
-        fields={active.fields(programmes)}
+        fields={active.fields(programmes, volunteerOptions)}
       />
     </div>
   );
@@ -201,6 +223,7 @@ function PathwayForm({
   }
 
   if (done) {
+    const isMentor = pathway.key === "mentor";
     return (
       <div className="rounded-2xl border border-primary/30 bg-card p-10 text-center">
         <CheckCircle2 className="mx-auto mb-4 size-12 text-primary" />
@@ -209,6 +232,12 @@ function PathwayForm({
         </h3>
         <p className="mt-2 text-muted-foreground">
           We've received your details and someone from Ikigai will be in touch.
+        </p>
+        <p className="mt-3 rounded-xl bg-secondary px-4 py-3 text-sm text-foreground">
+          Please check your email inbox — and spam/junk folder — for our reply.{" "}
+          {isMentor
+            ? "If you're approved, your email will include a link to install the Ikigai app (PWA) and get started."
+            : "Approved volunteers and partners receive a confirmation email with next steps."}
         </p>
       </div>
     );
@@ -246,21 +275,32 @@ function PathwayForm({
                   className={cn(inputClass, "resize-none")}
                 />
               ) : f.type === "select" ? (
-                <select
-                  id={id}
-                  name={f.name}
-                  className={inputClass}
-                  defaultValue=""
-                >
-                  <option value="" disabled>
-                    Choose one…
-                  </option>
-                  {(f.options ?? []).map((o) => (
-                    <option key={o} value={o}>
-                      {o}
+                <>
+                  <select
+                    id={id}
+                    name={f.name}
+                    className={inputClass}
+                    defaultValue=""
+                  >
+                    <option value="" disabled>
+                      {f.options && f.options.length > 0
+                        ? "Choose one…"
+                        : "No active programmes or events right now"}
                     </option>
-                  ))}
-                </select>
+                    {(f.options ?? []).map((o) => (
+                      <option key={o} value={o}>
+                        {o}
+                      </option>
+                    ))}
+                  </select>
+                  {f.name === "volunteerFor" &&
+                    (!f.options || f.options.length === 0) && (
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Nothing is currently open for volunteering — please
+                        check back soon or leave a message and we'll match you.
+                      </p>
+                    )}
+                </>
               ) : (
                 <input
                   id={id}

@@ -1,6 +1,10 @@
 import { Footer } from "@/components/marketing/footer";
 import { Nav } from "@/components/marketing/nav";
-import { getProgrammes } from "@/lib/cms";
+import {
+  getActiveEventsForVolunteer,
+  getActiveProgrammesForVolunteer,
+  getProgrammes,
+} from "@/lib/cms";
 import { GetInvolvedForms } from "./forms";
 
 export const metadata = {
@@ -9,9 +13,22 @@ export const metadata = {
     "Join a programme, volunteer, mentor, or partner with Ikigai in Sierra Leone.",
 };
 
+export const dynamic = "force-dynamic";
+
 export default async function GetInvolvedPage() {
-  const programmes = await getProgrammes();
+  // programmes for the "Join a programme" dropdown stays as all published
+  // programmes (joining is gated on the detail page), while the volunteer
+  // dropdown is filtered to only active (not past, allowVolunteer=true).
+  const [programmes, activeProgrammes, activeEvents] = await Promise.all([
+    getProgrammes(),
+    getActiveProgrammesForVolunteer(),
+    getActiveEventsForVolunteer(),
+  ]);
   const programmeNames = programmes.map((p) => p.name);
+  const volunteerOptions = [
+    ...activeProgrammes.map((p) => `${p.name} — Programme`),
+    ...activeEvents.map((e) => `${e.title} — Event`),
+  ];
 
   return (
     <div className="min-h-screen bg-background">
@@ -34,7 +51,10 @@ export default async function GetInvolvedPage() {
 
         <section className="py-24">
           <div className="mx-auto max-w-3xl px-6">
-            <GetInvolvedForms programmes={programmeNames} />
+            <GetInvolvedForms
+              programmes={programmeNames}
+              volunteerOptions={volunteerOptions}
+            />
           </div>
         </section>
       </main>
