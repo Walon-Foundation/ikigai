@@ -11,6 +11,14 @@ import {
   slugify,
   text,
 } from "@/lib/cms-admin";
+
+// Parse a datetime-local string (YYYY-MM-DDTHH:mm) to Date, or null if empty/invalid.
+// Mirrors the helper in app/admin/(protected)/cms/events/actions.ts.
+function parseDate(value: string): Date | null {
+  if (!value || !value.trim()) return null;
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
 import {
   cmsInvalidate,
   cmsMove,
@@ -31,6 +39,12 @@ const cols = {
 export async function save(id: string | null, v: Record<string, string>) {
   await requireAdmin();
   const name = requiredText(v.name, 120, "Name");
+  const startsAt = parseDate(v.startsAt);
+  const endsAt = parseDate(v.endsAt);
+  if (startsAt && endsAt && endsAt < startsAt) {
+    throw new Error("End date must be after start date");
+  }
+
   const fields = {
     name,
     pillarId: v.pillarId || null,
@@ -44,6 +58,14 @@ export async function save(id: string | null, v: Record<string, string>) {
     ctaLabel: text(v.ctaLabel, 60),
     ctaUrl: text(v.ctaUrl, 300),
     featured: bool(v.featured),
+    startsAt,
+    endsAt,
+    // allowVolunteer defaults to true for backwards-compat; unchecked → false
+    // The form sends "true" when checked, "" when unchecked. An existing row
+    // with NULL (pre-migration) is treated as true in the UI (page.tsx) so
+    // the admin sees it checked; here bool("") => false only when they
+    // explicitly uncheck it.
+    allowVolunteer: bool(v.allowVolunteer),
     updatedAt: new Date(),
   };
 

@@ -66,7 +66,7 @@ export type Field =
       placeholder?: string;
     }
   | { type: "datetime"; name: string; label: string; required?: boolean }
-  | { type: "checkbox"; name: string; label: string };
+  | { type: "checkbox"; name: string; label: string; defaultChecked?: boolean };
 
 export type AdminRow = {
   id: string;
@@ -424,6 +424,9 @@ function FieldInput({ field, value }: { field: Field; value?: string }) {
   }
 
   if (field.type === "checkbox") {
+    // value === "true" → checked, "" → unchecked, undefined → use defaultChecked (for new rows)
+    const checked =
+      value === "true" ? true : value === "" ? false : (field.defaultChecked ?? false);
     return (
       <label
         htmlFor={id}
@@ -433,7 +436,7 @@ function FieldInput({ field, value }: { field: Field; value?: string }) {
           id={id}
           name={field.name}
           type="checkbox"
-          defaultChecked={value === "true"}
+          defaultChecked={checked}
           className="size-4 rounded border-border"
         />
         {field.label}

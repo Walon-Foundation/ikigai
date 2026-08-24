@@ -12,6 +12,13 @@ function toLines(value: unknown): string {
   return Array.isArray(value) ? value.join("\n") : "";
 }
 
+// Format a Date for datetime-local input ("YYYY-MM-DDTHH:mm"), in local time.
+function toLocalInput(date: Date | null | undefined): string {
+  if (!date) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
 export default async function ProgrammesCmsPage() {
   const [rows, pillarRows] = await Promise.all([
     db.select().from(programmes).orderBy(asc(programmes.orderIndex)),
@@ -82,12 +89,36 @@ export default async function ProgrammesCmsPage() {
       placeholder: "/get-involved",
     },
     { type: "checkbox", name: "featured", label: "Feature on the homepage" },
+    {
+      type: "datetime",
+      name: "startsAt",
+      label: "Starts at (optional — when the programme begins)",
+    },
+    {
+      type: "datetime",
+      name: "endsAt",
+      label: "Ends at (optional — when it finishes; volunteers blocked after this)",
+    },
+    {
+      type: "checkbox",
+      name: "allowVolunteer",
+      label: "Allow volunteering / joining (uncheck to close even if date is future)",
+      defaultChecked: true,
+    },
   ];
 
   const items: AdminRow[] = rows.map((p) => ({
     id: p.id,
     title: p.name,
-    subtitle: [p.pillarId ? pillarName.get(p.pillarId) : null, p.summary]
+    subtitle: [
+      p.pillarId ? pillarName.get(p.pillarId) : null,
+      p.summary,
+      p.startsAt
+        ? `starts ${p.startsAt.toLocaleDateString("en-GB")}`
+        : null,
+      p.endsAt ? `ends ${p.endsAt.toLocaleDateString("en-GB")}` : null,
+      p.allowVolunteer === false ? "volunteering closed" : null,
+    ]
       .filter(Boolean)
       .join(" · "),
     thumb: p.heroImageUrl,
@@ -105,6 +136,10 @@ export default async function ProgrammesCmsPage() {
       ctaLabel: p.ctaLabel ?? "",
       ctaUrl: p.ctaUrl ?? "",
       featured: p.featured ? "true" : "",
+      startsAt: toLocalInput(p.startsAt as Date | null),
+      endsAt: toLocalInput(p.endsAt as Date | null),
+      // default true when null (backwards-compat), so checkbox checked unless explicitly false
+      allowVolunteer: p.allowVolunteer === false ? "" : "true",
     },
   }));
 

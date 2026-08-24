@@ -18,8 +18,21 @@ function toLocalInput(date: Date | null): string {
 const FIELDS: Field[] = [
   { type: "text", name: "title", label: "Title", required: true },
   { type: "datetime", name: "startsAt", label: "Starts", required: true },
+  { type: "datetime", name: "endsAt", label: "Ends (optional — volunteering/joining blocked after this)" },
   { type: "text", name: "location", label: "Location" },
   { type: "image", name: "imageUrl", label: "Event image" },
+  {
+    type: "checkbox",
+    name: "allowVolunteer",
+    label: "Allow volunteering (uncheck to block volunteer sign-ups even if date is future)",
+    defaultChecked: true,
+  },
+  {
+    type: "checkbox",
+    name: "allowJoin",
+    label: "Allow joining / registration (uncheck to close registration even if date is future)",
+    defaultChecked: true,
+  },
   {
     type: "textarea",
     name: "reportSummary",
@@ -44,7 +57,12 @@ export default async function EventsCmsPage() {
             year: "numeric",
           })
         : null,
+      e.endsAt
+        ? `ends ${e.endsAt.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}`
+        : null,
       e.location,
+      e.allowVolunteer === false ? "volunteering closed" : null,
+      e.allowJoin === false ? "join closed" : null,
     ]
       .filter(Boolean)
       .join(" · "),
@@ -53,8 +71,11 @@ export default async function EventsCmsPage() {
     values: {
       title: e.title,
       startsAt: toLocalInput(e.startsAt),
+      endsAt: toLocalInput(e.endsAt as Date | null),
       location: e.location ?? "",
       imageUrl: e.imageUrl ?? "",
+      allowVolunteer: e.allowVolunteer === false ? "" : "true",
+      allowJoin: e.allowJoin === false ? "" : "true",
       reportSummary: e.reportSummary ?? "",
       reportPartners: e.reportPartners ?? "",
       reportImpact: e.reportImpact ?? "",

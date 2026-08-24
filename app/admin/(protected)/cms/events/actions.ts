@@ -3,7 +3,7 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/db/db";
 import { events } from "@/db/schema";
-import { imageUrl, requiredText, slugify, text } from "@/lib/cms-admin";
+import { bool, imageUrl, requiredText, slugify, text } from "@/lib/cms-admin";
 import { cmsInvalidate } from "@/lib/cms-crud";
 import { requireAdmin } from "@/lib/db-user";
 
@@ -32,11 +32,20 @@ export async function save(id: string | null, v: Record<string, string>) {
   const startsAt = parseDate(v.startsAt);
   if (!startsAt) throw new Error("A valid start date and time is required");
 
+  const endsAt = parseDate(v.endsAt);
+  if (endsAt && endsAt < startsAt) {
+    throw new Error("End date must be after start date");
+  }
+
   const fields = {
     title,
     startsAt,
+    endsAt,
     location: text(v.location, 200),
     imageUrl: imageUrl(v.imageUrl, 500),
+    // allowVolunteer / allowJoin default to true (checked by default in the form)
+    allowVolunteer: bool(v.allowVolunteer),
+    allowJoin: bool(v.allowJoin),
     reportSummary: text(v.reportSummary, 4_000),
     reportPartners: text(v.reportPartners, 500),
     reportImpact: text(v.reportImpact, 500),
