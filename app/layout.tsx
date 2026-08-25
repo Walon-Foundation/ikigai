@@ -94,13 +94,10 @@ export default function RootLayout({
     >
       <head>
         <ThemeInit />
-        {/* Explicit favicon links — file-based app/favicon.ico generates the
-            /favicon.ico route, but some browsers/crawlers and the admin
-            subdomain (rewritten via proxy) are more reliable with an explicit
-            tag. public/favicon.ico is the static fallback. */}
-        <link rel="icon" href="/favicon.ico" sizes="any" />
-        <link rel="icon" href="/icon" type="image/png" sizes="32x32" />
-        <link rel="apple-touch-icon" href="/apple-icon" sizes="180x180" />
+        {/* Icons are declared once, in `metadata.icons` above — Next renders
+            them into <head> for every route. Repeating them as manual <link>
+            tags here emitted each icon twice, with two non-identical
+            rel="icon" tags whose precedence was left to browser heuristics. */}
       </head>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
