@@ -1,6 +1,6 @@
 "use server";
 
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db/db";
 import { journalEntries, journalFeedback, mentorships } from "@/db/schema";
@@ -67,66 +67,3 @@ export async function addJournalFeedback(data: {
 // Helper: load shared entries + their feedback for the detail page.
 //
 // One left join, not two queries. Fetching the entries and then their feedback
-// by id meant a second network round-trip that could only start once the first
-// had landed — and over the neon-http driver a round-trip is the expensive part,
-// not the row count. The join gets both in a single trip and the rows are
-// regrouped in memory below.
-// The caller runs this concurrently with its own access check, so this query
-// carries the check itself: joining `mentorships` on (mentee, mentor, active)
-// means a mentor without an active mentorship to this mentee matches no rows.
-export async function getSharedJournals(menteeId: string, mentorId: string) {
-  const rows = await db
-    .select({
-      id: journalEntries.id,
-      content: journalEntries.content,
-      visibility: journalEntries.visibility,
-      createdAt: journalEntries.createdAt,
-      feedback: journalFeedback,
-    })
-    .from(journalEntries)
-    .innerJoin(
-      mentorships,
-      and(
-        eq(mentorships.menteeId, journalEntries.userId),
-        eq(mentorships.mentorId, mentorId),
-        eq(mentorships.status, "active"),
-      ),
-    )
-    // Left, not inner: an entry with no feedback yet must still appear.
-    .leftJoin(journalFeedback, eq(journalFeedback.entryId, journalEntries.id))
-    .where(
-      and(
-        eq(journalEntries.userId, menteeId),
-        inArray(journalEntries.visibility, ["mentor_only", "community"]),
-      ),
-    )
-    .orderBy(journalEntries.createdAt);
-
-  // The join repeats an entry once per feedback row; fold them back together,
-  // preserving the entry order the query returned.
-  const byEntry = new Map<string, SharedJournal>();
-  for (const row of rows) {
-    let entry = byEntry.get(row.id);
-    if (!entry) {
-      entry = {
-        id: row.id,
-        content: row.content,
-        visibility: row.visibility,
-        createdAt: row.createdAt,
-        feedback: [],
-      };
-      byEntry.set(row.id, entry);
-    }
-    if (row.feedback) entry.feedback.push(row.feedback);
-  }
-
-  return [...byEntry.values()];
-}
-
-type SharedJournal = {
-  id: string;
-  content: string;
-  visibility: string | null;
-  createdAt: Date | null;
-  feedback: (typeof journalFeedback.$inferSelect)[];
-};

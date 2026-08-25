@@ -20,7 +20,7 @@ import {
 } from "@/db/schema";
 import { getDbUser } from "@/lib/db-user";
 import { stageName } from "@/lib/growth";
-import { getSharedJournals } from "./feedback-actions";
+import { getSharedJournals } from "./shared-journals";
 import { FeedbackForm } from "./feedback-client";
 import { MenteeTasks, type TaskItem } from "./mentee-tasks";
 import { SkillReview } from "./skill-review";
