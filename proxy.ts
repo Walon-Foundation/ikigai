@@ -43,18 +43,26 @@ async function getUserRole(clerkId: string): Promise<string | null> {
 
 // Paths that belong to the PWA (the app subdomain). On the marketing domain
 // these are redirected to the app subdomain; everything else is marketing.
+// Keep this in step with the route directories under app/(pwa)/ — every
+// segment there is an authenticated surface and must not be served from the
+// public, SEO-indexed marketing origin.
 const PWA_PATHS = [
+  "/activities",
   "/dashboard",
+  "/goals",
+  "/groups",
   "/journal",
   "/journey",
+  "/mentor-portal",
+  "/mentors",
   "/mentorship",
+  "/notifications",
+  "/onboarding",
   "/pad-her-power",
+  "/parent-portal",
+  "/purpose-book",
   "/safety",
   "/settings",
-  "/onboarding",
-  "/mentor-portal",
-  "/parent-portal",
-  "/activities",
   "/sign-in",
   "/sign-up",
 ];
@@ -104,7 +112,11 @@ export default clerkMiddleware(async (auth, request) => {
     // which is exactly why the favicon was missing on admin pages.
     const ADMIN_ASSET_RE =
       /^\/(favicon\.ico|icon|apple-icon|manifest\.webmanifest|sitemap\.xml|robots\.txt|sw\.js|icon-\d+x\d+\.png)$/;
-    if (ADMIN_ASSET_RE.test(pathname) || pathname.startsWith("/icon?") || pathname.startsWith("/apple-icon?")) {
+    if (
+      ADMIN_ASSET_RE.test(pathname) ||
+      pathname.startsWith("/icon?") ||
+      pathname.startsWith("/apple-icon?")
+    ) {
       return NextResponse.next();
     }
     // No self-service sign-up for admins.
