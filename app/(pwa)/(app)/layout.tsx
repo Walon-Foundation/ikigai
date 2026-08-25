@@ -19,6 +19,7 @@ type OnboardingData = {
   verificationSubmitted?: boolean;
   childLinked?: boolean;
   inviteCode?: string;
+  linkSkipped?: boolean;
 };
 
 function getMenteeNextStep(data: OnboardingData): string {
@@ -67,7 +68,12 @@ export default async function AppLayout({
       redirect(getMentorNextStep(data));
     }
   } else if (user.role === "parent") {
-    if (!data.childLinked && !data.inviteCode) {
+    // `linkSkipped` is the third exit. Without it a parent who tapped
+    // "Skip for now" on the link step was redirected back to that same step
+    // forever: the skip recorded only `childLinked: false`, which this guard
+    // reads as "not finished". The parent dashboard already renders a "No child
+    // linked yet" state for exactly this case; it was simply unreachable.
+    if (!data.childLinked && !data.inviteCode && !data.linkSkipped) {
       redirect(getParentNextStep(data));
     }
   }

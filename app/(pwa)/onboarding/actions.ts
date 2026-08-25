@@ -6,6 +6,33 @@ import { redirect } from "next/navigation";
 import { db } from "@/db/db";
 import { guardianLinks, milestones, users } from "@/db/schema";
 
+// Client-supplied text reaches these actions straight off a request body, so
+// every free-text field is clamped before it is stored. The caps mirror
+// settings/actions.ts, which already does this for the same columns.
+const MAX_BIO = 500;
+const MAX_TAG_LENGTH = 60;
+const MAX_TAGS = 10;
+
+function boundedText(value: unknown, max: number): string {
+  return typeof value === "string" ? value.trim().slice(0, max) : "";
+}
+
+// interestTags feeds mentor↔mentee matching (lib/match.ts) and renders as chips
+// in the marketplace. The vocabulary is open by design — the assessment lets a
+// mentee type an interest that isn't on any list — so this bounds rather than
+// filters: strings only, trimmed, length-capped, de-duplicated, count-capped.
+function boundedTags(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return [
+    ...new Set(
+      value
+        .filter((t): t is string => typeof t === "string")
+        .map((t) => t.trim().slice(0, MAX_TAG_LENGTH))
+        .filter(Boolean),
+    ),
+  ].slice(0, MAX_TAGS);
+}
+
 type OnboardingData = {
   roleSelected?: boolean;
   assessment?: {
@@ -47,6 +74,7 @@ type OnboardingData = {
   childEmail?: string;
   inviteCode?: string;
   childLinked?: boolean;
+  linkSkipped?: boolean;
 };
 
 async function getUser() {
@@ -79,10 +107,29 @@ async function patchOnboardingData(
     .where(eq(users.clerkId, clerkId));
 }
 
-export async function setRole(role: "mentee" | "mentor" | "parent") {
+// Roles a user may assign to themselves during onboarding. `admin` is a member
+// of the `role` pgEnum but is deliberately NOT here: `users.role` is the single
+// column both authorization gates read (proxy.ts and requireAdmin() in
+// lib/db-user.ts), so a self-service write to it is a write to the entire
+// authorization system. The parameter's TypeScript union is erased at runtime
+// and a server action's arguments come straight off the request body, so this
+// list — not the type — is what actually constrains the value.
+const SELF_ASSIGNABLE_ROLES = ["mentee", "mentor", "parent"] as const;
+type SelfAssignableRole = (typeof SELF_ASSIGNABLE_ROLES)[number];
+
+export async function setRole(role: SelfAssignableRole) {
   const { userId } = await auth();
   if (!userId) throw new Error("Unauthenticated");
-  await db.update(users).set({ role }).where(eq(users.clerkId, userId));
+  if (!SELF_ASSIGNABLE_ROLES.includes(role)) {
+    throw new Error("Invalid role");
+  }
+  // Never overwrite an elevated role. Onboarding only ever moves an account off
+  // the `mentee` default, so scoping the update to that state means replaying
+  // this action later cannot strip an admin or an approved mentor of their role.
+  await db
+    .update(users)
+    .set({ role })
+    .where(and(eq(users.clerkId, userId), eq(users.role, "mentee")));
   await patchOnboardingData(userId, { roleSelected: true });
   if (role === "mentee") redirect("/onboarding/mentee/assessment");
   if (role === "mentor") redirect("/onboarding/mentor/profile");
@@ -164,14 +211,12 @@ export async function completeMenteeOnboarding() {
   // Promote assessment tags to the real interestTags column — matching and
   // every mentor-facing view read users.interestTags, so leaving it empty
   // (the old behaviour) broke both.
-  const interestTags = [
-    ...new Set([
-      ...(data.assessment?.love ?? []),
-      ...(data.assessment?.skills ?? []),
-      ...(data.assessment?.community ?? []),
-      ...(data.assessment?.opportunity ?? []),
-    ]),
-  ].slice(0, 10);
+  const interestTags = boundedTags([
+    ...(data.assessment?.love ?? []),
+    ...(data.assessment?.skills ?? []),
+    ...(data.assessment?.community ?? []),
+    ...(data.assessment?.opportunity ?? []),
+  ]);
   await db.update(users).set({ interestTags }).where(eq(users.clerkId, userId));
 
   await db
@@ -195,8 +240,16 @@ export async function saveMentorProfile(data: {
   await db
     // Mirror expertise into interestTags so mentor↔mentee matching and the
     // marketplace tag chips have real data to work with.
+    //
+    // Bounded, not allowlisted. settings/actions.ts filters this same column
+    // against INTEREST_TAGS, but that list is not the vocabulary these screens
+    // offer — the mentor form has its own EXPERTISE_TAGS and the mentee
+    // assessment deliberately accepts typed-in interests. Allowlisting here
+    // would silently discard almost every real answer. What this column cannot
+    // carry is unbounded client input, since the matcher reads it and the
+    // marketplace renders it, so the values are clamped instead.
     .update(users)
-    .set({ bio: data.bio, interestTags: data.expertise })
+    .set({ bio: boundedText(data.bio, MAX_BIO), interestTags: boundedTags(data.expertise) })
     .where(eq(users.clerkId, userId));
   await patchOnboardingData(userId, {
     mentorProfile: {
@@ -246,16 +299,55 @@ export async function saveParentProfile(data: {
   redirect("/onboarding/parent/link");
 }
 
+// How many outstanding (unaccepted) guardian requests one parent may have.
+// A guardian request renders inside the child's trusted app UI as "<name> wants
+// to be your guardian", with an Accept button, in front of someone who may be
+// 13. The consent gate itself is sound — nothing about the child is visible
+// until they accept — but the ABILITY TO ASK is what needs bounding, so an
+// adult cannot spray requests at addresses until one is tapped.
+const MAX_PENDING_GUARDIAN_REQUESTS = 5;
+
 export async function saveParentLink(childEmail: string) {
   const parent = await getUser();
 
+  // Only a parent account may create guardian links. `saveParentLink` is a
+  // server action, so it is a public endpoint reachable by any signed-in user
+  // regardless of which page rendered it — the role has to be checked here
+  // rather than inferred from the fact that this is a parent onboarding screen.
+  if (parent.role !== "parent") throw new Error("Forbidden");
+
   if (!childEmail) {
-    await patchOnboardingData(parent.clerkId, { childLinked: false });
+    // `linkSkipped`, not just `childLinked: false`. AppLayout resumes parent
+    // onboarding whenever neither `childLinked` nor `inviteCode` is set, so
+    // recording only the negative sent a parent who tapped "Skip for now"
+    // straight back to the page they skipped, with no other way out of
+    // onboarding. This flag is what makes the skip terminal — the parent
+    // dashboard already has a "No child linked yet" branch to receive them.
+    await patchOnboardingData(parent.clerkId, {
+      childLinked: false,
+      linkSkipped: true,
+    });
     redirect("/parent-portal");
   }
 
   const data = (parent.onboardingData as OnboardingData | null) ?? {};
   const relationship = data.parentProfile?.relationship ?? "parent";
+
+  const pending = await db
+    .select({ id: guardianLinks.id })
+    .from(guardianLinks)
+    .where(
+      and(
+        eq(guardianLinks.parentId, parent.id),
+        eq(guardianLinks.status, "pending"),
+      ),
+    )
+    .limit(MAX_PENDING_GUARDIAN_REQUESTS + 1);
+  if (pending.length > MAX_PENDING_GUARDIAN_REQUESTS) {
+    throw new Error(
+      "You have too many pending guardian requests. Ask your child to accept one before sending another.",
+    );
+  }
 
   // Don't create a second link to the same email for this parent.
   const [existing] = await db
