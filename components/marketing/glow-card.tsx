@@ -10,34 +10,41 @@ interface GlowCardProps {
   className?: string;
 }
 
+// The panel tints and the label colours are tokens, not literals. As literals
+// the four panels stayed light in dark mode while the title's `text-foreground`
+// flipped near-white, leaving four invisible cards — each one wrapped in a link,
+// so they were still reachable by keyboard. See `--pillar-*` in app/globals.css.
+//
+// `label` uses the `-ink` tokens rather than the fill tokens: 10px uppercase
+// `text-accent` on the amber panel measures 2.0:1 even in light mode.
 const VARIANTS = {
   green: {
-    bg: "oklch(0.96 0.02 154)",
+    bg: "bg-pillar-green",
     glow: "rgba(26, 92, 58, 0.22)",
     border: "border-primary/10",
     ring: "hover:ring-2 hover:ring-primary/20",
     label: "text-primary",
   },
   amber: {
-    bg: "oklch(0.97 0.03 75)",
+    bg: "bg-pillar-amber",
     glow: "rgba(245, 166, 35, 0.28)",
     border: "border-accent/10",
     ring: "hover:ring-2 hover:ring-accent/20",
-    label: "text-accent",
+    label: "text-accent-ink",
   },
   earth: {
-    bg: "oklch(0.96 0.025 35)",
+    bg: "bg-pillar-earth",
     glow: "rgba(192, 92, 58, 0.22)",
     border: "border-earth/10",
     ring: "hover:ring-2 hover:ring-earth/20",
-    label: "text-earth",
+    label: "text-earth-ink",
   },
   sage: {
-    bg: "oklch(0.96 0.02 155)",
+    bg: "bg-pillar-sage",
     glow: "rgba(46, 139, 87, 0.22)",
     border: "border-primary-light/10",
     ring: "hover:ring-2 hover:ring-primary-light/20",
-    label: "text-primary-light",
+    label: "text-primary-light-ink",
   },
 } as const;
 
@@ -53,11 +60,11 @@ export function GlowCard({
     <div
       className={cn(
         "group relative flex h-full flex-col overflow-hidden rounded-xl border transition-transform duration-200 hover:-translate-y-1",
+        v.bg,
         v.border,
         v.ring,
         className,
       )}
-      style={{ background: v.bg }}
     >
       {/* Radial glow overlay — blooms from bottom-left on hover */}
       <span

@@ -16,7 +16,7 @@ export type TaskItem = {
 };
 
 const STATUS_STYLES: Record<string, string> = {
-  assigned: "bg-accent-pale text-earth",
+  assigned: "bg-accent-pale text-earth-ink",
   completed: "bg-primary-muted/30 text-primary",
   failed: "bg-destructive/10 text-destructive",
 };

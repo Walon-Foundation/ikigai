@@ -205,7 +205,7 @@ async function ImpactStatsBlock({ config }: { config: BlockConfig }) {
   return (
     <section className="bg-primary py-16">
       <div className="mx-auto max-w-7xl px-6">
-        <p className="mb-8 text-center text-xs font-semibold uppercase tracking-widest text-primary-muted/70">
+        <p className="mb-8 text-center text-xs font-semibold uppercase tracking-widest text-primary-muted">
           {label}
         </p>
         <div className="grid grid-cols-2 gap-6 sm:grid-cols-4">

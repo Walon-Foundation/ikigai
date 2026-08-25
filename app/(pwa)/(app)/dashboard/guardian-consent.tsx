@@ -69,7 +69,7 @@ function ConsentCard({ request }: { request: GuardianRequest }) {
   return (
     <div className="rounded-2xl border border-accent/40 bg-accent-pale/40 p-5">
       <div className="flex items-start gap-3">
-        <ShieldQuestion className="mt-0.5 size-5 shrink-0 text-earth" />
+        <ShieldQuestion className="mt-0.5 size-5 shrink-0 text-earth-ink" />
         <div>
           <p className="text-sm font-semibold text-foreground">
             Guardian link request

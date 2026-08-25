@@ -12,6 +12,14 @@ type Props = {
 
 // Interpolate leaf colour from healthy green toward a dry, faded tone as health
 // falls. Keeps the silhouette but drains the life out of it.
+//
+// These stay hex literals on purpose. Only the two endpoints happen to match a
+// token (#2E8B57 is --primary-light, #A8D5B5 is the light theme's
+// --primary-muted); the three wilt steps between them have no token at all, and
+// --primary-muted is a *text* token that inverts in dark mode, which would tear
+// this ramp in half. It is one continuous illustration gradient, so it is
+// written as one. Everything structural below — panel, trunk, branches, sun,
+// badge — is a token, because those do need to follow the theme.
 function leafColors(health: number): { primary: string; accent: string } {
   if (health >= 75) return { primary: "#2E8B57", accent: "#A8D5B5" };
   if (health >= 50) return { primary: "#5C8A4A", accent: "#C2CFA0" };
@@ -97,8 +105,18 @@ export function GrowthTree({ completedCount, level, health = 100 }: Props) {
         aria-label="Growth Tree visualisation"
       >
         <title>Growth Tree</title>
-        {/* Background */}
-        <rect x="4" y="4" width="232" height="272" rx="20" fill="#F0EDE8" />
+        {/* Background. --muted, not --card: this rect sits inside a bg-card
+            container on both PWA screens, so --card would erase the panel in
+            light mode. --muted is the token whose light value is the #F0EDE8
+            this used to hardcode, and it has a dark value. */}
+        <rect
+          x="4"
+          y="4"
+          width="232"
+          height="272"
+          rx="20"
+          fill="var(--muted)"
+        />
 
         {/* Sun (level 3) */}
         {showSun && (
@@ -106,14 +124,15 @@ export function GrowthTree({ completedCount, level, health = 100 }: Props) {
             cx={175}
             cy={45}
             r={22}
-            fill="#F5A623"
+            fill="var(--accent)"
             initial={{ opacity: 0, scale: 0 }}
             animate={{ opacity: 0.9, scale: 1 }}
             transition={{ delay: 1.4, duration: 0.6, ease: "easeOut" }}
           />
         )}
 
-        {/* Soil */}
+        {/* Soil — part of the leaf ramp's palette, left as a literal for the
+            same reason (see leafColors above). */}
         <ellipse
           cx="120"
           cy="262"
@@ -135,7 +154,7 @@ export function GrowthTree({ completedCount, level, health = 100 }: Props) {
         >
           <motion.path
             d={TRUNK}
-            stroke="#1A5C3A"
+            stroke="var(--primary)"
             strokeWidth="6"
             strokeLinecap="round"
             fill="none"
@@ -150,7 +169,7 @@ export function GrowthTree({ completedCount, level, health = 100 }: Props) {
           <motion.path
             key={branch.d}
             d={branch.d}
-            stroke="#2E8B57"
+            stroke="var(--primary-light)"
             strokeWidth={4 - i * 0.3}
             strokeLinecap="round"
             fill="none"
@@ -201,7 +220,7 @@ export function GrowthTree({ completedCount, level, health = 100 }: Props) {
           textAnchor="middle"
           fontSize="10"
           fontWeight="600"
-          fill="#1A5C3A"
+          fill="var(--primary)"
           fontFamily="inherit"
         >
           {level === 1 ? "Explorer" : level === 2 ? "Advocate" : "Mentor"} —

@@ -17,9 +17,11 @@ const dmSans = DM_Sans({
 
 // Not preloaded. next/font preloads by default, which put a 40KB woff2 on the
 // critical path of every page in the app — including all seven marketing pages,
-// where `font-mono` renders not one glyph. It's used in exactly three places,
-// all deep inside the PWA, all pairing codes. It still loads there, just when
+// where `font-mono` renders not one glyph. It's used in exactly two places,
+// both deep inside the PWA, both pairing codes. It still loads there, just when
 // something actually needs it rather than ahead of first paint everywhere.
+// (Until this commit that claim was false: /team's empty state set `font-mono`
+// on an admin URL, so the marketing site did pull the face down.)
 const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
   variable: "--font-jetbrains-mono",
@@ -73,12 +75,16 @@ export const metadata: Metadata = {
   },
 };
 
+// `maximumScale: 1` + `userScalable: false` used to live here, added with the
+// PWA shell to make the installed app feel native. They also locked pinch-zoom
+// for every visitor on every surface, which fails WCAG 2.1 AA SC 1.4.4 (Resize
+// Text) — and this product's smallest type is 10px, read on small, low-density
+// Android screens. Nothing else compensates for it, so zoom stays available.
+// Next.js supplies width=device-width, initial-scale=1 by default.
 export const viewport: Viewport = {
   themeColor: "#1A5C3A",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
 };
 
 export default function RootLayout({

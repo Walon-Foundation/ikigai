@@ -81,8 +81,7 @@ export default async function TeamPage() {
                 </p>
                 <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                   We’re adding the people behind Ikigai — youth leaders,
-                  mentors, and organizers. Check back soon or manage the list in
-                  the admin at <span className="font-mono text-xs">/admin/cms/team</span>.
+                  mentors, and organizers. Check back soon to meet them.
                 </p>
               </div>
             )}

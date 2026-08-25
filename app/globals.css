@@ -54,6 +54,13 @@
   --color-accent-pale: var(--accent-pale);
   --color-earth: var(--earth);
   --color-earth-light: var(--earth-light);
+  --color-accent-ink: var(--accent-ink);
+  --color-earth-ink: var(--earth-ink);
+  --color-primary-light-ink: var(--primary-light-ink);
+  --color-pillar-green: var(--pillar-green);
+  --color-pillar-amber: var(--pillar-amber);
+  --color-pillar-earth: var(--pillar-earth);
+  --color-pillar-sage: var(--pillar-sage);
 }
 
 :root {
@@ -91,6 +98,25 @@
   --accent-pale: oklch(0.94 0.065 75); /* #FDE8C8 */
   --earth: oklch(0.52 0.12 35); /* #C05C3A terracotta */
   --earth-light: oklch(0.73 0.1 45); /* #E8A07A */
+  /* ── Ink — the text-safe counterpart of a fill colour ──
+     A colour chosen to read as a 48px block of fill does not survive being
+     set as 10px uppercase type: `text-accent` on the amber pillar measures
+     2.0:1. So `--accent` stays the fill and `--accent-ink` is the same hue
+     taken down until it clears AA as text. `--earth-ink` and
+     `--primary-light-ink` carry their light values over unchanged (5.1:1 and
+     4.7:1 as text already) and exist for the dark overrides below, where the
+     surfaces they sit on invert. */
+  --accent-ink: oklch(0.5 0.14 60);
+  --earth-ink: oklch(0.52 0.12 35);
+  --primary-light-ink: oklch(0.52 0.11 155);
+  /* ── Homepage pillar panels (components/marketing/glow-card.tsx) ──
+     These four tints were inline oklch() literals in the component, so they
+     stayed light in dark mode while the card's `text-foreground` flipped
+     near-white — four invisible, still-focusable links. */
+  --pillar-green: oklch(0.96 0.02 154);
+  --pillar-amber: oklch(0.97 0.03 75);
+  --pillar-earth: oklch(0.96 0.025 35);
+  --pillar-sage: oklch(0.96 0.02 155);
   /* ── Radius ── */
   --radius: 0.75rem;
   /* ── Charts ── */
@@ -120,6 +146,13 @@
   --popover-foreground: oklch(0.94 0.008 75);
   --primary: oklch(0.82 0.068 155); /* primary-muted as interactive in dark */
   --primary-foreground: oklch(0.1 0.02 154);
+  /* Dark mode promotes the light theme's --primary-muted to --primary, so
+     --primary-muted has to move out of the way or the two become the same
+     colour and every `text-primary-muted` on a `bg-primary` surface — the
+     eyebrow and lede of all 15 marketing page headers, the homepage impact
+     stat labels, the PWA hero cards — renders at 1.00:1. The roles simply
+     swap: light's --primary becomes dark's --primary-muted. */
+  --primary-muted: oklch(0.35 0.095 154);
   --secondary: oklch(0.2 0.03 154); /* #1E2D1A */
   --secondary-foreground: oklch(0.94 0.008 75);
   --muted: oklch(0.2 0.03 154);
@@ -130,6 +163,22 @@
   --border: oklch(0.24 0.04 154); /* #2A3D25 */
   --input: oklch(0.24 0.04 154);
   --ring: oklch(0.53 0.11 155);
+  /* Inks invert: on a dark panel the readable amber/terracotta/sage is the
+     light one. --accent-ink here is exactly --accent, which is what a fill
+     colour is free to be once the surface under it is dark. */
+  --accent-ink: oklch(0.76 0.17 68);
+  --earth-ink: oklch(0.73 0.1 45);
+  /* --accent-pale had no dark value, so the warm cream panel it paints stayed
+     light in dark mode — a bright island behind dark-mode foreground text, at
+     1.02:1. Same defect class as the pillar backgrounds above. Darkened here to
+     a low-chroma amber; the text on these panels moves to --earth-ink, which
+     does have a dark value, giving 6.69:1. Light mode is untouched. */
+  --accent-pale: oklch(0.24 0.045 75);
+  --primary-light-ink: oklch(0.82 0.068 155);
+  --pillar-green: oklch(0.19 0.03 154);
+  --pillar-amber: oklch(0.2 0.04 75);
+  --pillar-earth: oklch(0.2 0.04 35);
+  --pillar-sage: oklch(0.19 0.03 155);
   --sidebar: oklch(0.14 0.025 154);
   --sidebar-foreground: oklch(0.94 0.008 75);
   --sidebar-primary: oklch(0.82 0.068 155);
@@ -203,6 +252,49 @@
   }
 }
 
+/* The /how-it-works step reveal (app/(marketing)/how-it-works/step-item.tsx).
+   This lives here rather than in a `style` attribute for two reasons: a media
+   query cannot reach an inline style, so the reduced-motion block below could
+   never silence it; and an inline `opacity: 0` that only JavaScript ever
+   clears leaves the whole page blank when IntersectionObserver doesn't run.
+   The `scripting: none` rule below is that second safety net. */
+.step-reveal {
+  opacity: 0;
+  transition:
+    opacity 0.75s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.75s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.step-reveal[data-side="left"] {
+  transform: translateX(-56px);
+}
+.step-reveal[data-side="right"] {
+  transform: translateX(56px);
+}
+.step-reveal[data-visible="true"] {
+  opacity: 1;
+  transform: translateX(0);
+}
+/* The step number is the page's main visual anchor at 72–96px. It greys back
+   to --border before its step scrolls into view and resolves to --primary
+   once it does — driven off the parent's data attribute so the colour is a
+   token in both themes rather than a pair of light-mode hex literals. */
+.step-reveal .step-number {
+  color: var(--border);
+  transition: color 500ms ease;
+}
+.step-reveal[data-visible="true"] .step-number {
+  color: var(--primary);
+}
+@media (scripting: none) {
+  .step-reveal {
+    opacity: 1;
+    transform: none;
+  }
+  .step-reveal .step-number {
+    color: var(--primary);
+  }
+}
+
 /* Loading UI is feedback, not decoration — it must stay visible in Lite Mode.
    But honour a stated motion preference: hold the skeletons and the progress
    bar still rather than pulsing them. */
@@ -214,6 +306,14 @@
   }
   .animate-nav-progress {
     transform: scaleX(0.5);
+  }
+  .step-reveal,
+  .step-reveal .step-number {
+    transition: none;
+  }
+  .step-reveal[data-side="left"],
+  .step-reveal[data-side="right"] {
+    transform: none;
   }
 }
 
@@ -243,7 +343,10 @@
   border-color: oklch(0.35 0.095 154 / 0.20);
 }
 .dark .card-lift:hover {
-  box-shadow: 0 8px 24px -12px oklch(0 / 0 0 / 0.4);
+  /* `oklch(0 / 0 0 / 0.4)` — two slashes, four components — is not parseable,
+     so the browser dropped the whole declaration and dark hover fell through
+     to the light rule's *green* shadow. */
+  box-shadow: 0 8px 24px -12px oklch(0 0 0 / 0.4);
 }
 
 /* Lite Mode — hide decorative/media content to save data */
