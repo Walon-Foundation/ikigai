@@ -17,7 +17,8 @@ const FILTERS = [
   { key: "", label: "All" },
   { key: "new", label: "New" },
   { key: "in_progress", label: "In progress" },
-  { key: "handled", label: "Handled" },
+  { key: "handled", label: "Accepted" },
+  { key: "closed", label: "Closed" },
 ];
 
 function fmt(date: Date | null): string {
