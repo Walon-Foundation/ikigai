@@ -10,11 +10,15 @@ import {
   guardianLinks,
   journalEntries,
   journalFeedback,
+  meetingVerifications,
   mentorDocuments,
   mentorReviews,
+  mentorships,
   milestones,
   pushNotifications,
   satisfactionSurveys,
+  skillMilestones,
+  skillTracks,
   users,
 } from "@/db/schema";
 
@@ -47,7 +51,28 @@ export const DELETION_GRACE_DAYS = 30;
  */
 export async function purgeUser(userId: string): Promise<void> {
   // Content that belongs to this user alone.
+  //
+  // Both directions of journal feedback have to go before the entries do.
+  // journal_feedback.entry_id is NOT NULL with no ON DELETE behaviour (the
+  // schema is pushed, so there is no migration adding one), which means a
+  // mentor's comment left on this user's entry is a foreign key pointing at a
+  // row we are about to delete — deleting only by mentorId raised a constraint
+  // violation and aborted the purge partway through, leaving the account
+  // half-scrubbed. Clearing feedback ON their entries as well as feedback BY
+  // them is also the right privacy answer: a comment quoting a child's journal
+  // entry is that child's data no matter who typed it.
   await db.delete(journalFeedback).where(eq(journalFeedback.mentorId, userId));
+  await db
+    .delete(journalFeedback)
+    .where(
+      inArray(
+        journalFeedback.entryId,
+        db
+          .select({ id: journalEntries.id })
+          .from(journalEntries)
+          .where(eq(journalEntries.userId, userId)),
+      ),
+    );
   await db.delete(journalEntries).where(eq(journalEntries.userId, userId));
   await db.delete(goals).where(eq(goals.userId, userId));
   await db.delete(growthTrees).where(eq(growthTrees.userId, userId));
@@ -63,6 +88,43 @@ export async function purgeUser(userId: string): Promise<void> {
   // Reviews this user wrote. Reviews written ABOUT them (mentorId) stay — they
   // are other people's words about a mentor, not this user's data.
   await db.delete(mentorReviews).where(eq(mentorReviews.authorId, userId));
+
+  // The skill track and its milestones are this mentee's own progress record —
+  // same category as goals and the growth tree. Milestones first: their
+  // skill_track_id is a NOT NULL foreign key onto the tracks.
+  await db
+    .delete(skillMilestones)
+    .where(
+      inArray(
+        skillMilestones.skillTrackId,
+        db
+          .select({ id: skillTracks.id })
+          .from(skillTracks)
+          .where(eq(skillTracks.menteeId, userId)),
+      ),
+    );
+  await db.delete(skillTracks).where(eq(skillTracks.menteeId, userId));
+
+  // Meeting verifications for mentorships where this user was the MENTEE.
+  // These rows carry lat/lng of a physical meeting between an adult and, very
+  // often, a minor — the single most sensitive thing left behind by a purge
+  // after the ID scans below. Mentorships themselves are kept for the mentor's
+  // history (see the header), but nothing about that rationale requires keeping
+  // a child's location, so the coordinates go with the account. Verifications
+  // for mentorships where this user was the MENTOR are left alone: those are
+  // the other party's meeting record, and deleting them would erase a minor's
+  // evidence that a meeting happened.
+  await db
+    .delete(meetingVerifications)
+    .where(
+      inArray(
+        meetingVerifications.mentorshipId,
+        db
+          .select({ id: mentorships.id })
+          .from(mentorships)
+          .where(eq(mentorships.menteeId, userId)),
+      ),
+    );
 
   // Vetting documents are the most sensitive thing this platform holds — a
   // scan of someone's national ID. Purging must remove the files themselves
@@ -130,10 +192,28 @@ export async function purgeExpiredAccounts(
       ),
     );
 
+  // Each account is isolated. purgeUser touches a dozen tables and calls out to
+  // UploadThing, so any one of them can fail — and an unhandled rejection here
+  // propagated out through the cron route, which does not catch either. That
+  // meant a single bad row aborted the whole run, and because the job is only
+  // retried on the next schedule against the same data, the same row would
+  // abort it again: every account queued behind it stayed unpurged
+  // indefinitely, with nobody told. A deletion request that silently never
+  // completes is the failure mode this platform can least afford. So we log and
+  // carry on, and report only the ids that actually completed — the cron route
+  // logs that count, and it must not claim accounts were purged when they
+  // weren't. A failed account keeps deletionRequestedAt set and stays due, so
+  // the next run picks it up again.
+  const purged: string[] = [];
   for (const user of due) {
-    await purgeUser(user.id);
+    try {
+      await purgeUser(user.id);
+      purged.push(user.id);
+    } catch (err) {
+      console.error(`purge: failed for user ${user.id}`, err);
+    }
   }
-  return due.map((u) => u.id);
+  return purged;
 }
 
 /** Kept for callers that need to check a batch of ids. */

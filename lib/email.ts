@@ -25,10 +25,24 @@ export async function sendMail(opts: {
   const from = env.smtpFrom ?? "Ikigai <hello@findingyourikigai.org>";
   const tx = getTransporter();
   if (!tx) {
-    console.log(`[email:dev] to=${opts.to} subject=${opts.subject}\n${opts.text ?? opts.html.slice(0, 500)}`);
+    // No SMTP configured — and the SMTP vars are optional (lib/env.ts), so this
+    // branch is not just a local-dev convenience: it is what runs on any deploy
+    // where they were never set. Log that an email was attempted and to whom,
+    // never the body. These bodies carry guardian invite codes, mentor
+    // verification decisions and safeguarding correspondence; printing them puts
+    // that in retained platform logs, readable by anyone with dashboard access
+    // and outliving the account deletions in lib/purge.ts. A single-use invite
+    // code sitting in a log is a working credential.
+    console.log(`[email:dev] to=${opts.to} subject=${opts.subject}`);
     return { dev: true };
   }
-  return tx.sendMail({ from, to: opts.to, subject: opts.subject, html: opts.html, text: opts.text });
+  return tx.sendMail({
+    from,
+    to: opts.to,
+    subject: opts.subject,
+    html: opts.html,
+    text: opts.text,
+  });
 }
 
 export function pwaInstallUrl(): string {
