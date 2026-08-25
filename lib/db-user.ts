@@ -1,6 +1,6 @@
 import "server-only";
 import { auth, currentUser } from "@clerk/nextjs/server";
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq, isNull, ne } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { cache } from "react";
 import { db } from "@/db/db";
@@ -35,23 +35,50 @@ export async function getOrCreateDbUser(): Promise<DbUser> {
     .filter(Boolean)
     .join(" ");
   const displayName = clerkUser?.fullName ?? parts ?? "User";
-  const email =
-    clerkUser?.emailAddresses.find(
-      (e) => e.id === clerkUser.primaryEmailAddressId,
-    )?.emailAddress ??
-    clerkUser?.emailAddresses[0]?.emailAddress ??
-    null;
+  // ONLY the primary address, and only once Clerk says it is verified. The
+  // re-link below hands an existing row to whoever presents this address, so
+  // the address has to be one Clerk has proven this person controls. Taking
+  // emailAddresses[0] as a fallback did not: a secondary address needs no
+  // confirmation to sit in that array, so anyone could have typed a victim's
+  // address into their own Clerk profile and been handed the victim's row.
+  const primaryEmail = clerkUser?.emailAddresses.find(
+    (e) => e.id === clerkUser.primaryEmailAddressId,
+  );
+  const email = primaryEmail?.emailAddress ?? null;
+  const emailIsVerified = primaryEmail?.verification?.status === "verified";
 
   // Clerk can issue a new clerkId for someone who already has a row here (a
   // dev→prod key swap orphans every existing id; signing up again does the
   // same). Re-link that row by email instead of inserting a second account —
   // otherwise the same person silently ends up with two disconnected users
   // rows, neither of which has the other's history.
-  if (email) {
+  //
+  // That convenience is also an account-takeover primitive, because users.email
+  // carries no unique constraint and this rewrites whichever row it finds. Three
+  // guards keep it to the case it was written for:
+  //
+  //  - verified primary address only (above), so the claim is proven;
+  //  - never an admin row, so the worst case of a missed guard is inheriting a
+  //    peer account rather than the safeguarding queue and every user record;
+  //  - never a soft-deleted row, because a purged account is a tombstone that
+  //    safety_reports still point at (see lib/purge.ts) — re-linking it would
+  //    resurrect a deliberately closed account, and the scrubbed row has no
+  //    history left to reunite the person with anyway.
+  //
+  // If no row survives these filters we fall through and insert a fresh one,
+  // which is the safe direction to fail: a duplicate account is recoverable by
+  // an admin, a hijacked one is not.
+  if (email && emailIsVerified) {
     const [byEmail] = await db
       .select()
       .from(users)
-      .where(eq(users.email, email))
+      .where(
+        and(
+          eq(users.email, email),
+          ne(users.role, "admin"),
+          isNull(users.deletedAt),
+        ),
+      )
       .orderBy(desc(users.createdAt))
       .limit(1);
     if (byEmail) {
