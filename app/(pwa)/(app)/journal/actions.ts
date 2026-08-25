@@ -14,9 +14,24 @@ import {
 export async function saveJournalEntry(data: {
   content: string;
   visibility: string;
+  // Who the client believes is writing. Optional, because a live compose always
+  // belongs to the session that is posting it — this exists for the offline
+  // queue, where an entry can outlive the session that wrote it.
+  expectedOwnerId?: string;
 }) {
   const { userId } = await auth();
   if (!userId) throw new Error("Unauthenticated");
+
+  // The offline journal (lib/offline-journal.ts) persists unsent entries in
+  // IndexedDB on a device this audience frequently shares. Without this check
+  // the replay path resolved the author from whoever happened to be signed in
+  // when it ran — so a queued entry could be written into the next person's
+  // journal, carrying its safeguarding flag onto the wrong child. The client
+  // already refuses to replay another owner's entry; this is the same rule
+  // stated where it cannot be bypassed.
+  if (data.expectedOwnerId && data.expectedOwnerId !== userId) {
+    throw new Error("This entry belongs to a different account");
+  }
 
   // Server-side validation: client args reach this function unverified.
   const content = typeof data.content === "string" ? data.content.trim() : "";
