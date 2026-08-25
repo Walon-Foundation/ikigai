@@ -45,11 +45,24 @@ export default async function AdminDashboardPage() {
     db
       .select({ pendingMentors: count() })
       .from(users)
-      .where(and(eq(users.role, "mentor"), isNull(users.verifiedAt))),
+      // Pending means undecided, not merely unverified — the same distinction
+      // schools/page.tsx already draws. A rejected applicant has been decided,
+      // so counting them here would show the operator a queue that never
+      // empties no matter how much of it they work through.
+      .where(
+        and(
+          eq(users.role, "mentor"),
+          isNull(users.verifiedAt),
+          isNull(users.rejectedAt),
+        ),
+      ),
     db
       .select({ pendingSchools: count() })
       .from(schools)
-      .where(isNull(schools.verifiedAt)),
+      // Same reasoning, and this one was already drifting from the schools
+      // queue it links to: that page has excluded rejected schools since
+      // `rejected_at` was added, this count never did.
+      .where(and(isNull(schools.verifiedAt), isNull(schools.rejectedAt))),
     db
       .select({ openReports: count() })
       .from(safetyReports)

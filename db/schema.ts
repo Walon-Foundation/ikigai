@@ -51,6 +51,28 @@ export const users = pgTable(
       "private",
     ),
     verifiedAt: timestamp("verified_at"),
+    // A mentor application an admin turned down, and the reason they gave.
+    //
+    // Rejection used to be recorded by writing `role` back to "mentee". That
+    // destroyed the record instead of deciding it: every admin mentor query
+    // filters on role = 'mentor', so a rejected applicant disappeared from
+    // Pending and Verified alike, their verify URL 404'd, and no admin screen
+    // can set a role back — a misclick was unrecoverable in-product, and the
+    // government ID and CV they had submitted stayed on a row that no longer
+    // looked like an application at all. `role` is what a person IS on the
+    // platform; a verification decision is a fact ABOUT their application, and
+    // the two must not share a column. Same reasoning as schools.rejected_at:
+    // pending means undecided (verified_at IS NULL AND rejected_at IS NULL),
+    // not merely unverified — see admin/mentors/page.tsx.
+    //
+    // The reason is mandatory in the admin UI before Reject is enabled. It is
+    // an internal note for whoever follows up, not a column the applicant is
+    // shown: the rejection email says the team will be in touch, and this is
+    // what the team reads when they are. Before it existed the applicant was
+    // told "your application needs more information" and nobody — including the
+    // admin who sent that — could say what information was missing.
+    rejectedAt: timestamp("rejected_at"),
+    rejectionReason: text("rejection_reason"),
     // Set when the user asks for their account to be deleted. The account is
     // scrubbed by the purge job after a grace period, during which the user can
     // change their mind from Settings. Deletion is deliberately not instant: a
@@ -879,7 +901,16 @@ export const enquiries = pgTable(
     // jsonb so a new form field does not need a migration and an unrelated
     // form does not carry a column it never fills.
     details: jsonb("details"),
-    status: text("status").notNull().default("new"), // 'new' | 'in_progress' | 'handled'
+    // 'new' | 'in_progress' | 'handled' | 'closed'
+    //
+    // 'handled' is the ACCEPTED outcome: it sends the enquirer a congratulatory
+    // acceptance email. That is not what the word means in ordinary English —
+    // an operator marking a declined volunteer "handled" (I dealt with this)
+    // was congratulating them, unrecallably. 'closed' is the outcome that sends
+    // nothing, and the admin dropdown now labels both by their consequence.
+    // 'handled' is kept rather than renamed because rows already carry it and a
+    // rename would silently reclassify decisions that were already made.
+    status: text("status").notNull().default("new"),
     handledBy: uuid("handled_by").references(() => users.id),
     handledAt: timestamp("handled_at"),
     createdAt: timestamp("created_at").defaultNow(),

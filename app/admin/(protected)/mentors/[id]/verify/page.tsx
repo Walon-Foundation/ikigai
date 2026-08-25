@@ -30,6 +30,11 @@ export default async function VerifyMentorPage({
 }) {
   const { id } = await params;
 
+  // Deliberately not filtered by decision state: a rejected applicant must
+  // still resolve here, so an admin can read back why the call was made and
+  // overturn it. This page 404'd for them while rejection was written by
+  // downgrading `role` — the record they needed to review was the very thing
+  // the rejection destroyed. See db/schema.ts on users.rejectedAt.
   const [mentor] = await db
     .select()
     .from(users)
@@ -84,6 +89,30 @@ export default async function VerifyMentorPage({
       <h1 className="font-display mb-6 text-3xl font-black text-foreground">
         Verify Mentor
       </h1>
+
+      {/* The standing decision, shown before the evidence rather than after it,
+          so nobody re-reviews an application that was already turned down
+          without knowing it was — and so the reason is in front of whoever
+          picks up the follow-up. */}
+      {mentor.rejectedAt && (
+        <div className="mb-6 rounded-xl border border-destructive/40 bg-destructive/5 p-4">
+          <p className="text-sm font-semibold text-destructive">
+            Rejected on{" "}
+            {new Date(mentor.rejectedAt).toLocaleDateString("en-GB", {
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+            })}
+          </p>
+          <p className="mt-1 whitespace-pre-wrap text-sm text-foreground">
+            {mentor.rejectionReason ?? "No reason was recorded."}
+          </p>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Internal note — the applicant was not shown this. Approving below
+            overturns the rejection.
+          </p>
+        </div>
+      )}
 
       {/* Mentor Details */}
       <div className="mb-6 rounded-xl border border-border bg-card p-6">
@@ -217,6 +246,7 @@ export default async function VerifyMentorPage({
       <VerifyActions
         mentorId={id}
         mentorName={mentor.displayName ?? "This mentor"}
+        alreadyRejected={Boolean(mentor.rejectedAt)}
       />
     </div>
   );
