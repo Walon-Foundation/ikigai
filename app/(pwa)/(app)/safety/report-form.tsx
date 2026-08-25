@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, Send, Shield } from "lucide-react";
+import { Lock, Send, Shield } from "lucide-react";
 import { useState, useTransition } from "react";
 import { BusyLabel } from "@/components/spinner";
 import { submitSafetyReport } from "./actions";
@@ -37,20 +37,35 @@ export function ReportForm() {
 
   return (
     <div className="rounded-2xl border border-border bg-card p-5">
+      {/* This card used to be headed "Anonymous Report" and promised twice that
+          the sender's identity would never be revealed. That was not true:
+          submitSafetyReport() stores reporterId, and the admin report queue
+          renders "Reported by {displayName}". Telling a child their report is
+          anonymous and then attaching their name to it is the worst possible
+          version of this screen — it either breaks trust at the moment they
+          most need it, or it stops them reporting at all once they find out.
+          The identity is deliberately kept (the safeguarding team has to be
+          able to reach a child who reports abuse, and a report no one can
+          follow up on helps no one), so the copy below tells the truth about
+          it instead: who sees the name, why, and — the thing that actually
+          worries a young person — that the person being reported never does. */}
       <div className="mb-4 flex items-center gap-2">
         <Shield className="size-5 text-primary" />
-        <p className="font-semibold text-foreground">Anonymous Report</p>
+        <p className="font-semibold text-foreground">Report a problem</p>
       </div>
       <p className="mb-4 text-sm text-muted-foreground">
-        Report inappropriate behaviour or safety concerns. Your identity remains
-        anonymous. Our admin team reviews every report.
+        Tell us about behaviour that felt wrong or unsafe — something someone
+        said or did, or a worry you have about a friend. Our safeguarding team
+        reads every report and will take it seriously.
       </p>
 
       {submitted ? (
         <div className="rounded-xl border border-primary-muted/40 bg-primary-muted/10 p-4 text-center">
           <p className="font-semibold text-primary">Report submitted</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            Our team will review your report within 24 hours.
+            Our safeguarding team will read it within 24 hours, and someone may
+            message you to check how you are. If you need to talk to somebody
+            right now, the helplines above are open.
           </p>
         </div>
       ) : (
@@ -78,10 +93,13 @@ export function ReportForm() {
             rows={4}
             className="w-full resize-none rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none placeholder:text-muted-foreground focus:border-primary"
           />
-          <div className="mt-3 flex items-center gap-2">
-            <AlertTriangle className="size-3.5 text-muted-foreground" />
+          <div className="mt-3 flex items-start gap-2">
+            <Lock className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
             <p className="text-xs text-muted-foreground">
-              Your identity will not be revealed.
+              Your name is sent with this report so our safeguarding team can
+              check that you are okay and get back to you. Only that small team
+              can see it — the person you are reporting is never told who
+              reported them.
             </p>
           </div>
           <button

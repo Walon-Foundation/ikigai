@@ -1,12 +1,13 @@
 import { ChevronRight, Phone } from "lucide-react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { after } from "next/server";
 import { PageHeader } from "@/components/page-header";
 import { db } from "@/db/db";
 import { milestones } from "@/db/schema";
 import { getAppCopy } from "@/lib/app-copy";
 import { SAFETY_RESOURCES } from "@/lib/constants";
-import { requireRole } from "@/lib/db-user";
+import { getDbUser } from "@/lib/db-user";
 import { ReportForm } from "./report-form";
 
 // A server component. The whole page used to be `"use client"` for the sake of
@@ -14,17 +15,31 @@ import { ReportForm } from "./report-form";
 // in trouble is here for — waited on JavaScript to arrive before they existed.
 // They're plain HTML now; only the report form is an island.
 export default async function SafetyPage() {
-  const user = await requireRole(["mentee"]);
+  // Every signed-in role, not just mentees. This gate used to be
+  // requireRole(["mentee"]), which meant a mentor who was worried about a
+  // mentee, or a parent worried about their child's mentor, had no route to
+  // report it — they were redirected to their dashboard. Safeguarding is
+  // infrastructure here, not a mentee feature, and the people most able to
+  // recognise harm were the ones locked out of saying so.
+  const user = await getDbUser();
+  if (!user) redirect("/sign-in");
 
   // Was a useEffect firing a server action on every single mount, purely to
   // write a row that is a no-op after the first time. It's deferred past the
   // response now, matching what pad-her-power already does.
-  after(async () => {
-    await db
-      .insert(milestones)
-      .values({ userId: user.id, type: "safety_module" })
-      .onConflictDoNothing();
-  });
+  //
+  // Only mentees have a growth tree for this milestone to count towards, so
+  // opening the page as a mentor or parent no longer writes one — the row would
+  // be inert, and awarding "completed the safety module" for merely landing on
+  // the crisis page is a strange thing to record for anyone.
+  if (user.role === "mentee" || user.role === "club_lead") {
+    after(async () => {
+      await db
+        .insert(milestones)
+        .values({ userId: user.id, type: "safety_module" })
+        .onConflictDoNothing();
+    });
+  }
 
   const banner = await getAppCopy("safety_crisis_banner");
   const bannerTitle = (banner?.title as string) ?? "Need immediate help?";
