@@ -24,6 +24,7 @@ import { usePathname } from "next/navigation";
 import { LinkPending } from "@/components/nav-progress";
 import { useNotifications } from "@/components/notifications";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { signOutAndClearOfflineJournal } from "@/lib/offline-journal";
 import { cn } from "@/lib/utils";
 
 type NavItem = { href: string; label: string; icon: React.ElementType };
@@ -187,12 +188,20 @@ export function AppSidebar({
 
       <div className="border-t border-border p-3 space-y-2">
         <div className="flex items-center justify-between px-3 py-1">
-          <span className="text-xs font-medium text-muted-foreground">Theme</span>
+          <span className="text-xs font-medium text-muted-foreground">
+            Theme
+          </span>
           <ThemeToggle />
         </div>
+        {/* Sign-out clears the offline journal queue before Clerk drops the
+            session — these devices are shared, and a queued entry left behind
+            is both readable by the next person and syncable into their
+            account. See lib/offline-journal.ts. */}
         <button
           type="button"
-          onClick={() => signOut({ redirectUrl: "/" })}
+          onClick={() =>
+            signOutAndClearOfflineJournal(signOut, { redirectUrl: "/" })
+          }
           className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
         >
           <LogOut className="size-4" />

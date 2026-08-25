@@ -2,12 +2,16 @@
 
 import { useClerk } from "@clerk/nextjs";
 import { useEffect } from "react";
+import { signOutAndClearOfflineJournal } from "@/lib/offline-journal";
 
 export default function AdminSignOutPage() {
   const { signOut } = useClerk();
 
   useEffect(() => {
-    signOut({ redirectUrl: "/admin/sign-in" });
+    // Clears the offline journal queue first: this app is used on shared
+    // devices, and a queued entry outliving its author's session is both a
+    // disclosure and a mis-attribution risk. See lib/offline-journal.ts.
+    signOutAndClearOfflineJournal(signOut, { redirectUrl: "/admin/sign-in" });
   }, [signOut]);
 
   return (

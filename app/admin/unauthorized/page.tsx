@@ -3,6 +3,7 @@
 import { useClerk } from "@clerk/nextjs";
 import { ShieldX } from "lucide-react";
 import { clientEnv } from "@/lib/env.client";
+import { signOutAndClearOfflineJournal } from "@/lib/offline-journal";
 
 export default function AdminUnauthorizedPage() {
   const { signOut } = useClerk();
@@ -22,9 +23,17 @@ export default function AdminUnauthorizedPage() {
           If you manage Ikigai, sign in with your admin account.
         </p>
         <div className="mt-6 flex flex-col gap-3">
+          {/* "Switch account" is exactly the shared-device path this guards:
+              clear the offline journal queue before the next person signs in,
+              so nothing of the previous user's syncs into their journal. See
+              lib/offline-journal.ts. */}
           <button
             type="button"
-            onClick={() => signOut({ redirectUrl: "/sign-in" })}
+            onClick={() =>
+              signOutAndClearOfflineJournal(signOut, {
+                redirectUrl: "/sign-in",
+              })
+            }
             className="w-full rounded-full bg-primary py-3 font-semibold text-primary-foreground transition-colors hover:bg-primary-light"
           >
             Sign out & switch account

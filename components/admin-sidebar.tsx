@@ -23,6 +23,7 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { signOutAndClearOfflineJournal } from "@/lib/offline-journal";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
@@ -91,7 +92,9 @@ export function AdminSidebar({
 
       <div className="border-t border-border p-4 space-y-3">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-medium text-muted-foreground">Theme</span>
+          <span className="text-xs font-medium text-muted-foreground">
+            Theme
+          </span>
           <ThemeToggle />
         </div>
         <div className="min-w-0">
@@ -102,9 +105,15 @@ export function AdminSidebar({
             <p className="truncate text-xs text-muted-foreground">{email}</p>
           )}
         </div>
+        {/* Sign-out clears the offline journal queue before Clerk drops the
+            session — these devices are shared, and a queued entry left behind
+            is both readable by the next person and syncable into their
+            account. See lib/offline-journal.ts. */}
         <button
           type="button"
-          onClick={() => signOut({ redirectUrl: "/sign-in" })}
+          onClick={() =>
+            signOutAndClearOfflineJournal(signOut, { redirectUrl: "/sign-in" })
+          }
           className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
         >
           <LogOut className="size-4" />

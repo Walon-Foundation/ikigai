@@ -30,6 +30,7 @@ import { PageHeader } from "@/components/page-header";
 import { BusyLabel, Spinner } from "@/components/spinner";
 import { useToast } from "@/components/toast";
 import { INTEREST_TAGS } from "@/lib/constants";
+import { signOutAndClearOfflineJournal } from "@/lib/offline-journal";
 import { subscribeToPush, unsubscribeFromPush } from "@/lib/push-client";
 import { usePwaInstall } from "@/lib/use-pwa-install";
 import { cn } from "@/lib/utils";
@@ -117,9 +118,13 @@ export function SettingsClient({ user }: { user: DbUser }) {
     });
   }
 
+  // Routed through signOutAndClearOfflineJournal so the offline journal queue
+  // is wiped before the session goes. On a shared handset, anything left in
+  // that queue is readable by whoever picks the phone up next — and worse, gets
+  // synced into their account. See lib/offline-journal.ts.
   function handleSignOut() {
     startSignOutTransition(async () => {
-      await signOut({ redirectUrl: "/" });
+      await signOutAndClearOfflineJournal(signOut, { redirectUrl: "/" });
     });
   }
 
