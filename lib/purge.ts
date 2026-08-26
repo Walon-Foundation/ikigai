@@ -11,6 +11,7 @@ import {
   journalEntries,
   journalFeedback,
   meetingVerifications,
+  menteeStagePromotions,
   mentorDocuments,
   mentorReviews,
   mentorships,
@@ -19,6 +20,7 @@ import {
   satisfactionSurveys,
   skillMilestones,
   skillTracks,
+  taskSubmissions,
   users,
 } from "@/db/schema";
 
@@ -140,6 +142,37 @@ export async function purgeUser(userId: string): Promise<void> {
       .catch((err) => console.error("purge: could not delete documents", err));
     await db.delete(mentorDocuments).where(eq(mentorDocuments.userId, userId));
   }
+
+  // Task evidence. A submission's photo is a picture a young person took of
+  // their own work — the same class of thing as the ID scans above, and stored
+  // privately for the same reason, so the FILES have to go, not just the rows
+  // that point at them. A PDF assignment is the young person's own writing.
+  //
+  // The tasks themselves are left alone: a task belongs to the mentorship, and
+  // mentorships are deliberately kept for the mentor's history (see the
+  // header). What that rationale does not cover is the child's own uploads.
+  const submissions = await db
+    .select({
+      photoFileKey: taskSubmissions.photoFileKey,
+      pdfFileKey: taskSubmissions.pdfFileKey,
+    })
+    .from(taskSubmissions)
+    .where(eq(taskSubmissions.menteeId, userId));
+  const evidenceKeys = submissions
+    .flatMap((s) => [s.photoFileKey, s.pdfFileKey])
+    .filter((k): k is string => !!k);
+  if (evidenceKeys.length > 0) {
+    await new UTApi()
+      .deleteFiles(evidenceKeys)
+      .catch((err) => console.error("purge: could not delete evidence", err));
+  }
+  await db.delete(taskSubmissions).where(eq(taskSubmissions.menteeId, userId));
+
+  // Stage promotions are a record of decisions made ABOUT this person by their
+  // mentor. They carry no one else's history, so they go with the account.
+  await db
+    .delete(menteeStagePromotions)
+    .where(eq(menteeStagePromotions.menteeId, userId));
 
   // Guardian links are a relationship, and the other side is often a child's
   // parent. Remove the link rather than leave a dangling consent.
