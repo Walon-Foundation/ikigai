@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import {
   boolean,
   index,
@@ -155,6 +156,15 @@ export const mentorships = pgTable(
     mentorId: uuid("mentor_id").references(() => users.id),
     status: text("status").default("requested"), // 'requested' | 'active' | 'declined' | 'closed'
     matchScore: integer("match_score"), // 0–100, interest-tag overlap at request time
+    // When the mentor accepted, and when the 3-month base mentorship is up.
+    //
+    // baseEndsAt is stored rather than computed from startedAt because the base
+    // duration is a term of THIS agreement: changing BASE_MENTORSHIP_MONTHS
+    // later must not silently move the end date of a mentorship already under
+    // way. It is a marker, not a kill switch — nothing expires on its own, and
+    // the pair keep working past it until someone closes the mentorship.
+    startedAt: timestamp("started_at"),
+    baseEndsAt: timestamp("base_ends_at"),
     lastActivityAt: timestamp("last_activity_at"),
     createdAt: timestamp("created_at").defaultNow(),
   },
@@ -163,6 +173,18 @@ export const mentorships = pgTable(
     // trailing lastActivityAt lets the index satisfy the ORDER BY too.
     index("mentorships_mentee_idx").on(t.menteeId, t.lastActivityAt),
     index("mentorships_mentor_idx").on(t.mentorId, t.lastActivityAt),
+    // One mentor at a time. A partial unique index, so the constraint binds
+    // only the ACTIVE row — a mentee may still have many 'requested',
+    // 'declined' and 'closed' rows, including several closed mentorships with
+    // the same mentor over time.
+    //
+    // Enforced here as well as in the accept action because the action's check
+    // is read-then-write: two mentors accepting the same mentee in the same
+    // moment both read zero active mentorships and both write one. Only the
+    // database can refuse the second.
+    uniqueIndex("mentorships_one_active_mentor_idx")
+      .on(t.menteeId)
+      .where(sql`${t.status} = 'active'`),
   ],
 );
 
