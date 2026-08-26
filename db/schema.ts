@@ -638,13 +638,69 @@ export const invoices = pgTable("invoices", {
 });
 
 // Group discussions (PRD §14). Any signed-in member can post.
-export const groups = pgTable("groups", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  name: text("name").notNull(),
-  description: text("description"),
-  createdBy: uuid("created_by").references(() => users.id),
-  createdAt: timestamp("created_at").defaultNow(),
-});
+// A club. Created by a mentee inside the PWA, and — per the programme rule —
+// listed on the public website automatically, with no approval step.
+//
+// `hiddenAt` is the counterweight to that. Automatic publication means
+// mentee-written text reaches a public page with no human in front of it, so
+// there has to be a way to take one down after the fact; `keywordFlag` runs the
+// same safeguarding check the journal and group messages use (lib/journal.ts)
+// so the admin queue surfaces the risky ones rather than waiting to be told.
+// A hidden club still works inside the app — hiding is not deleting.
+export const groups = pgTable(
+  "groups",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: text("name").notNull(),
+    // Public URL segment, derived from the name at creation and never changed
+    // after — a live /clubs/<slug> link must not rot because someone renamed
+    // their club.
+    slug: text("slug").notNull().unique(),
+    description: text("description"),
+    // What this club is about, in the same free vocabulary as
+    // users.interestTags — that is what makes the two comparable, and club
+    // recommendation is tag overlap between them (lib/clubs.ts).
+    interestTags: text("interest_tags").array(),
+    // The programme stage this club suits, or null for "any stage".
+    stage: skillStageEnum("stage"),
+    createdBy: uuid("created_by").references(() => users.id),
+    keywordFlag: boolean("keyword_flag").notNull().default(false),
+    hiddenAt: timestamp("hidden_at"),
+    hiddenReason: text("hidden_reason"),
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (t) => [
+    // The public listing reads visible clubs newest-first.
+    index("groups_hidden_idx").on(t.hiddenAt, t.createdAt),
+  ],
+);
+
+// Every stage promotion, and who pressed it.
+//
+// The mentee's stage lives on users.currentStage, which only ever holds the
+// latest value. This is the record of how they got there: a promotion is a
+// mentor's judgement about a young person's progress, and "who decided this,
+// when, and against which mentorship" is not something to leave inferable only
+// from a timestamp that the next promotion overwrites.
+export const menteeStagePromotions = pgTable(
+  "mentee_stage_promotions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    menteeId: uuid("mentee_id")
+      .notNull()
+      .references(() => users.id),
+    mentorId: uuid("mentor_id").references(() => users.id),
+    mentorshipId: uuid("mentorship_id").references(() => mentorships.id),
+    fromStage: skillStageEnum("from_stage").notNull(),
+    toStage: skillStageEnum("to_stage").notNull(),
+    // Filled when an admin overrides the pacing floor, so an early promotion is
+    // never silent.
+    overrodePacing: boolean("overrode_pacing").notNull().default(false),
+    note: text("note"),
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (t) => [index("stage_promotions_mentee_idx").on(t.menteeId, t.createdAt)],
+);
 
 export const groupMembers = pgTable(
   "group_members",
