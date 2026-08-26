@@ -59,7 +59,7 @@ async function mentorshipForMentor(mentorshipId: string, mentorId: string) {
 // result so the UI can explain a refusal rather than silently failing.
 export async function acceptRequest(
   mentorshipId: string,
-): Promise<{ ok: boolean; reason?: "full" | "not_found" }> {
+): Promise<{ ok: boolean; reason?: "full" | "not_found" | "already_paired" }> {
   const me = await requireMentor();
 
   const [request] = await db
@@ -83,10 +83,56 @@ export async function acceptRequest(
     );
   if (activeCount >= MENTOR_CAPACITY) return { ok: false, reason: "full" };
 
-  await db
-    .update(mentorships)
-    .set({ status: "active", lastActivityAt: new Date() })
-    .where(eq(mentorships.id, mentorshipId));
+  // One mentor at a time. A mentee may hold requests with several mentors —
+  // that is how they shop for a match — but the first acceptance closes the
+  // question, and a second mentor accepting later must be told why they
+  // cannot, not silently create a second pairing.
+  if (request.menteeId) {
+    const [{ value: menteeActive }] = await db
+      .select({ value: count() })
+      .from(mentorships)
+      .where(
+        and(
+          eq(mentorships.menteeId, request.menteeId),
+          eq(mentorships.status, "active"),
+        ),
+      );
+    if (menteeActive > 0) return { ok: false, reason: "already_paired" };
+  }
+
+  const startedAt = new Date();
+  try {
+    await db
+      .update(mentorships)
+      .set({
+        status: "active",
+        startedAt,
+        baseEndsAt: baseEndDate(startedAt),
+        lastActivityAt: startedAt,
+      })
+      .where(eq(mentorships.id, mentorshipId));
+  } catch (error) {
+    // Most likely the partial unique index refusing it: another mentor accepted
+    // this mentee between the check above and this write. The check is not
+    // redundant — it answers clearly in the ordinary case — but only the index
+    // can settle a genuine race.
+    //
+    // Confirmed by re-reading rather than assumed from the fact that something
+    // threw. A dropped connection also lands here, and reporting that as
+    // "already matched" would send the mentor away believing a false thing
+    // about their mentee.
+    const [{ value: nowActive }] = await db
+      .select({ value: count() })
+      .from(mentorships)
+      .where(
+        and(
+          eq(mentorships.menteeId, request.menteeId ?? ""),
+          eq(mentorships.status, "active"),
+        ),
+      );
+    if (nowActive > 0) return { ok: false, reason: "already_paired" };
+    throw error;
+  }
 
   if (request.menteeId) {
     await db

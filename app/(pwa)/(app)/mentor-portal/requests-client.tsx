@@ -35,6 +35,18 @@ export function PendingRequests({
   );
 }
 
+// Every refusal acceptRequest can return, and what the mentor is told.
+//
+// Keyed off the action's own union so a new reason cannot be added there and
+// silently fall through to "no longer available" here — which is what happened
+// to `already_paired`, a refusal that has nothing to do with availability.
+const REFUSAL: Record<string, string> = {
+  full: "You already have the maximum of two active mentees.",
+  already_paired:
+    "This mentee has already been matched with another mentor. A mentee works with one mentor at a time.",
+  not_found: "This request is no longer available.",
+};
+
 function RequestCard({
   request,
   atCapacity,
@@ -104,11 +116,7 @@ function RequestCard({
               try {
                 const res = await acceptRequest(request.id);
                 if (!res.ok) {
-                  setError(
-                    res.reason === "full"
-                      ? "You already have the maximum of two active mentees."
-                      : "This request is no longer available.",
-                  );
+                  setError(REFUSAL[res.reason ?? "not_found"]);
                 }
               } finally {
                 setBusyAction(null);
