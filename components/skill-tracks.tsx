@@ -3,10 +3,7 @@
 import { Check, ChevronDown, Lock, Send } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import {
-  completeMilestone,
-  submitMilestone,
-} from "@/app/(pwa)/(app)/journey/skill-actions";
+import { submitMilestone } from "@/app/(pwa)/(app)/journey/skill-actions";
 import { BusyLabel } from "@/components/spinner";
 import { SKILL_STAGE_LABELS, SKILL_STAGES } from "@/lib/skill-stages";
 import type { SkillTrackView } from "@/lib/skill-tracks";
@@ -187,23 +184,15 @@ function MilestoneRow({
             type="button"
             disabled={isPending}
             aria-busy={busy}
-            onClick={() =>
-              run(() =>
-                milestone.requiresMentorReview
-                  ? submitMilestone(milestone.id)
-                  : completeMilestone(milestone.id),
-              )
-            }
+            onClick={() => run(() => submitMilestone(milestone.id))}
             className="mt-1.5 flex items-center gap-1.5 rounded-full border border-primary/30 px-3 py-1 text-xs font-semibold text-primary disabled:opacity-50"
           >
+            {/* One button, always "submit". A "Mark done" branch used to sit
+                opposite this for milestones whose template did not require
+                review; a mentee marking their own milestone done is the thing
+                the programme rule forbids. */}
             <BusyLabel pending={busy} busy="Saving…">
-              {milestone.requiresMentorReview ? (
-                <>
-                  <Send className="size-3" /> Submit to mentor
-                </>
-              ) : (
-                "Mark done"
-              )}
+              <Send className="size-3" /> Submit to mentor
             </BusyLabel>
           </button>
         )}

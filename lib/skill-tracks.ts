@@ -276,31 +276,17 @@ async function loadOwnedMilestone(milestoneId: string, menteeId: string) {
   return row;
 }
 
-/** A mentee checks off a self-checkable milestone (no mentor review needed). */
-export async function completeOwnMilestone(
-  milestoneId: string,
-  menteeId: string,
-): Promise<void> {
-  const row = await loadOwnedMilestone(milestoneId, menteeId);
-  if (!row || row.milestone.status !== "available") return;
-  if (row.template.requiresMentorReview) {
-    throw new Error("This milestone needs your mentor to review it first");
-  }
+// completeOwnMilestone() used to live here: a mentee checked off any milestone
+// whose template did not set requiresMentorReview, and it went straight to
+// 'done' with its growth points awarded. That is no longer how the programme
+// works — a mentee cannot mark a milestone complete, whatever its dimension —
+// so the function is gone rather than left behind guarded, because a mentee
+// path to 'done' is exactly the thing that must not exist.
+//
+// Every milestone now travels 'available' → 'submitted' → 'done', and only
+// reviewMilestone() below writes the last step.
 
-  await db
-    .update(skillMilestones)
-    .set({ status: "done", completedAt: new Date() })
-    .where(
-      and(
-        eq(skillMilestones.id, milestoneId),
-        eq(skillMilestones.status, "available"),
-      ),
-    );
-  await applyTaskComplete(menteeId, row.template.growthPoints);
-  await maybeAdvanceStage(row.track.id);
-}
-
-/** A mentee submits work on a milestone that needs mentor sign-off. */
+/** A mentee submits work on a milestone. Every milestone needs sign-off. */
 export async function submitOwnMilestone(
   milestoneId: string,
   menteeId: string,
