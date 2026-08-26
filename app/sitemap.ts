@@ -1,7 +1,13 @@
+import { and, eq, isNull } from "drizzle-orm";
 import type { MetadataRoute } from "next";
 import { db } from "@/db/db";
-import { events, marketingPages, programmes, stories } from "@/db/schema";
-import { and, eq } from "drizzle-orm";
+import {
+  events,
+  groups,
+  marketingPages,
+  programmes,
+  stories,
+} from "@/db/schema";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +25,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "/events",
     "/stories",
     "/gallery",
+    "/clubs",
     "/partners",
     "/contact",
     "/how-it-works",
@@ -29,16 +36,49 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     url: `${base}${route}`,
     lastModified: new Date(),
     changeFrequency: route === "" ? "weekly" : "monthly",
-    priority: route === "" ? 1 : route === "/programmes" || route === "/events" ? 0.8 : 0.6,
+    priority:
+      route === ""
+        ? 1
+        : route === "/programmes" || route === "/events"
+          ? 0.8
+          : 0.6,
   }));
 
   try {
-    const [programmeRows, storyRows, eventRows, customPages] = await Promise.all([
-      db.select({ slug: programmes.slug }).from(programmes).where(eq(programmes.published, true)),
-      db.select({ slug: stories.slug }).from(stories).where(eq(stories.published, true)),
-      db.select({ slug: events.slug }).from(events).where(and(eq(events.isPublic, true))),
-      db.select({ slug: marketingPages.slug }).from(marketingPages).where(eq(marketingPages.published, true)),
-    ]);
+    const [programmeRows, storyRows, eventRows, customPages, clubRows] =
+      await Promise.all([
+        db
+          .select({ slug: programmes.slug })
+          .from(programmes)
+          .where(eq(programmes.published, true)),
+        db
+          .select({ slug: stories.slug })
+          .from(stories)
+          .where(eq(stories.published, true)),
+        db
+          .select({ slug: events.slug })
+          .from(events)
+          .where(and(eq(events.isPublic, true))),
+        db
+          .select({ slug: marketingPages.slug })
+          .from(marketingPages)
+          .where(eq(marketingPages.published, true)),
+        // Hidden clubs are excluded: their pages 404, and a sitemap that
+        // advertises a 404 is a sitemap search engines learn to distrust.
+        db
+          .select({ slug: groups.slug })
+          .from(groups)
+          .where(isNull(groups.hiddenAt)),
+      ]);
+
+    const clubUrls: MetadataRoute.Sitemap = clubRows
+      .filter((r) => r.slug)
+      .map((r) => ({
+        url: `${base}/clubs/${r.slug}`,
+        lastModified: new Date(),
+        changeFrequency: "weekly",
+        priority: 0.4,
+      }));
 
     const programmeUrls: MetadataRoute.Sitemap = programmeRows
       .filter((r) => r.slug)
@@ -74,7 +114,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.5,
     }));
 
-    return [...staticRoutes, ...programmeUrls, ...storyUrls, ...eventUrls, ...customUrls];
+    return [
+      ...staticRoutes,
+      ...programmeUrls,
+      ...storyUrls,
+      ...eventUrls,
+      ...clubUrls,
+      ...customUrls,
+    ];
   } catch {
     return staticRoutes;
   }

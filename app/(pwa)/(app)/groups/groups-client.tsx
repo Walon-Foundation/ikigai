@@ -16,6 +16,15 @@ export function CreateGroupForm() {
       const res = await createGroup({
         name: String(formData.get("name") ?? ""),
         description: String(formData.get("description") ?? ""),
+        // Comma-separated in one field rather than a tag picker: the club's
+        // subject is whatever the mentee says it is, in the same open
+        // vocabulary their own interests use — that shared vocabulary is what
+        // lets clubs be recommended to people at all.
+        interestTags: String(formData.get("interestTags") ?? "")
+          .split(",")
+          .map((t) => t.trim())
+          .filter(Boolean),
+        stage: String(formData.get("stage") ?? ""),
       });
       setOpen(false);
       router.push(`/groups/${res.groupId}`);
@@ -50,6 +59,32 @@ export function CreateGroupForm() {
         placeholder="What's it about? (optional)"
         className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm outline-none focus:border-primary"
       />
+      <input
+        name="interestTags"
+        placeholder="Topics, separated by commas — e.g. coding, robotics"
+        className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm outline-none focus:border-primary"
+      />
+      <label
+        htmlFor="club-stage"
+        className="block text-xs font-semibold text-muted-foreground"
+      >
+        Which stage is this club best for?
+      </label>
+      <select
+        id="club-stage"
+        name="stage"
+        defaultValue=""
+        className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm outline-none focus:border-primary"
+      >
+        <option value="">Any stage</option>
+        <option value="discover">Discover</option>
+        <option value="thrive">Thrive</option>
+        <option value="build">Build</option>
+        <option value="lead">Lead</option>
+      </select>
+      <p className="text-xs text-muted-foreground">
+        Your club appears on the ikigai website as soon as you create it.
+      </p>
       <div className="flex gap-2">
         <button
           type="submit"

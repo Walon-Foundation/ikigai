@@ -24,6 +24,7 @@ const WHAT_WE_DO = [
   { href: "/what-we-do", label: "Overview" },
   { href: "/programmes", label: "Programmes" },
   { href: "/gallery", label: "Gallery" },
+  { href: "/clubs", label: "Clubs" },
   { href: "/partners", label: "Partners" },
 ];
 
@@ -35,6 +36,7 @@ const ALL_LINKS = [
   { href: "/events", label: "Events" },
   { href: "/stories", label: "Stories" },
   { href: "/gallery", label: "Gallery" },
+  { href: "/clubs", label: "Clubs" },
   { href: "/partners", label: "Partners" },
   { href: "/contact", label: "Contact" },
 ];
