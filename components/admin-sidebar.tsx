@@ -32,6 +32,7 @@ const NAV_ITEMS = [
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/mentors", label: "Mentors", icon: UserCheck },
   { href: "/admin/mentees", label: "Mentees", icon: UserPlus },
+  { href: "/admin/clubs", label: "Clubs", icon: Users2 },
   { href: "/admin/guardians", label: "Guardians", icon: Users2 },
   { href: "/admin/safeguarding", label: "Safeguarding", icon: ShieldAlert },
   { href: "/admin/events", label: "Events", icon: CalendarDays },
