@@ -112,7 +112,8 @@ export const users = pgTable(
     createdAt: timestamp("created_at").defaultNow(),
   },
   (t) => [
-    // The mentor marketplace filters on exactly this pair.
+    // The mentor marketplace filters on exactly this pair — and so does the
+    // mentee approval queue, which reuses these same decision columns.
     index("users_role_verified_idx").on(t.role, t.verifiedAt),
     // Guardian links resolve a child by email.
     index("users_email_idx").on(t.email),

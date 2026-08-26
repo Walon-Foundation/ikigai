@@ -17,6 +17,7 @@ import {
   ShieldAlert,
   Sprout,
   UserCheck,
+  UserPlus,
   Users,
   Users2,
 } from "lucide-react";
@@ -30,6 +31,7 @@ const NAV_ITEMS = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/mentors", label: "Mentors", icon: UserCheck },
+  { href: "/admin/mentees", label: "Mentees", icon: UserPlus },
   { href: "/admin/guardians", label: "Guardians", icon: Users2 },
   { href: "/admin/safeguarding", label: "Safeguarding", icon: ShieldAlert },
   { href: "/admin/events", label: "Events", icon: CalendarDays },
