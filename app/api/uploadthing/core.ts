@@ -2,8 +2,15 @@ import { auth } from "@clerk/nextjs/server";
 import { and, eq } from "drizzle-orm";
 import { createUploadthing, type FileRouter } from "uploadthing/next";
 import { UploadThingError, UTApi } from "uploadthing/server";
+import { z } from "zod";
 import { db } from "@/db/db";
-import { mentorDocuments, users } from "@/db/schema";
+import {
+  mentorDocuments,
+  mentorships,
+  taskSubmissions,
+  tasks,
+  users,
+} from "@/db/schema";
 import { DOCUMENT_LIMITS } from "@/lib/uploads";
 
 const f = createUploadthing();
@@ -118,6 +125,120 @@ type FileSizeLiteral = "8MB";
 const GOVERNMENT_ID_MAX = DOCUMENT_LIMITS.governmentId
   .maxFileSize as FileSizeLiteral;
 const MENTOR_CV_MAX = DOCUMENT_LIMITS.mentorCv.maxFileSize as FileSizeLiteral;
+const TASK_PHOTO_MAX = DOCUMENT_LIMITS.taskEvidencePhoto
+  .maxFileSize as FileSizeLiteral;
+const TASK_PDF_MAX = DOCUMENT_LIMITS.taskEvidencePdf
+  .maxFileSize as FileSizeLiteral;
+
+/**
+ * Authenticate a mentee and confirm they own an unresolved task.
+ *
+ * Takes the task id as UploadThing input rather than trusting the client to
+ * say who it is uploading for: without this join, any signed-in mentee could
+ * attach a file to any task on the platform, including another mentee's.
+ */
+async function requireOwnOpenTask(taskId: string) {
+  const { userId } = await auth();
+  if (!userId) throw new UploadThingError("Unauthorized");
+
+  const [me] = await db
+    .select({ id: users.id, role: users.role })
+    .from(users)
+    .where(eq(users.clerkId, userId))
+    .limit(1);
+  if (!me) throw new UploadThingError("Unauthorized");
+  if (me.role !== "mentee") throw new UploadThingError("Forbidden");
+
+  const [task] = await db
+    .select({ id: tasks.id, status: tasks.status })
+    .from(tasks)
+    .innerJoin(
+      mentorships,
+      and(
+        eq(tasks.mentorshipId, mentorships.id),
+        eq(mentorships.menteeId, me.id),
+      ),
+    )
+    .where(eq(tasks.id, taskId))
+    .limit(1);
+  if (!task) throw new UploadThingError("Forbidden");
+  // A completed or failed task is decided; new evidence cannot be filed
+  // against it, and letting one in would let a mentee overwrite the record
+  // their mentor already ruled on.
+  if (task.status === "completed" || task.status === "failed") {
+    throw new UploadThingError("This task is already resolved");
+  }
+
+  return { menteeId: me.id, taskId: task.id };
+}
+
+/**
+ * Store a piece of task evidence against its submission, privately.
+ *
+ * Same private-ACL discipline as the vetting documents above, and for a
+ * stronger reason: this is a photograph taken by a child, and a permanent
+ * public URL for it is not something this platform should ever mint. If the
+ * ACL flip fails the file is deleted rather than left readable.
+ */
+async function storeEvidence(
+  meta: { menteeId: string; taskId: string },
+  column: "photo" | "pdf",
+  file: { key: string; name: string },
+) {
+  try {
+    await utapi.updateACL(file.key, "private");
+  } catch (err) {
+    await utapi.deleteFiles(file.key).catch(() => {});
+    console.error("uploadthing: could not make evidence private", err);
+    throw new UploadThingError("Upload failed");
+  }
+
+  const [existing] = await db
+    .select()
+    .from(taskSubmissions)
+    .where(eq(taskSubmissions.taskId, meta.taskId))
+    .limit(1);
+
+  const fields =
+    column === "photo"
+      ? { photoFileKey: file.key, photoFileName: file.name }
+      : { pdfFileKey: file.key, pdfFileName: file.name };
+
+  await db
+    .insert(taskSubmissions)
+    .values({
+      taskId: meta.taskId,
+      menteeId: meta.menteeId,
+      // An upload can be the first thing that happens on a task, before the
+      // mentee has explicitly chosen a route. The file itself names the route.
+      kind: existing?.kind ?? (column === "pdf" ? "pdf" : "test_and_photo"),
+      ...fields,
+    })
+    .onConflictDoUpdate({
+      target: taskSubmissions.taskId,
+      set: { ...fields, submittedAt: new Date() },
+    });
+
+  // Replacing a file removes the one it replaced, rather than orphaning a
+  // private object nothing points at.
+  const stale =
+    column === "photo" ? existing?.photoFileKey : existing?.pdfFileKey;
+  if (stale && stale !== file.key) {
+    await utapi.deleteFiles(stale).catch(() => {});
+  }
+
+  // Uploading new evidence pulls the task back out of review, matching
+  // reopenIfSubmitted() in dashboard/task-actions.ts — a mentor must never be
+  // reviewing a submission that is still being changed underneath them.
+  await db
+    .update(tasks)
+    .set({ status: "assigned", submittedAt: null })
+    .where(and(eq(tasks.id, meta.taskId), eq(tasks.status, "submitted")));
+
+  return { uploaded: true as const, fileName: file.name };
+}
+
+const taskInput = z.object({ taskId: z.uuid() });
 
 export const ourFileRouter = {
   avatar: f({
@@ -157,6 +278,28 @@ export const ourFileRouter = {
     .middleware(async () => requireMentorUpload())
     .onUploadComplete(async ({ metadata, file }) =>
       storeDocument(metadata.userId, "cv", file),
+    ),
+
+  // Pictorial evidence: the photo half of the test-and-photo route.
+  taskEvidencePhoto: f({
+    image: { maxFileSize: TASK_PHOTO_MAX, maxFileCount: 1 },
+  })
+    .input(taskInput)
+    .middleware(async ({ input }) => requireOwnOpenTask(input.taskId))
+    .onUploadComplete(async ({ metadata, file }) =>
+      storeEvidence(metadata, "photo", file),
+    ),
+
+  // The PDF route: the whole assignment, submitted as a document. PDF only,
+  // by the same deliberate omission of `image` as the mentor CV endpoint —
+  // "submit the assignment through a PDF" is not satisfied by a photograph.
+  taskEvidencePdf: f({
+    pdf: { maxFileSize: TASK_PDF_MAX, maxFileCount: 1 },
+  })
+    .input(taskInput)
+    .middleware(async ({ input }) => requireOwnOpenTask(input.taskId))
+    .onUploadComplete(async ({ metadata, file }) =>
+      storeEvidence(metadata, "pdf", file),
     ),
 
   // Photos for the public website, uploaded from /admin/cms.

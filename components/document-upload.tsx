@@ -29,6 +29,7 @@ export function DocumentUpload({
   initialFileName,
   required = false,
   onUploaded,
+  uploadInput,
 }: {
   endpoint: DocumentEndpoint;
   label: string;
@@ -39,6 +40,12 @@ export function DocumentUpload({
   required?: boolean;
   /** Fires with the stored file name, so a form can gate on it. */
   onUploaded?: (fileName: string) => void;
+  /**
+   * Route input, for endpoints that need to know what the file is FOR — the
+   * task evidence routes take `{ taskId }` and authorize against it. The
+   * server re-checks ownership; this only says which task is meant.
+   */
+  uploadInput?: Record<string, unknown>;
 }) {
   const [fileName, setFileName] = useState<string | null>(
     initialFileName ?? null,
@@ -70,7 +77,10 @@ export function DocumentUpload({
       return;
     }
 
-    const result = await startUpload([file]);
+    // `as never` because startUpload's input parameter is typed per endpoint
+    // and this component is generic over all four. The value is validated by
+    // the route's own schema on arrival, which is where it matters.
+    const result = await startUpload([file], uploadInput as never);
     // A failed upload has already toasted through onUploadError; leaving the
     // previous file name in place is correct, since that file is still stored.
     if (!result) return;

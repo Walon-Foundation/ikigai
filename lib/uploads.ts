@@ -7,7 +7,11 @@
 // as a sentence the applicant can act on rather than a failed request. Change a
 // number here and all three move together.
 
-export type DocumentEndpoint = "governmentId" | "mentorCv";
+export type DocumentEndpoint =
+  | "governmentId"
+  | "mentorCv"
+  | "taskEvidencePhoto"
+  | "taskEvidencePdf";
 
 export type DocumentLimit = {
   /** Matches UploadThing's own unit: 1MB is 1024 * 1024 bytes. */
@@ -56,6 +60,32 @@ export const DOCUMENT_LIMITS: Record<DocumentEndpoint, DocumentLimit> = {
     formatLabel: "a PDF",
     formatAdvice:
       "Open your CV and use Save as PDF or Export as PDF, then upload that file.",
+  },
+  // Task evidence: a photo of the work done. Images only — a PDF here would
+  // be the other route, and accepting both would let a mentee satisfy the
+  // photo half of test-and-photo with the same file they would have submitted
+  // as a PDF instead.
+  taskEvidencePhoto: {
+    maxBytes: 8 * MB,
+    maxFileSize: "8MB",
+    accept: "image/*",
+    mimeTypes: ["image/*"],
+    extensions: [".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif"],
+    formatLabel: "a photo",
+    formatAdvice: "Take a picture of your work, then upload that.",
+  },
+  // Task evidence: the whole assignment as a document. Same 10MB ceiling as a
+  // CV, and PDF-only for the same reason — the mentor has to be able to read
+  // it, on whatever machine they own.
+  taskEvidencePdf: {
+    maxBytes: 10 * MB,
+    maxFileSize: "10MB",
+    accept: "application/pdf",
+    mimeTypes: ["application/pdf"],
+    extensions: [".pdf"],
+    formatLabel: "a PDF",
+    formatAdvice:
+      "Open your assignment and use Save as PDF or Export as PDF, then upload that file.",
   },
 };
 
