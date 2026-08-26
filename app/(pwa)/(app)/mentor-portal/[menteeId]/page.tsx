@@ -1,7 +1,8 @@
-import { and, asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { ChevronLeft, MessageCircle } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { UTApi } from "uploadthing/server";
 import { Avatar } from "@/components/avatar";
 import { Curriculum, type CurriculumItem } from "@/components/curriculum";
 import { MenteeProfileCard } from "@/components/mentee-profile-card";
@@ -15,15 +16,22 @@ import {
   milestoneTemplates,
   skillMilestones,
   skillTracks,
+  taskSubmissions,
   tasks,
   users,
 } from "@/db/schema";
 import { getDbUser } from "@/lib/db-user";
 import { stageName } from "@/lib/growth";
-import { getSharedJournals } from "./shared-journals";
+import { getStageReadiness } from "@/lib/mentorship";
+
+/** Evidence links live just long enough for the mentor to open them. */
+const EVIDENCE_LINK_TTL_SECONDS = 15 * 60;
+
 import { FeedbackForm } from "./feedback-client";
 import { MenteeTasks, type TaskItem } from "./mentee-tasks";
+import { getSharedJournals } from "./shared-journals";
 import { SkillReview } from "./skill-review";
+import { StagePromotion } from "./stage-promotion";
 
 export default async function MenteeDetailPage({
   params,
@@ -153,6 +161,57 @@ export default async function MenteeDetailPage({
     };
   });
 
+  // Evidence for the tasks on this page, plus a short-lived signed link for
+  // each file. The files are stored privately and have no URL of their own; the
+  // link is minted per view and expires, so nothing durable ever points at a
+  // photograph a young person took. The mentor's own browser fetches it — the
+  // bytes never pass through this backend.
+  const taskIds = taskRows.map((row) => row.tasks.id);
+  const submissionRows =
+    taskIds.length > 0
+      ? await db
+          .select()
+          .from(taskSubmissions)
+          .where(inArray(taskSubmissions.taskId, taskIds))
+      : [];
+
+  const utapi = new UTApi();
+  async function signedLink(key: string | null): Promise<string | null> {
+    if (!key) return null;
+    try {
+      const { ufsUrl } = await utapi.generateSignedURL(key, {
+        expiresIn: EVIDENCE_LINK_TTL_SECONDS,
+      });
+      return ufsUrl;
+    } catch {
+      // A file we cannot produce a link for reads as unavailable, not as
+      // absent — the mentor must not mistake a broken link for missing work.
+      return null;
+    }
+  }
+
+  const submissionsByTask = new Map(
+    await Promise.all(
+      submissionRows.map(
+        async (row) =>
+          [
+            row.taskId,
+            {
+              kind: row.kind,
+              testScore: row.testScore,
+              testTotal: row.testTotal,
+              testPassed: !!row.testPassedAt,
+              photoFileName: row.photoFileName,
+              photoUrl: await signedLink(row.photoFileKey),
+              pdfFileName: row.pdfFileName,
+              pdfUrl: await signedLink(row.pdfFileKey),
+              note: row.note,
+            },
+          ] as const,
+      ),
+    ),
+  );
+
   const taskItems: TaskItem[] = taskRows.map((row) => {
     const t = row.tasks;
     return {
@@ -160,10 +219,15 @@ export default async function MenteeDetailPage({
       title: t.title,
       description: t.description,
       status: t.status,
+      stage: t.stage,
+      requiresEvidence: t.requiresEvidence,
       growthPoints: t.growthPoints,
       createdAt: t.createdAt?.toISOString() ?? null,
+      submission: submissionsByTask.get(t.id) ?? null,
     };
   });
+
+  const readiness = await getStageReadiness(menteeId);
 
   const health = tree?.health ?? 100;
   const stage = tree?.stage ?? 1;
@@ -244,6 +308,13 @@ export default async function MenteeDetailPage({
           mentorshipId={mentorship.id}
           initialItems={curriculum}
           canEdit
+        />
+
+        {/* Stage promotion — mentor-only, and gated on the pacing floor. */}
+        <StagePromotion
+          mentorshipId={mentorship.id}
+          menteeName={mentee.displayName ?? "your mentee"}
+          readiness={readiness}
         />
 
         <MenteeTasks mentorshipId={mentorship.id} initialTasks={taskItems} />

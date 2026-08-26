@@ -1,24 +1,62 @@
 "use client";
 
-import { Check, Plus, Sprout, X } from "lucide-react";
+import {
+  Check,
+  ExternalLink,
+  FileText,
+  ImageIcon,
+  Plus,
+  Sprout,
+  Trash2,
+  X,
+} from "lucide-react";
 import { useState, useTransition } from "react";
 import { BusyLabel } from "@/components/spinner";
+import { useToast } from "@/components/toast";
 import { cn } from "@/lib/utils";
 import { assignTask, completeTask, failTask } from "../actions";
+
+export type TaskSubmissionView = {
+  kind: string;
+  testScore: number | null;
+  testTotal: number | null;
+  testPassed: boolean;
+  photoFileName: string | null;
+  photoUrl: string | null;
+  pdfFileName: string | null;
+  pdfUrl: string | null;
+  note: string | null;
+};
 
 export type TaskItem = {
   id: string;
   title: string;
   description: string | null;
   status: string;
+  stage: string | null;
+  requiresEvidence: boolean;
   growthPoints: number;
   createdAt: string | null;
+  submission: TaskSubmissionView | null;
 };
 
 const STATUS_STYLES: Record<string, string> = {
   assigned: "bg-accent-pale text-earth-ink",
+  submitted: "bg-accent/20 text-earth-ink",
   completed: "bg-primary-muted/30 text-primary",
   failed: "bg-destructive/10 text-destructive",
+};
+
+type DraftQuestion = {
+  prompt: string;
+  options: string[];
+  correctIndex: number;
+};
+
+const BLANK_QUESTION: DraftQuestion = {
+  prompt: "",
+  options: ["", ""],
+  correctIndex: 0,
 };
 
 export function MenteeTasks({
@@ -31,6 +69,8 @@ export function MenteeTasks({
   const [showForm, setShowForm] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [stage, setStage] = useState("");
+  const [questions, setQuestions] = useState<DraftQuestion[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -39,14 +79,28 @@ export function MenteeTasks({
     setError(null);
     startTransition(async () => {
       try {
-        await assignTask({ mentorshipId, title, description });
+        await assignTask({
+          mentorshipId,
+          title,
+          description,
+          stage,
+          questions: questions.filter((q) => q.prompt.trim()),
+        });
         setTitle("");
         setDescription("");
+        setStage("");
+        setQuestions([]);
         setShowForm(false);
       } catch {
         setError("Could not assign the task. Try again.");
       }
     });
+  }
+
+  function patchQuestion(index: number, patch: Partial<DraftQuestion>) {
+    setQuestions((qs) =>
+      qs.map((q, i) => (i === index ? { ...q, ...patch } : q)),
+    );
   }
 
   return (
@@ -79,6 +133,136 @@ export function MenteeTasks({
             rows={3}
             className="w-full resize-none rounded-lg border border-border bg-card px-3 py-2 text-sm outline-none focus:border-primary"
           />
+
+          <label
+            htmlFor="task-stage"
+            className="block text-xs font-semibold text-muted-foreground"
+          >
+            Which stage does this count towards?
+          </label>
+          <select
+            id="task-stage"
+            value={stage}
+            onChange={(e) => setStage(e.target.value)}
+            className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm outline-none focus:border-primary"
+          >
+            <option value="">
+              No stage — doesn&apos;t count towards promotion
+            </option>
+            <option value="discover">Discover</option>
+            <option value="thrive">Thrive</option>
+            <option value="build">Build</option>
+            <option value="lead">Lead</option>
+          </select>
+
+          {/* The test is the mentor's, written per task — that is what "total
+              control of the curriculum" means here. It is optional: without it
+              the mentee simply submits a PDF instead. */}
+          <div className="rounded-lg border border-border bg-card p-3">
+            <p className="text-xs font-semibold text-foreground">
+              Test questions (optional)
+            </p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              If you add questions, your mentee can pass the test and send a
+              photo instead of writing up a PDF. They need 70% to pass.
+            </p>
+
+            <div className="mt-3 space-y-3">
+              {questions.map((question, index) => (
+                <div
+                  // Index-keyed on purpose: these rows have no id until they are
+                  // saved, and their text is what the mentor is editing.
+                  // biome-ignore lint/suspicious/noArrayIndexKey: draft rows have no stable id
+                  key={index}
+                  className="rounded-lg border border-border p-2.5"
+                >
+                  <div className="flex items-start gap-2">
+                    <input
+                      value={question.prompt}
+                      onChange={(e) =>
+                        patchQuestion(index, { prompt: e.target.value })
+                      }
+                      placeholder={`Question ${index + 1}`}
+                      className="min-w-0 flex-1 rounded-lg border border-border bg-background px-2.5 py-1.5 text-sm outline-none focus:border-primary"
+                    />
+                    <button
+                      type="button"
+                      aria-label={`Remove question ${index + 1}`}
+                      onClick={() =>
+                        setQuestions((qs) => qs.filter((_, i) => i !== index))
+                      }
+                      className="shrink-0 rounded-lg p-1.5 text-muted-foreground hover:text-destructive"
+                    >
+                      <Trash2 className="size-3.5" />
+                    </button>
+                  </div>
+
+                  <div className="mt-2 space-y-1.5">
+                    {question.options.map((option, optionIndex) => (
+                      <div
+                        // biome-ignore lint/suspicious/noArrayIndexKey: draft options have no stable id
+                        key={optionIndex}
+                        className="flex items-center gap-2"
+                      >
+                        <input
+                          type="radio"
+                          name={`correct-${index}`}
+                          checked={question.correctIndex === optionIndex}
+                          onChange={() =>
+                            patchQuestion(index, { correctIndex: optionIndex })
+                          }
+                          aria-label={`Mark option ${optionIndex + 1} correct`}
+                          className="size-3.5 shrink-0 accent-primary"
+                        />
+                        <input
+                          value={option}
+                          onChange={(e) =>
+                            patchQuestion(index, {
+                              options: question.options.map((o, i) =>
+                                i === optionIndex ? e.target.value : o,
+                              ),
+                            })
+                          }
+                          placeholder={`Answer ${optionIndex + 1}`}
+                          className="min-w-0 flex-1 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs outline-none focus:border-primary"
+                        />
+                      </div>
+                    ))}
+                    {question.options.length < 6 && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          patchQuestion(index, {
+                            options: [...question.options, ""],
+                          })
+                        }
+                        className="text-xs font-semibold text-primary"
+                      >
+                        + Another answer
+                      </button>
+                    )}
+                  </div>
+                  <p className="mt-1.5 text-[11px] text-muted-foreground">
+                    Select the radio next to the correct answer.
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              onClick={() =>
+                setQuestions((qs) => [
+                  ...qs,
+                  { ...BLANK_QUESTION, options: ["", ""] },
+                ])
+              }
+              className="mt-2 flex items-center gap-1 text-xs font-semibold text-primary"
+            >
+              <Plus className="size-3.5" /> Add a question
+            </button>
+          </div>
+
           {error && <p className="text-xs text-destructive">{error}</p>}
           <div className="flex justify-end gap-2">
             <button
@@ -122,23 +306,39 @@ export function MenteeTasks({
 }
 
 function TaskRow({ task }: { task: TaskItem }) {
+  const toast = useToast();
   const [isPending, startTransition] = useTransition();
   // Complete and Mark failed act on the same task — track which one was
   // clicked so only that button spins instead of both.
   const [busyAction, setBusyAction] = useState<"complete" | "fail" | null>(
     null,
   );
-  const isOpen = task.status === "assigned";
+  const isOpen = task.status === "assigned" || task.status === "submitted";
 
   function run(action: "complete" | "fail") {
     setBusyAction(action);
     startTransition(async () => {
       try {
         if (action === "complete") {
-          await completeTask(task.id);
+          const result = await completeTask(task.id);
+          // The server refuses to complete a task with no evidence. Saying so
+          // is the whole point — a silently ignored click would read as a bug.
+          if (!result.ok) {
+            toast({
+              variant: "error",
+              title: "No evidence yet",
+              description: result.reason ?? "This task can't be completed yet.",
+            });
+          }
         } else {
           await failTask(task.id);
         }
+      } catch {
+        toast({
+          variant: "error",
+          title: "Couldn't save that",
+          description: "Check you're online and try again.",
+        });
       } finally {
         setBusyAction(null);
       }
@@ -156,15 +356,24 @@ function TaskRow({ task }: { task: TaskItem }) {
             </p>
           )}
         </div>
-        <span
-          className={cn(
-            "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase",
-            STATUS_STYLES[task.status] ?? "bg-muted text-muted-foreground",
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          <span
+            className={cn(
+              "rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase",
+              STATUS_STYLES[task.status] ?? "bg-muted text-muted-foreground",
+            )}
+          >
+            {task.status}
+          </span>
+          {task.stage && (
+            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold capitalize text-primary">
+              {task.stage}
+            </span>
           )}
-        >
-          {task.status}
-        </span>
+        </div>
       </div>
+
+      <Evidence task={task} />
 
       {isOpen && (
         <div className="mt-3 flex gap-2">
@@ -193,5 +402,112 @@ function TaskRow({ task }: { task: TaskItem }) {
         </div>
       )}
     </div>
+  );
+}
+
+/**
+ * What the mentee filed, and links to open it.
+ *
+ * Every link here is a short-lived signed URL minted on the server for this
+ * render. There is no permanent URL for any of these files — they are stored
+ * privately precisely because one of them is a photograph taken by a child.
+ */
+function Evidence({ task }: { task: TaskItem }) {
+  if (!task.requiresEvidence) {
+    return (
+      <p className="mt-2 text-xs text-muted-foreground">
+        No evidence required on this task.
+      </p>
+    );
+  }
+
+  const submission = task.submission;
+  if (!submission) {
+    return (
+      <p className="mt-2 text-xs text-muted-foreground">
+        Nothing submitted yet.
+      </p>
+    );
+  }
+
+  return (
+    <div className="mt-3 rounded-lg border border-border bg-background p-3">
+      <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+        {submission.kind === "pdf" ? "PDF assignment" : "Test + photo"}
+      </p>
+
+      {submission.kind === "test_and_photo" && (
+        <p
+          className={cn(
+            "mt-1.5 text-xs font-semibold",
+            submission.testPassed ? "text-primary" : "text-muted-foreground",
+          )}
+        >
+          {submission.testTotal
+            ? `Test: ${submission.testScore}/${submission.testTotal} — ${
+                submission.testPassed ? "passed" : "not passed"
+              }`
+            : "Test not taken yet"}
+        </p>
+      )}
+
+      <div className="mt-2 space-y-1.5">
+        <EvidenceLink
+          icon={ImageIcon}
+          label={submission.photoFileName}
+          url={submission.photoUrl}
+          hidden={submission.kind !== "test_and_photo"}
+        />
+        <EvidenceLink
+          icon={FileText}
+          label={submission.pdfFileName}
+          url={submission.pdfUrl}
+          hidden={submission.kind !== "pdf"}
+        />
+      </div>
+
+      {submission.note && (
+        <p className="mt-2 rounded-lg bg-card px-2.5 py-1.5 text-xs text-muted-foreground">
+          {submission.note}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function EvidenceLink({
+  icon: Icon,
+  label,
+  url,
+  hidden,
+}: {
+  icon: React.ElementType;
+  label: string | null;
+  url: string | null;
+  hidden: boolean;
+}) {
+  if (hidden) return null;
+  if (!label) {
+    return <p className="text-xs text-muted-foreground">Not uploaded yet.</p>;
+  }
+  if (!url) {
+    // Distinguished from "not uploaded": the file exists, the link failed.
+    return (
+      <p className="text-xs font-semibold text-destructive">
+        {label} — couldn&apos;t open this file, reload the page.
+      </p>
+    );
+  }
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noreferrer"
+      className="flex items-center gap-1.5 text-xs font-semibold text-primary"
+    >
+      <Icon className="size-3.5 shrink-0" />
+      <span className="truncate">{label}</span>
+      <ExternalLink className="size-3 shrink-0" />
+    </a>
   );
 }
