@@ -65,6 +65,7 @@ const PWA_PATHS = [
   "/settings",
   "/sign-in",
   "/sign-up",
+  "/tasks",
 ];
 
 const isPwaPath = (pathname: string) =>

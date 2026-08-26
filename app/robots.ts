@@ -25,6 +25,8 @@ export default function robots(): MetadataRoute.Robots {
           "/mentorship",
           "/mentorship/*",
           "/settings",
+          "/tasks",
+          "/tasks/*",
           "/api/*",
         ],
       },
