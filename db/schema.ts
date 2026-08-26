@@ -27,6 +27,17 @@ export const roleEnum = pgEnum("role", [
   "admin",
 ]);
 
+// The four programme stages a mentee moves through. Declared up here rather
+// than beside the skill tables because `users.currentStage` needs it: a const
+// is in its temporal dead zone until evaluated, so a pgEnum used by an earlier
+// pgTable has to be defined before it.
+export const skillStageEnum = pgEnum("skill_stage", [
+  "discover",
+  "thrive",
+  "build",
+  "lead",
+]);
+
 export const users = pgTable(
   "users",
   {
@@ -40,6 +51,18 @@ export const users = pgTable(
     interestTags: text("interest_tags").array(),
     schoolId: uuid("school_id").references(() => schools.id),
     growthLevel: integer("growth_level").default(1), // 1=Explorer, 2=Advocate, 3=Mentor
+    // The mentee's programme stage: DISCOVER → THRIVE → BUILD → LEAD.
+    //
+    // Distinct from skillTracks.currentStage, which is per-skill — a mentee
+    // tracking three interests has three of those, at three different stages.
+    // This is the single stage the mentee IS at, and it is what club
+    // recommendations and the mentor's promote button read. Only a mentor
+    // moves it (see lib/mentorship.ts promoteMenteeStage); nothing the mentee
+    // does advances it on its own.
+    currentStage: skillStageEnum("current_stage").notNull().default("discover"),
+    // When the mentee entered currentStage. The pacing floor is measured from
+    // here, so it resets on every promotion rather than running from signup.
+    stageStartedAt: timestamp("stage_started_at").defaultNow(),
     // What a new journal entry defaults to: 'private' | 'mentor_only'.
     // The settings toggle for this has always existed but had nothing behind it
     // — it was React state that reset on reload, and it defaulted to ON while
@@ -200,13 +223,6 @@ export const growthTrees = pgTable("growth_trees", {
   updatedAt: timestamp("updated_at").defaultNow(),
   createdAt: timestamp("created_at").defaultNow(),
 });
-
-export const skillStageEnum = pgEnum("skill_stage", [
-  "discover",
-  "thrive",
-  "build",
-  "lead",
-]);
 
 // A category of skill (Advocacy, Software Engineering, Fashion & Tailoring,
 // ...) with the milestone templates that define its automatic DISCOVER→
