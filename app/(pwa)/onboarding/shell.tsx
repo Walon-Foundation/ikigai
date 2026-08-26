@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { ToastProvider } from "@/components/toast";
 
 const STEP_MAP: Record<string, { current: number; total: number }> = {
   "/onboarding/mentee/assessment": { current: 1, total: 4 },
@@ -17,31 +18,36 @@ export function OnboardingShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const step = STEP_MAP[pathname];
 
+  // Onboarding sits outside (app), so it does not inherit that layout's
+  // provider — and this is where a mentor uploads their vetting documents, the
+  // one place in the flow with a result worth announcing.
   return (
-    <div className="min-h-screen bg-background">
-      <div className="sticky top-0 z-10 border-b border-border bg-background/80 backdrop-blur-sm">
-        <div className="mx-auto max-w-2xl px-6 py-4">
-          <div className="flex items-center justify-between">
-            <span className="font-display text-xl font-black text-primary">
-              Ikigai
-            </span>
-            {step && (
-              <span className="text-sm text-muted-foreground">
-                Step {step.current} of {step.total}
+    <ToastProvider>
+      <div className="min-h-screen bg-background">
+        <div className="sticky top-0 z-10 border-b border-border bg-background/80 backdrop-blur-sm">
+          <div className="mx-auto max-w-2xl px-6 py-4">
+            <div className="flex items-center justify-between">
+              <span className="font-display text-xl font-black text-primary">
+                Ikigai
               </span>
+              {step && (
+                <span className="text-sm text-muted-foreground">
+                  Step {step.current} of {step.total}
+                </span>
+              )}
+            </div>
+            {step && (
+              <div className="mt-3 h-1.5 w-full rounded-full bg-muted">
+                <div
+                  className="h-1.5 rounded-full bg-primary transition-all duration-500"
+                  style={{ width: `${(step.current / step.total) * 100}%` }}
+                />
+              </div>
             )}
           </div>
-          {step && (
-            <div className="mt-3 h-1.5 w-full rounded-full bg-muted">
-              <div
-                className="h-1.5 rounded-full bg-primary transition-all duration-500"
-                style={{ width: `${(step.current / step.total) * 100}%` }}
-              />
-            </div>
-          )}
         </div>
+        <div className="mx-auto max-w-2xl px-6 py-10">{children}</div>
       </div>
-      <div className="mx-auto max-w-2xl px-6 py-10">{children}</div>
-    </div>
+    </ToastProvider>
   );
 }

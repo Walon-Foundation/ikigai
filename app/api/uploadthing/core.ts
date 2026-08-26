@@ -4,6 +4,7 @@ import { createUploadthing, type FileRouter } from "uploadthing/next";
 import { UploadThingError, UTApi } from "uploadthing/server";
 import { db } from "@/db/db";
 import { mentorDocuments, users } from "@/db/schema";
+import { DOCUMENT_LIMITS } from "@/lib/uploads";
 
 const f = createUploadthing();
 const utapi = new UTApi();
@@ -108,6 +109,16 @@ async function storeDocument(
   return { uploaded: true as const };
 }
 
+// UploadThing types `maxFileSize` as a power-of-two literal, but its own
+// parser (fileSizeToBytes in @uploadthing/shared) accepts any number and unit,
+// and 10MB is the number this product promises the applicant. Rounding it up
+// to the nearest typeable value would leave the server accepting files the
+// screen says it will not — a cap that only the browser enforces is not a cap.
+type FileSizeLiteral = "8MB";
+const GOVERNMENT_ID_MAX = DOCUMENT_LIMITS.governmentId
+  .maxFileSize as FileSizeLiteral;
+const MENTOR_CV_MAX = DOCUMENT_LIMITS.mentorCv.maxFileSize as FileSizeLiteral;
+
 export const ourFileRouter = {
   avatar: f({
     image: { maxFileSize: "4MB", maxFileCount: 1 },
@@ -127,17 +138,21 @@ export const ourFileRouter = {
     }),
 
   governmentId: f({
-    image: { maxFileSize: "8MB", maxFileCount: 1 },
-    pdf: { maxFileSize: "8MB", maxFileCount: 1 },
+    image: { maxFileSize: GOVERNMENT_ID_MAX, maxFileCount: 1 },
+    pdf: { maxFileSize: GOVERNMENT_ID_MAX, maxFileCount: 1 },
   })
     .middleware(async () => requireMentorUpload())
     .onUploadComplete(async ({ metadata, file }) =>
       storeDocument(metadata.userId, "government_id", file),
     ),
 
+  // PDF only, by deliberate omission of `image`. This is the enforcement:
+  // the picker's `accept` attribute and the pre-flight check in
+  // components/document-upload.tsx are both conveniences a crafted request
+  // walks straight past, so an image sent to this endpoint has to be refused
+  // here or it is not refused at all.
   mentorCv: f({
-    pdf: { maxFileSize: "8MB", maxFileCount: 1 },
-    image: { maxFileSize: "8MB", maxFileCount: 1 },
+    pdf: { maxFileSize: MENTOR_CV_MAX, maxFileCount: 1 },
   })
     .middleware(async () => requireMentorUpload())
     .onUploadComplete(async ({ metadata, file }) =>

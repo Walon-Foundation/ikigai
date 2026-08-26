@@ -4,7 +4,7 @@ import { auth } from "@clerk/nextjs/server";
 import { and, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { db } from "@/db/db";
-import { guardianLinks, milestones, users } from "@/db/schema";
+import { guardianLinks, mentorDocuments, milestones, users } from "@/db/schema";
 
 // Client-supplied text reaches these actions straight off a request body, so
 // every free-text field is clamped before it is stored. The caps mirror
@@ -249,7 +249,10 @@ export async function saveMentorProfile(data: {
     // carry is unbounded client input, since the matcher reads it and the
     // marketplace renders it, so the values are clamped instead.
     .update(users)
-    .set({ bio: boundedText(data.bio, MAX_BIO), interestTags: boundedTags(data.expertise) })
+    .set({
+      bio: boundedText(data.bio, MAX_BIO),
+      interestTags: boundedTags(data.expertise),
+    })
     .where(eq(users.clerkId, userId));
   await patchOnboardingData(userId, {
     mentorProfile: {
@@ -263,19 +266,33 @@ export async function saveMentorProfile(data: {
   redirect("/onboarding/mentor/verification");
 }
 
-// The personal statement is the ONLY thing a mentor applicant actually submits
-// — document upload isn't built yet. It used to be dropped on the floor: the
-// textarea was uncontrolled and this action took no arguments, so an applicant
-// wrote their statement, hit Submit, and was redirected to a success page while
-// the text went nowhere. It reaches the admin's review screen now.
+// A mentor's application is their personal statement plus their vetting
+// documents. The statement used to be dropped on the floor — the textarea was
+// uncontrolled and this action took no arguments, so an applicant wrote it, hit
+// Submit, and was redirected to a success page while the text went nowhere. It
+// reaches the admin's review screen now.
+//
+// The CV is required, and required HERE. A server action is a public endpoint
+// reachable by anyone signed in, whatever page rendered it, so the check in
+// verification-form.tsx guards the screen and this guards the application: an
+// applicant cannot arrive in the admin's review queue with nothing to review.
 export async function submitMentorVerification(personalStatement: string) {
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthenticated");
+  const user = await getUser();
+
+  const [cv] = await db
+    .select({ id: mentorDocuments.id })
+    .from(mentorDocuments)
+    .where(
+      and(eq(mentorDocuments.userId, user.id), eq(mentorDocuments.kind, "cv")),
+    )
+    .limit(1);
+  if (!cv) throw new Error("A CV is required before submitting.");
+
   const statement =
     typeof personalStatement === "string"
       ? personalStatement.trim().slice(0, MAX_STATEMENT)
       : "";
-  await patchOnboardingData(userId, {
+  await patchOnboardingData(user.clerkId, {
     verificationSubmitted: true,
     personalStatement: statement,
   });
