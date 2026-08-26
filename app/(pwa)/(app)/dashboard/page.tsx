@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { db } from "@/db/db";
 import {
@@ -59,12 +59,20 @@ export default async function DashboardPage() {
         id: tasks.id,
         title: tasks.title,
         description: tasks.description,
+        status: tasks.status,
         mentorshipId: tasks.mentorshipId,
       })
       .from(tasks)
       .innerJoin(mentorships, eq(tasks.mentorshipId, mentorships.id))
+      // 'submitted' belongs on this list as much as 'assigned'. A task the
+      // mentee has sent for review is still open work from their side — it is
+      // waiting on someone — and dropping it here would make it look as though
+      // submitting had lost it.
       .where(
-        and(eq(mentorships.menteeId, user.id), eq(tasks.status, "assigned")),
+        and(
+          eq(mentorships.menteeId, user.id),
+          inArray(tasks.status, ["assigned", "submitted"]),
+        ),
       )
       .orderBy(desc(tasks.createdAt));
 
@@ -120,7 +128,12 @@ export default async function DashboardPage() {
     const openTasks = mentorshipRow
       ? allOpenTasks
           .filter((t) => t.mentorshipId === mentorshipRow.id)
-          .map(({ id, title, description }) => ({ id, title, description }))
+          .map(({ id, title, description, status }) => ({
+            id,
+            title,
+            description,
+            status,
+          }))
       : [];
 
     const tree = treeRows[0] ?? null;
