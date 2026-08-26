@@ -197,15 +197,91 @@ export const tasks = pgTable(
     mentorshipId: uuid("mentorship_id").references(() => mentorships.id),
     title: text("title").notNull(),
     description: text("description"),
-    status: text("status").notNull().default("assigned"), // 'assigned' | 'completed' | 'failed'
+    // 'assigned' → 'submitted' (mentee sent evidence) → 'completed' | 'failed'.
+    // Only a mentor writes 'completed' or 'failed'; see the note on
+    // requiresEvidence below and lib/mentorship.ts.
+    status: text("status").notNull().default("assigned"),
     growthPoints: integer("growth_points").notNull().default(10),
+    // Which programme stage this task counts towards. Stage promotion counts
+    // completed tasks in the mentee's current stage, so a task with no stage
+    // counts towards none of them.
+    stage: skillStageEnum("stage"),
+    // Whether the mentee must file evidence before the mentor can complete it.
+    // Default true: the programme rule is that every task is evidenced. The
+    // column exists so a mentor can waive it for something evidence does not
+    // fit — a conversation, a visit — rather than being forced to fake a PDF.
+    requiresEvidence: boolean("requires_evidence").notNull().default(true),
     dueDate: timestamp("due_date"), // display only — never auto-fails
+    submittedAt: timestamp("submitted_at"),
     completedAt: timestamp("completed_at"),
     failedAt: timestamp("failed_at"),
     createdAt: timestamp("created_at").defaultNow(),
   },
   // The dashboard reads open tasks for one mentorship: (mentorshipId, status).
   (t) => [index("tasks_mentorship_idx").on(t.mentorshipId, t.status)],
+);
+
+// A question on a task's on-platform test. Multiple choice, authored by the
+// mentor alongside the task, graded by the platform.
+//
+// `correctIndex` is why every read of this table for a mentee must select
+// columns explicitly: `SELECT *` here hands the answer key to the browser.
+// See lib/tasks.ts, which is the only place that reads it.
+export const taskQuestions = pgTable(
+  "task_questions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    taskId: uuid("task_id")
+      .notNull()
+      .references(() => tasks.id),
+    prompt: text("prompt").notNull(),
+    options: text("options").array().notNull(),
+    correctIndex: integer("correct_index").notNull(),
+    orderIndex: integer("order_index").notNull().default(0),
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (t) => [index("task_questions_task_idx").on(t.taskId, t.orderIndex)],
+);
+
+// The evidence a mentee files against a task.
+//
+// The programme accepts one of exactly two bundles, which is what `kind`
+// names:
+//   'test_and_photo' — pass the task's on-platform test AND attach a photo
+//   'pdf'            — submit the assignment as a PDF
+// Neither is a partial credit: isComplete() in lib/tasks.ts decides whether a
+// row actually satisfies its own kind, and the mentor's complete button is
+// refused until it does.
+//
+// One row per task, replaced on resubmission — the same
+// upload-replaces-previous shape as mentorDocuments. Files are stored as
+// UploadThing keys under a private ACL, so there is no URL until the reviewer
+// mints a signed one.
+export const taskSubmissions = pgTable(
+  "task_submissions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    taskId: uuid("task_id")
+      .notNull()
+      .unique()
+      .references(() => tasks.id),
+    menteeId: uuid("mentee_id")
+      .notNull()
+      .references(() => users.id),
+    kind: text("kind").notNull(), // 'test_and_photo' | 'pdf'
+    // 'test_and_photo' half.
+    testScore: integer("test_score"),
+    testTotal: integer("test_total"),
+    testPassedAt: timestamp("test_passed_at"),
+    photoFileKey: text("photo_file_key"),
+    photoFileName: text("photo_file_name"),
+    // 'pdf' half.
+    pdfFileKey: text("pdf_file_key"),
+    pdfFileName: text("pdf_file_name"),
+    note: text("note"),
+    submittedAt: timestamp("submitted_at").defaultNow(),
+  },
+  (t) => [index("task_submissions_mentee_idx").on(t.menteeId)],
 );
 
 // An ordered curriculum a mentor builds for a mentorship (a growth roadmap
