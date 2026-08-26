@@ -4,8 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Footer } from "@/components/marketing/footer";
 import { Nav } from "@/components/marketing/nav";
-import { canJoin, canVolunteer, isPast } from "@/lib/cms";
-import { getProgramme } from "@/lib/cms";
+import { canJoin, canVolunteer, getProgramme, isPast } from "@/lib/cms";
 
 // Rendered per request so an edit to a programme's copy or photos is live
 // immediately, rather than frozen into build-time HTML.
@@ -39,9 +38,15 @@ export default async function ProgrammePage({
   // Unified lifecycle: volunteering/joining blocked when past (endsAt < now)
   // or when the admin explicitly closed it via allowVolunteer. This keeps the
   // detail page and the Get Involved dropdown consistent.
-  const past = isPast(programme as { startsAt: Date | null; endsAt: Date | null });
+  const past = isPast(
+    programme as { startsAt: Date | null; endsAt: Date | null },
+  );
   const volunteerOpen = canVolunteer(
-    programme as { startsAt: Date | null; endsAt: Date | null; allowVolunteer: boolean | null },
+    programme as {
+      startsAt: Date | null;
+      endsAt: Date | null;
+      allowVolunteer: boolean | null;
+    },
   );
   const joinOpen = canJoin(
     programme as {
@@ -191,7 +196,9 @@ export default async function ProgrammePage({
           ) : (
             <div className="mt-16 rounded-2xl border border-border bg-secondary p-8 text-center">
               <p className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-                {past ? "This programme has ended" : "Volunteering is currently closed for this programme"}
+                {past
+                  ? "This programme has ended"
+                  : "Volunteering is currently closed for this programme"}
               </p>
               <p className="mt-2 text-sm text-muted-foreground">
                 {past

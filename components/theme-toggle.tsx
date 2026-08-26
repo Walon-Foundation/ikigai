@@ -41,7 +41,10 @@ export function ThemeToggle({
 
     // Keep in sync if another tab changes it.
     const onStorage = (e: StorageEvent) => {
-      if (e.key === "theme" && (e.newValue === "dark" || e.newValue === "light")) {
+      if (
+        e.key === "theme" &&
+        (e.newValue === "dark" || e.newValue === "light")
+      ) {
         setTheme(e.newValue);
       }
     };
@@ -90,7 +93,11 @@ export function ThemeToggle({
           className,
         )}
       >
-        {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
+        {theme === "dark" ? (
+          <Sun className="size-4" />
+        ) : (
+          <Moon className="size-4" />
+        )}
         {theme === "dark" ? "Light mode" : "Dark mode"}
       </button>
     );
@@ -106,7 +113,11 @@ export function ThemeToggle({
         className,
       )}
     >
-      {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
+      {theme === "dark" ? (
+        <Sun className="size-4" />
+      ) : (
+        <Moon className="size-4" />
+      )}
     </button>
   );
 }

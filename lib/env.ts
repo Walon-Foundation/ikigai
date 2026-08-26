@@ -13,34 +13,33 @@ if (typeof window !== "undefined") {
   );
 }
 
-const schema = z
-  .object({
-    DATABASE_URL: z.url(),
-    NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: z.string().min(1),
-    CLERK_SECRET_KEY: z.string().min(1),
-    // Optional: the Clerk webhook route returns 500 at runtime when unset.
-    CLERK_WEBHOOK_SECRET: z.string().optional(),
-    ADMIN_HOSTNAME: z.string().default("admin.localhost:3000"),
-    // Web Push (VAPID). The public key is exposed via NEXT_PUBLIC_VAPID_PUBLIC_KEY
-    // (see env.client.ts). When keys are unset, push send is a no-op — the in-app
-    // notification feed still works. Generate with `web-push generate-vapid-keys`.
-    VAPID_PRIVATE_KEY: z.string().optional(),
-    VAPID_SUBJECT: z.string().default("mailto:hello@findingyourikigai.org"),
-    // UploadThing (profile photos). Required for avatar uploads to work.
-    UPLOADTHING_TOKEN: z.string().optional(),
-    // Shared secret for the scheduled purge endpoint. Optional so dev and
-    // preview boot without it — the route refuses to run when it's unset
-    // rather than running unauthenticated.
-    CRON_SECRET: z.string().optional(),
-    // Email (nodemailer) — all optional so dev boots without SMTP. When unset,
-    // sendMail logs to console instead of sending — see lib/email.ts.
-    SMTP_HOST: z.string().optional(),
-    SMTP_PORT: z.coerce.number().optional(),
-    SMTP_USER: z.string().optional(),
-    SMTP_PASS: z.string().optional(),
-    SMTP_FROM: z.string().optional(),
-    SMTP_SECURE: z.coerce.boolean().optional(),
-  });
+const schema = z.object({
+  DATABASE_URL: z.url(),
+  NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: z.string().min(1),
+  CLERK_SECRET_KEY: z.string().min(1),
+  // Optional: the Clerk webhook route returns 500 at runtime when unset.
+  CLERK_WEBHOOK_SECRET: z.string().optional(),
+  ADMIN_HOSTNAME: z.string().default("admin.localhost:3000"),
+  // Web Push (VAPID). The public key is exposed via NEXT_PUBLIC_VAPID_PUBLIC_KEY
+  // (see env.client.ts). When keys are unset, push send is a no-op — the in-app
+  // notification feed still works. Generate with `web-push generate-vapid-keys`.
+  VAPID_PRIVATE_KEY: z.string().optional(),
+  VAPID_SUBJECT: z.string().default("mailto:hello@findingyourikigai.org"),
+  // UploadThing (profile photos). Required for avatar uploads to work.
+  UPLOADTHING_TOKEN: z.string().optional(),
+  // Shared secret for the scheduled purge endpoint. Optional so dev and
+  // preview boot without it — the route refuses to run when it's unset
+  // rather than running unauthenticated.
+  CRON_SECRET: z.string().optional(),
+  // Email (nodemailer) — all optional so dev boots without SMTP. When unset,
+  // sendMail logs to console instead of sending — see lib/email.ts.
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.coerce.number().optional(),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
+  SMTP_FROM: z.string().optional(),
+  SMTP_SECURE: z.coerce.boolean().optional(),
+});
 
 // Empty strings (e.g. `MONIME_SPACE_ID=` in .env) should behave like unset.
 const raw = Object.fromEntries(

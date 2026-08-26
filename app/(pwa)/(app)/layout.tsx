@@ -1,11 +1,12 @@
-import type { Metadata } from "next";
 import { auth } from "@clerk/nextjs/server";
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { AppNav } from "@/components/app-nav";
 
 export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
+
 import { AppSidebar } from "@/components/app-sidebar";
 import { LiteModeInit } from "@/components/lite-mode-init";
 import { NavProgressProvider } from "@/components/nav-progress";

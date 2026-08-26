@@ -4,8 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Footer } from "@/components/marketing/footer";
 import { Nav } from "@/components/marketing/nav";
-import { canJoin, isPast as isPastCheck } from "@/lib/cms";
-import { getPublicEvent } from "@/lib/cms";
+import { canJoin, getPublicEvent, isPast as isPastCheck } from "@/lib/cms";
 import { clientEnv } from "@/lib/env.client";
 
 // Rendered per request so making an event public or adding its report is live
@@ -34,9 +33,16 @@ export default async function EventPage({
   // Unified lifecycle — an event that has started but not yet ended is
   // still joinable ("ongoing"), so past means effectiveEnd < now, not just
   // startsAt < now. This matches lib/cms.ts and cards.tsx.
-  const isPast = isPastCheck(event as { startsAt: Date | null; endsAt: Date | null });
+  const isPast = isPastCheck(
+    event as { startsAt: Date | null; endsAt: Date | null },
+  );
   const joinOpen = canJoin(
-    event as { startsAt: Date | null; endsAt: Date | null; allowVolunteer: boolean | null; allowJoin: boolean | null },
+    event as {
+      startsAt: Date | null;
+      endsAt: Date | null;
+      allowVolunteer: boolean | null;
+      allowJoin: boolean | null;
+    },
   );
   const dateLabel = event.startsAt
     ? event.startsAt.toLocaleString("en-GB", {

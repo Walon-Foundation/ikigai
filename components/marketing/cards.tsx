@@ -107,8 +107,13 @@ export function EventCard({
       })
     : null;
   const now = Date.now();
-  const ends = (event as { endsAt?: Date | null }).endsAt?.getTime() ?? event.startsAt?.getTime() ?? 0;
-  const ongoing = event.startsAt ? event.startsAt.getTime() <= now && ends >= now : false;
+  const ends =
+    (event as { endsAt?: Date | null }).endsAt?.getTime() ??
+    event.startsAt?.getTime() ??
+    0;
+  const ongoing = event.startsAt
+    ? event.startsAt.getTime() <= now && ends >= now
+    : false;
 
   const inner = (
     <>

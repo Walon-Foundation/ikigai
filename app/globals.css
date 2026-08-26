@@ -320,14 +320,34 @@
 /* Marketing hero mesh — CSS-only, Lite Mode hidden */
 .hero-mesh {
   background:
-    radial-gradient(ellipse 80% 60% at 20% 100%, oklch(0.82 0.068 155 / 0.18) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 40% at 95% 10%, oklch(0.76 0.17 68 / 0.10) 0%, transparent 50%),
-    radial-gradient(ellipse 70% 50% at 50% -10%, oklch(0.52 0.12 35 / 0.07) 0%, transparent 60%);
+    radial-gradient(
+      ellipse 80% 60% at 20% 100%,
+      oklch(0.82 0.068 155 / 0.18) 0%,
+      transparent 60%
+    ),
+    radial-gradient(
+      ellipse 60% 40% at 95% 10%,
+      oklch(0.76 0.17 68 / 0.1) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      ellipse 70% 50% at 50% -10%,
+      oklch(0.52 0.12 35 / 0.07) 0%,
+      transparent 60%
+    );
 }
 .dark .hero-mesh {
   background:
-    radial-gradient(ellipse 80% 60% at 20% 100%, oklch(0.53 0.11 155 / 0.12) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 40% at 95% 10%, oklch(0.76 0.17 68 / 0.08) 0%, transparent 50%);
+    radial-gradient(
+      ellipse 80% 60% at 20% 100%,
+      oklch(0.53 0.11 155 / 0.12) 0%,
+      transparent 60%
+    ),
+    radial-gradient(
+      ellipse 60% 40% at 95% 10%,
+      oklch(0.76 0.17 68 / 0.08) 0%,
+      transparent 50%
+    );
 }
 
 /* Card polish — lift on hover, focus ring visible in both themes */
@@ -340,7 +360,7 @@
 .card-lift:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 24px -12px oklch(0.35 0.095 154 / 0.15);
-  border-color: oklch(0.35 0.095 154 / 0.20);
+  border-color: oklch(0.35 0.095 154 / 0.2);
 }
 .dark .card-lift:hover {
   /* `oklch(0 / 0 0 / 0.4)` — two slashes, four components — is not parseable,

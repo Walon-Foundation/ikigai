@@ -97,12 +97,14 @@ export default async function ProgrammesCmsPage() {
     {
       type: "datetime",
       name: "endsAt",
-      label: "Ends at (optional — when it finishes; volunteers blocked after this)",
+      label:
+        "Ends at (optional — when it finishes; volunteers blocked after this)",
     },
     {
       type: "checkbox",
       name: "allowVolunteer",
-      label: "Allow volunteering / joining (uncheck to close even if date is future)",
+      label:
+        "Allow volunteering / joining (uncheck to close even if date is future)",
       defaultChecked: true,
     },
   ];
@@ -113,9 +115,7 @@ export default async function ProgrammesCmsPage() {
     subtitle: [
       p.pillarId ? pillarName.get(p.pillarId) : null,
       p.summary,
-      p.startsAt
-        ? `starts ${p.startsAt.toLocaleDateString("en-GB")}`
-        : null,
+      p.startsAt ? `starts ${p.startsAt.toLocaleDateString("en-GB")}` : null,
       p.endsAt ? `ends ${p.endsAt.toLocaleDateString("en-GB")}` : null,
       p.allowVolunteer === false ? "volunteering closed" : null,
     ]

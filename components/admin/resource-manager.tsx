@@ -426,7 +426,11 @@ function FieldInput({ field, value }: { field: Field; value?: string }) {
   if (field.type === "checkbox") {
     // value === "true" → checked, "" → unchecked, undefined → use defaultChecked (for new rows)
     const checked =
-      value === "true" ? true : value === "" ? false : (field.defaultChecked ?? false);
+      value === "true"
+        ? true
+        : value === ""
+          ? false
+          : (field.defaultChecked ?? false);
     return (
       <label
         htmlFor={id}

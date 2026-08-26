@@ -18,19 +18,25 @@ function toLocalInput(date: Date | null): string {
 const FIELDS: Field[] = [
   { type: "text", name: "title", label: "Title", required: true },
   { type: "datetime", name: "startsAt", label: "Starts", required: true },
-  { type: "datetime", name: "endsAt", label: "Ends (optional — volunteering/joining blocked after this)" },
+  {
+    type: "datetime",
+    name: "endsAt",
+    label: "Ends (optional — volunteering/joining blocked after this)",
+  },
   { type: "text", name: "location", label: "Location" },
   { type: "image", name: "imageUrl", label: "Event image" },
   {
     type: "checkbox",
     name: "allowVolunteer",
-    label: "Allow volunteering (uncheck to block volunteer sign-ups even if date is future)",
+    label:
+      "Allow volunteering (uncheck to block volunteer sign-ups even if date is future)",
     defaultChecked: true,
   },
   {
     type: "checkbox",
     name: "allowJoin",
-    label: "Allow joining / registration (uncheck to close registration even if date is future)",
+    label:
+      "Allow joining / registration (uncheck to close registration even if date is future)",
     defaultChecked: true,
   },
   {
