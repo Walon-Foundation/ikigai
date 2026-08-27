@@ -1,6 +1,5 @@
 "use server";
 
-import { auth } from "@clerk/nextjs/server";
 import { and, count, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
@@ -11,8 +10,8 @@ import {
   taskQuestions,
   taskSubmissions,
   tasks,
-  users,
 } from "@/db/schema";
+import { requireApprovedMentor } from "@/lib/db-user";
 import { DEFAULT_TASK_POINTS } from "@/lib/growth";
 import { applyTaskComplete, applyTaskFail } from "@/lib/growth-tree";
 import { MENTOR_CAPACITY } from "@/lib/match";
@@ -24,18 +23,6 @@ import {
 import { notifyUser } from "@/lib/notify";
 import type { SkillStage } from "@/lib/skill-stages";
 import { isSubmissionComplete } from "@/lib/tasks";
-
-async function requireMentor() {
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthenticated");
-  const [me] = await db
-    .select({ id: users.id, role: users.role, displayName: users.displayName })
-    .from(users)
-    .where(eq(users.clerkId, userId))
-    .limit(1);
-  if (!me || me.role !== "mentor") throw new Error("Forbidden");
-  return me;
-}
 
 // Confirm the signed-in mentor owns this active mentorship and return the
 // mentee it belongs to.
@@ -60,7 +47,7 @@ async function mentorshipForMentor(mentorshipId: string, mentorId: string) {
 export async function acceptRequest(
   mentorshipId: string,
 ): Promise<{ ok: boolean; reason?: "full" | "not_found" | "already_paired" }> {
-  const me = await requireMentor();
+  const me = await requireApprovedMentor();
 
   const [request] = await db
     .select({ id: mentorships.id, menteeId: mentorships.menteeId })
@@ -160,7 +147,7 @@ export async function acceptRequest(
 }
 
 export async function declineRequest(mentorshipId: string) {
-  const me = await requireMentor();
+  const me = await requireApprovedMentor();
   const [updated] = await db
     .update(mentorships)
     .set({ status: "declined" })
@@ -219,7 +206,7 @@ export async function assignTask(input: {
   requiresEvidence?: boolean;
   questions?: NewQuestion[];
 }) {
-  const me = await requireMentor();
+  const me = await requireApprovedMentor();
   const m = await mentorshipForMentor(input.mentorshipId, me.id);
 
   // Validate untrusted client args before persisting.
@@ -330,7 +317,7 @@ async function taskForMentor(taskId: string, mentorId: string) {
 export async function completeTask(
   taskId: string,
 ): Promise<{ ok: boolean; reason?: string }> {
-  const me = await requireMentor();
+  const me = await requireApprovedMentor();
   const task = await taskForMentor(taskId, me.id);
   if (task.status === "completed" || task.status === "failed") {
     return { ok: true }; // already resolved
@@ -364,7 +351,7 @@ export async function completeTask(
 }
 
 export async function failTask(taskId: string) {
-  const me = await requireMentor();
+  const me = await requireApprovedMentor();
   const task = await taskForMentor(taskId, me.id);
   if (task.status === "completed" || task.status === "failed") return;
 
@@ -393,7 +380,7 @@ const STAGES: SkillStage[] = ["discover", "thrive", "build", "lead"];
 export async function promoteMentee(
   mentorshipId: string,
 ): Promise<{ ok: boolean; reason?: string; to?: string }> {
-  const me = await requireMentor();
+  const me = await requireApprovedMentor();
   const m = await mentorshipForMentor(mentorshipId, me.id);
   if (!m.menteeId) return { ok: false, reason: "Mentorship has no mentee." };
 
@@ -424,7 +411,7 @@ export async function promoteMentee(
 
 /** Pacing status for the mentor's screen. Read-only. */
 export async function menteeStageStatus(mentorshipId: string) {
-  const me = await requireMentor();
+  const me = await requireApprovedMentor();
   const m = await mentorshipForMentor(mentorshipId, me.id);
   if (!m.menteeId) return null;
   return getStageReadiness(m.menteeId);

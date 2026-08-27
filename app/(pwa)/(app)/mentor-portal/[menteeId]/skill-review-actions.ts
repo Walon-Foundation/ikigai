@@ -1,11 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireRole } from "@/lib/db-user";
+import { requireApprovedMentor } from "@/lib/db-user";
 import { reviewMilestone } from "@/lib/skill-tracks";
 
 export async function approveMilestone(milestoneId: string, menteeId: string) {
-  const me = await requireRole(["mentor"]);
+  const me = await requireApprovedMentor();
   if (typeof milestoneId !== "string" || !milestoneId) {
     throw new Error("Invalid milestone");
   }
@@ -18,7 +18,7 @@ export async function requestRevision(
   menteeId: string,
   feedback: string,
 ) {
-  const me = await requireRole(["mentor"]);
+  const me = await requireApprovedMentor();
   if (typeof milestoneId !== "string" || !milestoneId) {
     throw new Error("Invalid milestone");
   }
