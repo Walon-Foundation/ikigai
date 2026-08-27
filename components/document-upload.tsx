@@ -50,11 +50,18 @@ export function DocumentUpload({
   const [fileName, setFileName] = useState<string | null>(
     initialFileName ?? null,
   );
+  // Percent complete, or null when nothing is in flight. These are 10MB
+  // documents going up a phone connection: a bare spinner gives an applicant
+  // no way to tell a slow upload from a stalled one, and the ones who guess
+  // wrong close the app and lose the upload.
+  const [progress, setProgress] = useState<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const toast = useToast();
   const limit = DOCUMENT_LIMITS[endpoint];
 
   const { startUpload, isUploading } = useUploadThing(endpoint, {
+    uploadProgressGranularity: "fine",
+    onUploadProgress: setProgress,
     // The server's own rejections land here — a file that passed the check
     // above but was refused anyway, a dropped connection, storage failing.
     // UploadThing's own message is logged rather than shown: it is written for
@@ -77,16 +84,21 @@ export function DocumentUpload({
       return;
     }
 
-    // `as never` because startUpload's input parameter is typed per endpoint
-    // and this component is generic over all four. The value is validated by
-    // the route's own schema on arrival, which is where it matters.
-    const result = await startUpload([file], uploadInput as never);
-    // A failed upload has already toasted through onUploadError; leaving the
-    // previous file name in place is correct, since that file is still stored.
-    if (!result) return;
+    setProgress(0);
+    try {
+      // `as never` because startUpload's input parameter is typed per endpoint
+      // and this component is generic over all four. The value is validated by
+      // the route's own schema on arrival, which is where it matters.
+      const result = await startUpload([file], uploadInput as never);
+      // A failed upload has already toasted through onUploadError; leaving the
+      // previous file name in place is correct, since that file is still stored.
+      if (!result) return;
 
-    setFileName(file.name);
-    onUploaded?.(file.name);
+      setFileName(file.name);
+      onUploaded?.(file.name);
+    } finally {
+      setProgress(null);
+    }
   }
 
   const missing = required && !fileName;
@@ -108,7 +120,28 @@ export function DocumentUpload({
           )}
         </p>
         <p className="text-sm text-muted-foreground">{hint}</p>
-        {fileName ? (
+        {progress !== null ? (
+          <div className="mt-2">
+            <div
+              className="h-1.5 overflow-hidden rounded-full bg-border"
+              role="progressbar"
+              aria-label={`Uploading ${label}`}
+              aria-valuenow={Math.round(progress)}
+              aria-valuemin={0}
+              aria-valuemax={100}
+            >
+              <div
+                className="h-full rounded-full bg-primary transition-[width] duration-200"
+                style={{ width: `${Math.max(2, Math.round(progress))}%` }}
+              />
+            </div>
+            <p className="mt-1 text-xs font-medium text-muted-foreground">
+              {progress >= 100
+                ? "Finishing up…"
+                : `Uploading — ${Math.round(progress)}%`}
+            </p>
+          </div>
+        ) : fileName ? (
           <p className="mt-1 flex items-center gap-1 truncate text-xs font-medium text-primary">
             <Check className="size-3 shrink-0" />
             {fileName}
