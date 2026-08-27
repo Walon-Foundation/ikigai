@@ -46,11 +46,16 @@ export default async function VerifyMentorPage({
   const statement = (mentor.onboardingData as MentorOnboarding)
     ?.personalStatement;
 
-  // The stored files are private, so there is no URL to render — one is minted
-  // here, per view, and expires. generateSignedURL is local (it signs the key
-  // rather than calling UploadThing), so this costs no round-trip. The bytes
-  // still never touch this backend: the admin's own browser fetches the file
-  // from storage with the signed link.
+  // A signed link is minted here, per view, and expires. generateSignedURL is
+  // local (it signs the key rather than calling UploadThing), so this costs no
+  // round-trip. The bytes still never touch this backend: the admin's own
+  // browser fetches the file from storage with the signed link.
+  //
+  // The link expiring does not make the file unreachable. Private storage is a
+  // paid UploadThing feature and this app is on the free plan, so a document
+  // also sits at a permanent unauthenticated URL under its own 48-character
+  // key — unguessable and unlistable, but readable forever by anyone the link
+  // reaches. See makePrivate in app/api/uploadthing/core.ts.
   const rows = await db
     .select({
       kind: mentorDocuments.kind,
@@ -239,7 +244,8 @@ export default async function VerifyMentorPage({
           })}
         </div>
         <p className="mt-3 text-xs text-muted-foreground">
-          Links are private and expire after 15 minutes.
+          These links expire after 15 minutes. Don&apos;t forward them — a
+          document&apos;s own storage URL stays readable by anyone who has it.
         </p>
       </div>
 

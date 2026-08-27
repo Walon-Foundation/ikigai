@@ -1,5 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { and, eq } from "drizzle-orm";
+import { after } from "next/server";
 import { createUploadthing, type FileRouter } from "uploadthing/next";
 import { UploadThingError, UTApi } from "uploadthing/server";
 import { z } from "zod";
@@ -54,32 +55,83 @@ async function requireAdminUpload() {
   return { userId: user.id };
 }
 
+// Whether this UploadThing plan has already told us it will not store private
+// files. See makePrivate.
+let privateFilesUnsupported = false;
+
 /**
- * Store a vetting document, and make it private.
+ * A 400 is the plan saying no, and it will say no to every later file too.
+ * Anything else — a timeout, a 5xx — is transient, so the next upload retries.
+ */
+const isPlanRefusal = (err: unknown) =>
+  /\b400\b/.test(err instanceof Error ? err.message : String(err));
+
+/**
+ * Ask UploadThing to make a stored file private.
  *
- * This app's default ACL has to stay public-read because avatars are rendered
- * straight from their URLs, so a document lands public and is flipped to
- * private here, immediately after upload. If that flip fails the file is
- * deleted rather than left readable at a public URL: losing an upload is
- * recoverable — the applicant uploads it again — whereas a government ID
- * sitting permanently at a public link is not.
+ * This used to be mandatory, and it broke every mentor application. UploadThing
+ * answers `updateACL` with 400 "Private files are not allowed for free apps" on
+ * this plan, the catch below deleted the file it had just stored, and the
+ * applicant was told their upload failed — which is exactly what mentors
+ * reported for both their government ID and their CV.
  *
- * Only the key is stored. There is no working URL for a private file, so the
- * admin screen mints a short-lived signed one at view time.
+ * The attempt stays, because private is the right posture for a government ID
+ * and this starts working by itself the day the UploadThing app moves to a paid
+ * plan. What changed is the consequence of a refusal: the document survives,
+ * public, at an unguessable 48-character key. Nobody can list the bucket, but a
+ * link that leaks is readable by anyone, forever. That is weaker than this
+ * platform wants and it is the most the current plan allows.
+ */
+async function makePrivate(key: string): Promise<void> {
+  if (privateFilesUnsupported) return;
+  try {
+    await utapi.updateACL(key, "private");
+  } catch (err) {
+    if (isPlanRefusal(err)) {
+      // Latched per server instance: the call costs about 1.5 seconds, which
+      // is most of what an applicant on a slow connection spends waiting, and
+      // paying it on every upload to be told no again helps nobody.
+      privateFilesUnsupported = true;
+      console.warn(
+        "uploadthing: this plan does not allow private files, so documents stay public at their key. Upgrade the UploadThing app to re-enable private storage.",
+      );
+      return;
+    }
+    console.error("uploadthing: could not make file private", err);
+  }
+}
+
+/**
+ * Work that must happen but that nobody should wait for.
+ *
+ * Deleting the file a re-upload replaced is storage housekeeping; making the
+ * applicant's spinner spin through a second UploadThing round-trip for it is
+ * not. `after` runs it once the response is on its way, and the fallback
+ * covers a call made outside a request scope, such as from a test.
+ */
+function afterResponse(work: () => Promise<unknown>): void {
+  const run = () =>
+    work().catch((err) =>
+      console.error("uploadthing: background cleanup failed", err),
+    );
+  try {
+    after(run);
+  } catch {
+    run();
+  }
+}
+
+/**
+ * Store a vetting document.
+ *
+ * Only the key is stored. The admin screen mints a short-lived signed URL at
+ * view time, which works whether or not the file ended up private.
  */
 async function storeDocument(
   userId: string,
   kind: "government_id" | "cv",
   file: { key: string; name: string },
 ) {
-  try {
-    await utapi.updateACL(file.key, "private");
-  } catch (err) {
-    await utapi.deleteFiles(file.key).catch(() => {});
-    console.error("uploadthing: could not make document private", err);
-    throw new UploadThingError("Upload failed");
-  }
-
   // One document per kind per mentor: a re-upload replaces the previous file of
   // THIS kind rather than stacking, and the old object is removed from storage
   // instead of being orphaned there forever.
@@ -91,18 +143,16 @@ async function storeDocument(
     eq(mentorDocuments.kind, kind),
   );
 
-  const previous = await db
-    .select({ fileKey: mentorDocuments.fileKey })
-    .from(mentorDocuments)
-    .where(mine);
-  const stale = previous
-    .filter((p) => p.fileKey !== file.key)
-    .map((p) => p.fileKey);
-
-  await db
-    .delete(mentorDocuments)
-    .where(mine)
-    .catch(() => {});
+  // The ACL call and the database write are independent, so they overlap. The
+  // delete RETURNs the keys it removed, which a separate SELECT used to fetch —
+  // Neon's HTTP driver costs a network round-trip per statement, and this one
+  // runs while the applicant watches a spinner.
+  const [replaced] = await Promise.all([
+    db.delete(mentorDocuments).where(mine).returning({
+      fileKey: mentorDocuments.fileKey,
+    }),
+    makePrivate(file.key),
+  ]);
 
   await db.insert(mentorDocuments).values({
     userId,
@@ -111,9 +161,12 @@ async function storeDocument(
     fileName: file.name,
   });
 
-  if (stale.length > 0) await utapi.deleteFiles(stale).catch(() => {});
+  const stale = replaced
+    .map((row) => row.fileKey)
+    .filter((key) => key !== file.key);
+  if (stale.length > 0) afterResponse(() => utapi.deleteFiles(stale));
 
-  return { uploaded: true as const };
+  return { uploaded: true as const, fileName: file.name };
 }
 
 // UploadThing types `maxFileSize` as a power-of-two literal, but its own
@@ -173,67 +226,69 @@ async function requireOwnOpenTask(taskId: string) {
 }
 
 /**
- * Store a piece of task evidence against its submission, privately.
+ * Store a piece of task evidence against its submission.
  *
- * Same private-ACL discipline as the vetting documents above, and for a
- * stronger reason: this is a photograph taken by a child, and a permanent
- * public URL for it is not something this platform should ever mint. If the
- * ACL flip fails the file is deleted rather than left readable.
+ * Same private-ACL attempt as the vetting documents above, and this is the case
+ * that most deserves it: a photograph taken by a child, which on the current
+ * plan ends up at a permanent unauthenticated URL. Worth revisiting the moment
+ * the UploadThing app is upgraded — see makePrivate.
  */
 async function storeEvidence(
   meta: { menteeId: string; taskId: string },
   column: "photo" | "pdf",
   file: { key: string; name: string },
 ) {
-  try {
-    await utapi.updateACL(file.key, "private");
-  } catch (err) {
-    await utapi.deleteFiles(file.key).catch(() => {});
-    console.error("uploadthing: could not make evidence private", err);
-    throw new UploadThingError("Upload failed");
-  }
-
-  const [existing] = await db
-    .select()
-    .from(taskSubmissions)
-    .where(eq(taskSubmissions.taskId, meta.taskId))
-    .limit(1);
+  // Overlapped, and no longer fatal — see makePrivate. A mentee whose photo was
+  // deleted mid-upload because the plan refuses private files is a mentee who
+  // cannot evidence their task at all.
+  const [[existing]] = await Promise.all([
+    db
+      .select()
+      .from(taskSubmissions)
+      .where(eq(taskSubmissions.taskId, meta.taskId))
+      .limit(1),
+    makePrivate(file.key),
+  ]);
 
   const fields =
     column === "photo"
       ? { photoFileKey: file.key, photoFileName: file.name }
       : { pdfFileKey: file.key, pdfFileName: file.name };
 
-  await db
-    .insert(taskSubmissions)
-    .values({
-      taskId: meta.taskId,
-      menteeId: meta.menteeId,
-      // An upload can be the first thing that happens on a task, before the
-      // mentee has explicitly chosen a route. The file itself names the route.
-      kind: existing?.kind ?? (column === "pdf" ? "pdf" : "test_and_photo"),
-      ...fields,
-    })
-    .onConflictDoUpdate({
-      target: taskSubmissions.taskId,
-      set: { ...fields, submittedAt: new Date() },
-    });
+  // Both writes have to happen and neither depends on the other, so they share
+  // one wait instead of taking a Neon round-trip each.
+  //
+  // The update pulls the task back out of review, matching reopenIfSubmitted()
+  // in dashboard/task-actions.ts — a mentor must never be reviewing a
+  // submission that is still being changed underneath them.
+  await Promise.all([
+    db
+      .insert(taskSubmissions)
+      .values({
+        taskId: meta.taskId,
+        menteeId: meta.menteeId,
+        // An upload can be the first thing that happens on a task, before the
+        // mentee has explicitly chosen a route. The file itself names the route.
+        kind: existing?.kind ?? (column === "pdf" ? "pdf" : "test_and_photo"),
+        ...fields,
+      })
+      .onConflictDoUpdate({
+        target: taskSubmissions.taskId,
+        set: { ...fields, submittedAt: new Date() },
+      }),
+    db
+      .update(tasks)
+      .set({ status: "assigned", submittedAt: null })
+      .where(and(eq(tasks.id, meta.taskId), eq(tasks.status, "submitted"))),
+  ]);
 
-  // Replacing a file removes the one it replaced, rather than orphaning a
-  // private object nothing points at.
+  // Replacing a file removes the one it replaced, rather than orphaning an
+  // object nothing points at. Not something the mentee waits for.
   const stale =
     column === "photo" ? existing?.photoFileKey : existing?.pdfFileKey;
   if (stale && stale !== file.key) {
-    await utapi.deleteFiles(stale).catch(() => {});
+    afterResponse(() => utapi.deleteFiles(stale));
   }
-
-  // Uploading new evidence pulls the task back out of review, matching
-  // reopenIfSubmitted() in dashboard/task-actions.ts — a mentor must never be
-  // reviewing a submission that is still being changed underneath them.
-  await db
-    .update(tasks)
-    .set({ status: "assigned", submittedAt: null })
-    .where(and(eq(tasks.id, meta.taskId), eq(tasks.status, "submitted")));
 
   return { uploaded: true as const, fileName: file.name };
 }

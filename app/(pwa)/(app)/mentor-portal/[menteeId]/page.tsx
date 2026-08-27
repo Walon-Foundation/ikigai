@@ -42,6 +42,10 @@ export default async function MenteeDetailPage({
   const user = await getDbUser();
   if (!user) redirect("/sign-in");
   if (user.role !== "mentor") redirect("/dashboard");
+  // Unapproved or rejected — /mentor-portal explains which. Redirecting there
+  // rather than rendering a mentee's whole programme to someone who is not
+  // cleared to be looking at it.
+  if (!user.verifiedAt) redirect("/mentor-portal");
 
   // This page used to be nine network round-trips deep: the mentorship, then the
   // mentee, then the tree, then tasks, then curriculum, then meetings, then two

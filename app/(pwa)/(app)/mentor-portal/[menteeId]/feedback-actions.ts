@@ -4,7 +4,7 @@ import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db/db";
 import { journalEntries, journalFeedback, mentorships } from "@/db/schema";
-import { getDbUser } from "@/lib/db-user";
+import { requireApprovedMentor } from "@/lib/db-user";
 
 const MAX_COMMENT = 1_000;
 
@@ -16,9 +16,7 @@ export async function addJournalFeedback(data: {
   menteeId: string;
   comment: string;
 }) {
-  const me = await getDbUser();
-  if (!me) throw new Error("Unauthenticated");
-  if (me.role !== "mentor") throw new Error("Forbidden");
+  const me = await requireApprovedMentor();
 
   const comment =
     typeof data.comment === "string"
