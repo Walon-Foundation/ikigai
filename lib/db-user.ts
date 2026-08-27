@@ -135,6 +135,32 @@ export async function requireRole(
   return user;
 }
 
+/**
+ * The signed-in user, confirmed to be a mentor ikigai has APPROVED.
+ *
+ * `role` is what someone signed up as. `verifiedAt` is what the admin team
+ * decided after reading their government ID and CV, and it is the second one
+ * that may put an adult in front of a child — so every action a mentor takes
+ * over a mentee's programme goes through here.
+ *
+ * The browse, match and request paths already filter on verifiedAt, so an
+ * unapproved mentor is invisible to mentees. The gap this closes is approval
+ * being taken AWAY: a mentor approved last month and rejected today kept every
+ * mentee they already had, and full control of the programme those children
+ * were following. Rejection is exactly when that access has to stop.
+ *
+ * Throws rather than redirecting, because every caller is a server action —
+ * a public endpoint reachable by anyone signed in, whatever page rendered it.
+ * The screens explain the refusal; this is what enforces it.
+ */
+export async function requireApprovedMentor(): Promise<DbUser> {
+  const user = await getDbUser();
+  if (!user) throw new Error("Unauthenticated");
+  if (user.role !== "mentor") throw new Error("Forbidden");
+  if (!user.verifiedAt) throw new Error("Not approved");
+  return user;
+}
+
 // Authoritative admin gate for the /admin route group. Do NOT rely on proxy.ts
 // alone: the proxy's role check only runs when the request host matches the
 // admin subdomain, so any other route into these pages would otherwise render
