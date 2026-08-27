@@ -5,11 +5,24 @@ import { useState, useTransition } from "react";
 import { DocumentUpload } from "@/components/document-upload";
 import { BusyLabel } from "@/components/spinner";
 import { useToast } from "@/components/toast";
+import { MAX_PERSONAL_STATEMENT } from "@/lib/constants";
 import { DOCUMENT_LIMITS, maxSizeLabel } from "@/lib/uploads";
-import { submitMentorVerification } from "../../actions";
+import { type RequiredDocument, submitMentorVerification } from "../../actions";
 
 const CV = DOCUMENT_LIMITS.mentorCv;
 const GOVERNMENT_ID = DOCUMENT_LIMITS.governmentId;
+
+const DOCUMENT_NAMES: Record<RequiredDocument, string> = {
+  government_id: "government ID",
+  cv: "CV",
+};
+
+/** "your CV" / "your government ID and your CV" */
+function nameList(kinds: RequiredDocument[]): string {
+  const names = kinds.map((k) => `your ${DOCUMENT_NAMES[k]}`);
+  if (names.length <= 1) return names[0] ?? "";
+  return `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
+}
 
 export function VerificationForm({
   initialGovernmentId,
@@ -21,9 +34,15 @@ export function VerificationForm({
   const [statement, setStatement] = useState("");
   const [cvName, setCvName] = useState<string | null>(initialCv);
   const [idName, setIdName] = useState<string | null>(initialGovernmentId);
-  const [failed, setFailed] = useState(false);
   const [isPending, startTransition] = useTransition();
   const toast = useToast();
+
+  // Bumped to remount the upload fields when the server tells us a document it
+  // was showing as accepted is not actually on file. Their "uploaded" state is
+  // internal, so without a remount the screen keeps contradicting the server.
+  const [fieldsKey, setFieldsKey] = useState(0);
+
+  const statementLeft = MAX_PERSONAL_STATEMENT - statement.length;
 
   function submit() {
     // Neither document is optional: the admin team is deciding whether to put
@@ -52,10 +71,29 @@ export function VerificationForm({
       return;
     }
 
-    setFailed(false);
     startTransition(async () => {
       try {
-        await submitMentorVerification(statement);
+        const refusal = await submitMentorVerification(statement);
+
+        // The server found a document missing that this screen believed was
+        // uploaded — so the upload's server callback never landed and there is
+        // no row behind the tick. Say so plainly, and correct the screen, or
+        // the applicant re-presses Submit on a form that cannot ever accept it.
+        if (refusal) {
+          for (const kind of refusal.missing) {
+            if (kind === "government_id") setIdName(null);
+            if (kind === "cv") setCvName(null);
+          }
+          setFieldsKey((k) => k + 1);
+          toast({
+            variant: "error",
+            title:
+              refusal.missing.length > 1
+                ? "Neither document was saved"
+                : `Your ${DOCUMENT_NAMES[refusal.missing[0]]} wasn't saved`,
+            description: `We don't have ${nameList(refusal.missing)} on file. If you just uploaded ${refusal.missing.length > 1 ? "them" : "it"}, the upload didn't finish — try again and wait for the green tick before submitting.`,
+          });
+        }
       } catch (error) {
         // A successful submit ends in redirect(), which throws to unwind — that
         // is not a failure and must not be reported as one.
@@ -68,7 +106,16 @@ export function VerificationForm({
         ) {
           throw error;
         }
-        setFailed(true);
+        // Anything genuinely unexpected. Next redacts the message in
+        // production, so there is nothing specific to show — but the applicant
+        // still needs to know their statement survived and what to do next.
+        console.error("mentor verification: submit failed", error);
+        toast({
+          variant: "error",
+          title: "Couldn't submit your application",
+          description:
+            "We couldn't reach the server. Your statement is still here — check your connection and press Submit again.",
+        });
       }
     });
   }
@@ -94,21 +141,23 @@ export function VerificationForm({
 
       <div className="space-y-4">
         <DocumentUpload
+          key={`government-id-${fieldsKey}`}
           endpoint="governmentId"
           label="Government ID"
           hint={`National ID, passport, or driver's licence — PDF or photo, ${maxSizeLabel(GOVERNMENT_ID)} at most`}
           icon={IdCard}
-          initialFileName={initialGovernmentId}
+          initialFileName={idName}
           required
           onUploaded={setIdName}
         />
 
         <DocumentUpload
+          key={`mentor-cv-${fieldsKey}`}
           endpoint="mentorCv"
           label="CV / Resume"
           hint={`PDF only, ${maxSizeLabel(CV)} at most`}
           icon={FileText}
-          initialFileName={initialCv}
+          initialFileName={cvName}
           required
           onUploaded={setCvName}
         />
@@ -130,12 +179,36 @@ export function VerificationForm({
             rows={4}
             value={statement}
             onChange={(e) => setStatement(e.target.value)}
+            // The server clamps to the same number. Enforcing it here too is
+            // what stops an applicant writing past the limit and losing the end
+            // of their answer on submit without ever being told.
+            maxLength={MAX_PERSONAL_STATEMENT}
+            aria-describedby="personal-statement-help"
             placeholder="Why do you want to mentor young people? What do you hope to contribute?"
             className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm focus:border-primary focus:outline-none"
           />
-          <p className="mt-1 text-xs text-muted-foreground">
-            Our team reads this when reviewing your application.
-          </p>
+          <div
+            id="personal-statement-help"
+            className="mt-1 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1"
+          >
+            <p className="text-xs text-muted-foreground">
+              Our team reads this when reviewing your application.
+            </p>
+            <p
+              className={`text-xs tabular-nums ${
+                statementLeft === 0
+                  ? "font-semibold text-earth-ink"
+                  : "text-muted-foreground"
+              }`}
+              // Announced only as it starts to matter, so a screen reader is
+              // not reading a counter out on every keystroke.
+              aria-live={statementLeft <= 100 ? "polite" : "off"}
+            >
+              {statementLeft === 0
+                ? "Limit reached — 2,000 characters"
+                : `${statement.length.toLocaleString()} / ${MAX_PERSONAL_STATEMENT.toLocaleString()}`}
+            </p>
+          </div>
         </div>
       </div>
 
@@ -150,11 +223,6 @@ export function VerificationForm({
           Submit Application
         </BusyLabel>
       </button>
-      {failed && (
-        <p className="mt-2 text-center text-sm font-semibold text-destructive">
-          Couldn&apos;t submit — your statement is still here, try again.
-        </p>
-      )}
     </div>
   );
 }
