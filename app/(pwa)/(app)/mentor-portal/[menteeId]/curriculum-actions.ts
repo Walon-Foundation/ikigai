@@ -11,18 +11,32 @@ import { notifyUser } from "@/lib/notify";
 const MAX_TITLE = 200;
 const MAX_DESC = 2_000;
 
-type Caller = { id: string; role: string };
+type Caller = { id: string; role: string; verifiedAt: Date | null };
 
 async function requireUser(): Promise<Caller> {
   const { userId } = await auth();
   if (!userId) throw new Error("Unauthenticated");
   const [me] = await db
-    .select({ id: users.id, role: users.role })
+    .select({ id: users.id, role: users.role, verifiedAt: users.verifiedAt })
     .from(users)
     .where(eq(users.clerkId, userId))
     .limit(1);
   if (!me) throw new Error("User not found");
-  return { id: me.id, role: me.role };
+  return { id: me.id, role: me.role, verifiedAt: me.verifiedAt };
+}
+
+/**
+ * The curriculum is the mentor's, so writing to it needs an APPROVED mentor —
+ * see requireApprovedMentor in lib/db-user.ts. Checked separately from the
+ * isMentor test below because that one only asks which side of the mentorship
+ * the caller is on, and a mentor whose approval was withdrawn is still on the
+ * mentor side of it.
+ *
+ * Not applied to the mentee branches: a mentee's own access does not depend on
+ * their mentor's standing.
+ */
+function requireApproved(me: Caller) {
+  if (!me.verifiedAt) throw new Error("Not approved");
 }
 
 // Resolve a mentorship the caller is part of, returning both party ids and
@@ -86,6 +100,7 @@ export async function addCurriculumItem(input: {
   const me = await requireUser();
   const ctx = await mentorshipContext(input.mentorshipId, me);
   if (!ctx.isMentor) throw new Error("Only the mentor can edit the curriculum");
+  requireApproved(me);
 
   const existing = await db
     .select({ orderIndex: curriculumItems.orderIndex })
@@ -130,6 +145,7 @@ export async function editCurriculumItem(input: {
   const me = await requireUser();
   const ctx = await itemContext(input.id, me);
   if (!ctx.isMentor) throw new Error("Only the mentor can edit the curriculum");
+  requireApproved(me);
 
   await db
     .update(curriculumItems)
@@ -147,6 +163,7 @@ export async function deleteCurriculumItem(id: string) {
   const me = await requireUser();
   const ctx = await itemContext(id, me);
   if (!ctx.isMentor) throw new Error("Only the mentor can edit the curriculum");
+  requireApproved(me);
 
   await db.delete(curriculumItems).where(eq(curriculumItems.id, id));
   if (ctx.menteeId) revalidatePath(`/mentor-portal/${ctx.menteeId}`);
@@ -157,6 +174,7 @@ export async function moveCurriculumItem(id: string, direction: "up" | "down") {
   const me = await requireUser();
   const ctx = await itemContext(id, me);
   if (!ctx.isMentor) throw new Error("Only the mentor can edit the curriculum");
+  requireApproved(me);
 
   const items = await db
     .select({ id: curriculumItems.id, orderIndex: curriculumItems.orderIndex })
@@ -190,6 +208,9 @@ export async function setCurriculumItemStatus(input: {
 }) {
   const me = await requireUser();
   const ctx = await itemContext(input.id, me);
+  // Either party may move an item along, but a mentor who is no longer approved
+  // is no longer running this programme. The mentee's own side is untouched.
+  if (ctx.isMentor) requireApproved(me);
 
   await db
     .update(curriculumItems)
