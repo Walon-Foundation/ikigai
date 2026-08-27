@@ -1,7 +1,7 @@
 "use server";
 
 import { auth } from "@clerk/nextjs/server";
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { db } from "@/db/db";
 import { guardianLinks, mentorDocuments, milestones, users } from "@/db/schema";
@@ -272,21 +272,35 @@ export async function saveMentorProfile(data: {
 // Submit, and was redirected to a success page while the text went nowhere. It
 // reaches the admin's review screen now.
 //
-// The CV is required, and required HERE. A server action is a public endpoint
-// reachable by anyone signed in, whatever page rendered it, so the check in
-// verification-form.tsx guards the screen and this guards the application: an
-// applicant cannot arrive in the admin's review queue with nothing to review.
+// Both documents are required, and required HERE. A server action is a public
+// endpoint reachable by anyone signed in, whatever page rendered it, so the
+// check in verification-form.tsx guards the screen and this guards the
+// application: an applicant cannot arrive in the admin's review queue with
+// nothing to review, or with a CV and no proof of who wrote it.
+const REQUIRED_DOCUMENTS = ["government_id", "cv"] as const;
+
 export async function submitMentorVerification(personalStatement: string) {
   const user = await getUser();
 
-  const [cv] = await db
-    .select({ id: mentorDocuments.id })
+  // One query for both kinds rather than one per kind — this runs while the
+  // applicant waits on the Submit button, and Neon's HTTP driver charges a
+  // network round-trip per statement.
+  const documents = await db
+    .select({ kind: mentorDocuments.kind })
     .from(mentorDocuments)
     .where(
-      and(eq(mentorDocuments.userId, user.id), eq(mentorDocuments.kind, "cv")),
-    )
-    .limit(1);
-  if (!cv) throw new Error("A CV is required before submitting.");
+      and(
+        eq(mentorDocuments.userId, user.id),
+        inArray(mentorDocuments.kind, [...REQUIRED_DOCUMENTS]),
+      ),
+    );
+
+  const held = new Set(documents.map((d) => d.kind));
+  if (REQUIRED_DOCUMENTS.some((kind) => !held.has(kind))) {
+    throw new Error(
+      "A government ID and a CV are both required before submitting.",
+    );
+  }
 
   const statement =
     typeof personalStatement === "string"

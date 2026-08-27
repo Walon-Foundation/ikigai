@@ -9,6 +9,7 @@ import { DOCUMENT_LIMITS, maxSizeLabel } from "@/lib/uploads";
 import { submitMentorVerification } from "../../actions";
 
 const CV = DOCUMENT_LIMITS.mentorCv;
+const GOVERNMENT_ID = DOCUMENT_LIMITS.governmentId;
 
 export function VerificationForm({
   initialGovernmentId,
@@ -19,20 +20,34 @@ export function VerificationForm({
 }) {
   const [statement, setStatement] = useState("");
   const [cvName, setCvName] = useState<string | null>(initialCv);
+  const [idName, setIdName] = useState<string | null>(initialGovernmentId);
   const [failed, setFailed] = useState(false);
   const [isPending, startTransition] = useTransition();
   const toast = useToast();
 
   function submit() {
-    // The CV is the one document the review cannot proceed without, so the
-    // application is not accepted until it is on file. The button stays
-    // enabled and says why — a greyed-out Submit with no explanation leaves
-    // the applicant guessing at which field is at fault.
-    if (!cvName) {
+    // Neither document is optional: the admin team is deciding whether to put
+    // this adult in front of a child, and it cannot do that on a CV with no
+    // identity behind it, or on an ID with no history behind it.
+    //
+    // The button stays enabled and says which document is missing — a
+    // greyed-out Submit with no explanation leaves the applicant guessing at
+    // which field is at fault. Both are named in one message when both are
+    // missing, so nobody uploads one, retries, and is stopped again.
+    const missing = [
+      !idName &&
+        `your government ID (a PDF or a photo, ${maxSizeLabel(GOVERNMENT_ID)} at most)`,
+      !cvName && `your CV as a PDF (${maxSizeLabel(CV)} at most)`,
+    ].filter((m): m is string => Boolean(m));
+
+    if (missing.length > 0) {
       toast({
         variant: "error",
-        title: "Your CV is required",
-        description: `Upload your CV as a PDF (${maxSizeLabel(CV)} at most) before submitting your application.`,
+        title:
+          missing.length > 1
+            ? "Two documents are still missing"
+            : "One document is still missing",
+        description: `Upload ${missing.join(" and ")} before submitting your application.`,
       });
       return;
     }
@@ -81,9 +96,11 @@ export function VerificationForm({
         <DocumentUpload
           endpoint="governmentId"
           label="Government ID"
-          hint="National ID, passport, or driver's licence"
+          hint={`National ID, passport, or driver's licence — PDF or photo, ${maxSizeLabel(GOVERNMENT_ID)} at most`}
           icon={IdCard}
           initialFileName={initialGovernmentId}
+          required
+          onUploaded={setIdName}
         />
 
         <DocumentUpload
@@ -97,8 +114,8 @@ export function VerificationForm({
         />
 
         <p className="text-xs text-muted-foreground">
-          Your documents are uploaded straight to our storage provider and are
-          only ever readable by the ikigai team reviewing your application.
+          Both documents are required. They go straight to our storage provider
+          and are only used to review your application.
         </p>
 
         <div>
