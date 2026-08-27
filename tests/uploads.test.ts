@@ -67,7 +67,7 @@ describe("mentor CV: PDF only, 10MB", () => {
   });
 });
 
-describe("government ID: images allowed, 8MB", () => {
+describe("government ID: images allowed, 10MB", () => {
   test("accepts a photo and a PDF", () => {
     expect(rejectDocument(fileOf("id.jpg", "image/jpeg", MB), ID)).toBe(null);
     expect(rejectDocument(fileOf("id.pdf", "application/pdf", MB), ID)).toBe(
@@ -75,11 +75,36 @@ describe("government ID: images allowed, 8MB", () => {
     );
   });
 
-  test("still enforces its own smaller ceiling", () => {
-    expect(
-      rejectDocument(fileOf("id.jpg", "image/jpeg", 9 * MB), ID)?.title,
-    ).toBe("File is too large");
+  test("a modern phone photo is under the ceiling, not over it", () => {
+    // The ceiling used to be 8MB, which a single photo from a recent phone can
+    // clear. Applicants were told their own ID was too large.
+    expect(rejectDocument(fileOf("id.jpg", "image/jpeg", 9 * MB), ID)).toBe(
+      null,
+    );
   });
+
+  test("10MB exactly is allowed; one byte over is not", () => {
+    expect(rejectDocument(fileOf("id.jpg", "image/jpeg", 10 * MB), ID)).toBe(
+      null,
+    );
+    const over = rejectDocument(
+      fileOf("id.jpg", "image/jpeg", 10 * MB + 1),
+      ID,
+    );
+    expect(over?.title).toBe("File is too large");
+    expect(over?.description).toContain("10MB");
+  });
+
+  test("a HEIC photo with an empty MIME type passes on its extension", () => {
+    expect(rejectDocument(fileOf("IMG_2231.HEIC", "", MB), ID)).toBe(null);
+  });
+});
+
+test("both mentor vetting documents share the same 10MB ceiling", () => {
+  // The onboarding screen states one number for both. If these ever drift, one
+  // of the two fields refuses a file the screen said it would take.
+  expect(ID.maxBytes).toBe(CV.maxBytes);
+  expect(maxSizeLabel(ID)).toBe("10MB");
 });
 
 describe("task evidence photo: images only", () => {
@@ -102,7 +127,7 @@ describe("task evidence photo: images only", () => {
 
 test("maxSizeLabel matches the bytes actually enforced", () => {
   expect(maxSizeLabel(CV)).toBe("10MB");
-  expect(maxSizeLabel(ID)).toBe("8MB");
+  expect(maxSizeLabel(ID)).toBe("10MB");
   // The label and the UploadThing string must agree, or the screen promises a
   // limit the server does not enforce.
   for (const limit of Object.values(DOCUMENT_LIMITS)) {

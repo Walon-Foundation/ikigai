@@ -40,8 +40,8 @@ export const DOCUMENT_LIMITS: Record<DocumentEndpoint, DocumentLimit> = {
   // A national ID, passport or licence is usually photographed, not scanned,
   // so this one keeps accepting images.
   governmentId: {
-    maxBytes: 8 * MB,
-    maxFileSize: "8MB",
+    maxBytes: 10 * MB,
+    maxFileSize: "10MB",
     accept: "application/pdf,image/*",
     mimeTypes: ["application/pdf", "image/*"],
     extensions: [".pdf", ".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif"],
