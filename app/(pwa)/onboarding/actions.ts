@@ -5,6 +5,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { db } from "@/db/db";
 import { guardianLinks, mentorDocuments, milestones, users } from "@/db/schema";
+import { MAX_PERSONAL_STATEMENT } from "@/lib/constants";
 
 // Client-supplied text reaches these actions straight off a request body, so
 // every free-text field is clamped before it is stored. The caps mirror
@@ -88,8 +89,6 @@ async function getUser() {
   if (!user) throw new Error("User not found");
   return user;
 }
-
-const MAX_STATEMENT = 2_000;
 
 async function patchOnboardingData(
   clerkId: string,
@@ -279,7 +278,24 @@ export async function saveMentorProfile(data: {
 // nothing to review, or with a CV and no proof of who wrote it.
 const REQUIRED_DOCUMENTS = ["government_id", "cv"] as const;
 
-export async function submitMentorVerification(personalStatement: string) {
+export type RequiredDocument = (typeof REQUIRED_DOCUMENTS)[number];
+
+/**
+ * Why a submission was refused, returned rather than thrown.
+ *
+ * Next redacts a server action's error message in production — the applicant
+ * would get "an error occurred" and no way to tell a missing document from a
+ * database being down. Both leave them pressing Submit on a form that will
+ * never accept it. The reason has to travel as a value to survive.
+ */
+export type MentorVerificationRefusal = {
+  ok: false;
+  missing: RequiredDocument[];
+};
+
+export async function submitMentorVerification(
+  personalStatement: string,
+): Promise<MentorVerificationRefusal | void> {
   const user = await getUser();
 
   // One query for both kinds rather than one per kind — this runs while the
@@ -296,15 +312,12 @@ export async function submitMentorVerification(personalStatement: string) {
     );
 
   const held = new Set(documents.map((d) => d.kind));
-  if (REQUIRED_DOCUMENTS.some((kind) => !held.has(kind))) {
-    throw new Error(
-      "A government ID and a CV are both required before submitting.",
-    );
-  }
+  const missing = REQUIRED_DOCUMENTS.filter((kind) => !held.has(kind));
+  if (missing.length > 0) return { ok: false, missing };
 
   const statement =
     typeof personalStatement === "string"
-      ? personalStatement.trim().slice(0, MAX_STATEMENT)
+      ? personalStatement.trim().slice(0, MAX_PERSONAL_STATEMENT)
       : "";
   await patchOnboardingData(user.clerkId, {
     verificationSubmitted: true,

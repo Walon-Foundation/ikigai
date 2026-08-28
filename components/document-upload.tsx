@@ -94,6 +94,25 @@ export function DocumentUpload({
       // previous file name in place is correct, since that file is still stored.
       if (!result) return;
 
+      // Bytes reaching storage is not the same as this app knowing about them.
+      // The row is written in onUploadComplete, which UploadThing calls back
+      // separately and the client polls for; serverData is that callback's
+      // return value, and it is absent when the callback never landed — a cold
+      // start, a timeout, a failed write.
+      //
+      // Ticking the field green on `result` alone is what made this screen lie:
+      // the applicant saw both documents accepted, and Submit then refused
+      // because neither had a row behind it.
+      if (!result[0]?.serverData) {
+        toast({
+          variant: "error",
+          title: `${label} didn't finish saving`,
+          description:
+            "Your file reached our storage but we couldn't record it. Upload it again — if it keeps happening, tell the ikigai team.",
+        });
+        return;
+      }
+
       setFileName(file.name);
       onUploaded?.(file.name);
     } finally {

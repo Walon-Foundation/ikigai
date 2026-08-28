@@ -1,3 +1,13 @@
+/**
+ * Longest personal statement a mentor applicant may submit.
+ *
+ * Declared here because the server and the screen both have to know it. The
+ * server clamps to this length, so a screen that does not enforce the same
+ * number silently swallows the end of someone's application — they write 2,500
+ * characters, press Submit, and 500 of them are gone with no warning.
+ */
+export const MAX_PERSONAL_STATEMENT = 2_000;
+
 export const INTEREST_TAGS = [
   "Technology",
   "Entrepreneurship",
