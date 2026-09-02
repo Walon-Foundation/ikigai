@@ -20,7 +20,7 @@ import {
   getStageReadiness,
   promoteMenteeStage,
 } from "@/lib/mentorship";
-import { notifyUser } from "@/lib/notify";
+import { dispatch } from "@/lib/notifications/dispatch";
 import type { SkillStage } from "@/lib/skill-stages";
 import { isSubmissionComplete } from "@/lib/tasks";
 
@@ -132,12 +132,10 @@ export async function acceptRequest(
     // Defer the push notification past the response — the mentee doesn't
     // need it before the mentor's own UI updates.
     after(async () => {
-      await notifyUser({
-        userId: menteeId,
-        title: "Your mentor accepted! 🎉",
-        body: `${mentorName ?? "Your mentor"} accepted your request. Plan your Finding Yourself Picnic to get started.`,
-        type: "match",
-        url: "/mentorship",
+      await dispatch({
+        key: "MATCH_ACCEPTED",
+        to: menteeId,
+        vars: { mentor: mentorName ?? "Your mentor" },
       });
     });
   }
@@ -163,13 +161,7 @@ export async function declineRequest(mentorshipId: string) {
   if (updated?.menteeId) {
     const menteeId = updated.menteeId;
     after(async () => {
-      await notifyUser({
-        userId: menteeId,
-        title: "Mentor request update",
-        body: "A mentor couldn't take you on right now. Explore other mentors who match your interests.",
-        type: "match",
-        url: "/mentors",
-      });
+      await dispatch({ key: "MATCH_DECLINED", to: menteeId });
     });
   }
   revalidatePath("/mentor-portal");
@@ -236,6 +228,19 @@ export async function assignTask(input: {
     })
     .returning({ id: tasks.id });
 
+  if (m.menteeId) {
+    const menteeId = m.menteeId;
+    const taskId = task.id;
+    after(async () => {
+      await dispatch({
+        key: "TASK_ASSIGNED",
+        to: menteeId,
+        vars: { task: title, taskId },
+        dedupe: taskId,
+      });
+    });
+  }
+
   const questions = cleanQuestions(input.questions);
   if (questions.length > 0) {
     await db.insert(taskQuestions).values(
@@ -293,6 +298,9 @@ async function taskForMentor(taskId: string, mentorId: string) {
   const [row] = await db
     .select({
       id: tasks.id,
+      // Carried so the mentee's notification can name the task rather than
+      // saying "a task" — a mentee may have several open at once.
+      title: tasks.title,
       status: tasks.status,
       requiresEvidence: tasks.requiresEvidence,
       growthPoints: tasks.growthPoints,
@@ -345,6 +353,16 @@ export async function completeTask(
 
   if (task.menteeId) {
     await applyTaskComplete(task.menteeId, task.growthPoints);
+    const menteeId = task.menteeId;
+    const taskTitle = task.title;
+    after(async () => {
+      await dispatch({
+        key: "TASK_COMPLETED",
+        to: menteeId,
+        vars: { task: taskTitle },
+        dedupe: `${taskId}:completed`,
+      });
+    });
     revalidatePath(`/mentor-portal/${task.menteeId}`);
   }
   return { ok: true };
@@ -362,6 +380,16 @@ export async function failTask(taskId: string) {
 
   if (task.menteeId) {
     await applyTaskFail(task.menteeId);
+    const menteeId = task.menteeId;
+    const taskTitle = task.title;
+    after(async () => {
+      await dispatch({
+        key: "TASK_FAILED",
+        to: menteeId,
+        vars: { task: taskTitle, taskId },
+        dedupe: `${taskId}:failed`,
+      });
+    });
     revalidatePath(`/mentor-portal/${task.menteeId}`);
   }
 }
@@ -395,12 +423,13 @@ export async function promoteMentee(
   const menteeId = m.menteeId;
   const to = result.to;
   after(async () => {
-    await notifyUser({
-      userId: menteeId,
-      title: `You've reached ${to.charAt(0).toUpperCase()}${to.slice(1)}! 🌱`,
-      body: "Your mentor moved you up a stage. New clubs and milestones are open to you.",
-      type: "milestone",
-      url: "/journey",
+    await dispatch({
+      key: "STAGE_ADVANCED",
+      to: menteeId,
+      vars: { stage: `${to.charAt(0).toUpperCase()}${to.slice(1)}` },
+      // One promotion to a given stage is one notification, however many times
+      // the action is retried.
+      dedupe: `${m.id}:${to}`,
     });
   });
 

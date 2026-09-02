@@ -4,7 +4,7 @@ import { after, type NextRequest, NextResponse } from "next/server";
 import { db } from "@/db/db";
 import { mentorships, messages, users } from "@/db/schema";
 import { flagsConcern } from "@/lib/journal";
-import { notifyUser } from "@/lib/notify";
+import { dispatch } from "@/lib/notifications/dispatch";
 
 const MAX_MESSAGE_LENGTH = 2000;
 
@@ -79,12 +79,14 @@ export async function POST(request: NextRequest) {
         ? membership.mentorId
         : membership.menteeId;
     if (recipientId) {
-      await notifyUser({
-        userId: recipientId,
-        title: `New message from ${sender.displayName ?? "your match"}`,
-        body: trimmed.slice(0, 140),
-        type: "nudge",
-        url: `/mentorship/${mentorshipId}`,
+      await dispatch({
+        key: "MESSAGE_RECEIVED",
+        to: recipientId,
+        vars: {
+          sender: sender.displayName ?? "your match",
+          preview: trimmed.slice(0, 140),
+          mentorshipId,
+        },
       });
     }
   });

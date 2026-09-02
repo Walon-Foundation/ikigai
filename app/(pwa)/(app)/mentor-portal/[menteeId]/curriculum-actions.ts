@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { db } from "@/db/db";
 import { curriculumItems, mentorships, users } from "@/db/schema";
-import { notifyUser } from "@/lib/notify";
+import { dispatch } from "@/lib/notifications/dispatch";
 
 const MAX_TITLE = 200;
 const MAX_DESC = 2_000;
@@ -124,12 +124,10 @@ export async function addCurriculumItem(input: {
   if (ctx.menteeId) {
     const menteeId = ctx.menteeId;
     after(async () => {
-      await notifyUser({
-        userId: menteeId,
-        title: "New curriculum step added",
-        body: title,
-        type: "task",
-        url: "/mentorship",
+      await dispatch({
+        key: "CURRICULUM_ITEM_ADDED",
+        to: menteeId,
+        vars: { title },
       });
     });
     revalidatePath(`/mentor-portal/${ctx.menteeId}`);
@@ -224,12 +222,10 @@ export async function setCurriculumItemStatus(input: {
   const counterpart = ctx.isMentor ? ctx.menteeId : ctx.mentorId;
   if (counterpart && input.status === "done") {
     after(async () => {
-      await notifyUser({
-        userId: counterpart,
-        title: "Curriculum step completed ✅",
-        body: "A step in your shared curriculum was marked done.",
-        type: "milestone",
-        url: "/mentorship",
+      await dispatch({
+        key: "CURRICULUM_ITEM_DONE",
+        to: counterpart,
+        dedupe: input.id,
       });
     });
   }

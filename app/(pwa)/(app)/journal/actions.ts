@@ -3,6 +3,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { count, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { db } from "@/db/db";
 import { journalEntries, milestones, users } from "@/db/schema";
 import {
@@ -10,6 +11,7 @@ import {
   isJournalVisibility,
   MAX_JOURNAL_LENGTH,
 } from "@/lib/journal";
+import { dispatchToAdmins } from "@/lib/notifications/dispatch";
 
 export async function saveJournalEntry(data: {
   content: string;
@@ -49,13 +51,32 @@ export async function saveJournalEntry(data: {
     .limit(1);
   if (!user) throw new Error("User not found");
 
-  await db.insert(journalEntries).values({
-    userId: user.id,
-    content,
-    visibility,
-    // Recomputed here — never trust a client-supplied safety flag.
-    keywordFlag: flagsConcern(content),
-  });
+  const flagged = flagsConcern(content);
+
+  const [entry] = await db
+    .insert(journalEntries)
+    .values({
+      userId: user.id,
+      content,
+      visibility,
+      // Recomputed here — never trust a client-supplied safety flag.
+      keywordFlag: flagged,
+    })
+    .returning({ id: journalEntries.id });
+
+  // A flagged entry used to set a boolean and wait to be noticed. The keyword
+  // list exists to catch a child in trouble; catching them and telling nobody
+  // is the same as not catching them.
+  //
+  // Nothing about the entry travels in the notification — not the author, not
+  // a snippet. It says an entry was flagged and points at the queue, which is
+  // behind requireAdmin(). A journal entry is private writing by a young
+  // person, and a lock-screen preview is not a safeguarding review.
+  if (flagged) {
+    after(async () => {
+      await dispatchToAdmins({ key: "JOURNAL_FLAGGED", dedupe: entry.id });
+    });
+  }
 
   // Award first_journal milestone if this is their first entry
   const [{ total }] = await db

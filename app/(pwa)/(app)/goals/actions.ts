@@ -2,9 +2,12 @@
 
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { db } from "@/db/db";
 import { goals } from "@/db/schema";
 import { getDbUser } from "@/lib/db-user";
+import { activeMentorshipFor } from "@/lib/mentorship";
+import { dispatch } from "@/lib/notifications/dispatch";
 
 const MAX_TITLE = 200;
 const MAX_DETAIL = 1_000;
@@ -42,10 +45,34 @@ export async function completeGoal(goalId: string) {
   if (!me) throw new Error("Unauthenticated");
   if (typeof goalId !== "string" || !goalId) throw new Error("Invalid goal");
 
-  await db
+  const [done] = await db
     .update(goals)
     .set({ status: "done", completedAt: new Date() })
-    .where(and(eq(goals.id, goalId), eq(goals.userId, me.id)));
+    .where(and(eq(goals.id, goalId), eq(goals.userId, me.id)))
+    .returning({ id: goals.id, title: goals.title });
+
+  // Goals are the only thing in the programme a mentee finishes without their
+  // mentor pressing anything, which makes this the one real "your mentee is
+  // making progress" signal the app has. Everything else that reaches `done`
+  // is the mentor's own click, and reporting that back to them would be noise.
+  if (done) {
+    const menteeId = me.id;
+    const menteeName = me.displayName;
+    after(async () => {
+      const mentorship = await activeMentorshipFor(menteeId);
+      if (!mentorship?.mentorId) return;
+      await dispatch({
+        key: "MENTEE_ACTIVITY_COMPLETED",
+        to: mentorship.mentorId,
+        vars: {
+          mentee: menteeName ?? "Your mentee",
+          item: done.title,
+          menteeId,
+        },
+        dedupe: `${done.id}:done`,
+      });
+    });
+  }
 
   revalidatePath("/goals");
 }

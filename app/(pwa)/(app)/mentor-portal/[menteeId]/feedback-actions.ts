@@ -2,9 +2,11 @@
 
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { db } from "@/db/db";
 import { journalEntries, journalFeedback, mentorships } from "@/db/schema";
 import { requireApprovedMentor } from "@/lib/db-user";
+import { dispatch } from "@/lib/notifications/dispatch";
 
 const MAX_COMMENT = 1_000;
 
@@ -58,6 +60,18 @@ export async function addJournalFeedback(data: {
   await db
     .insert(journalFeedback)
     .values({ entryId: data.entryId, mentorId: me.id, comment });
+
+  // The mentee shared an entry and their mentor answered it. Without this the
+  // reply sits on a journal page they have no reason to reopen.
+  const menteeId = data.menteeId;
+  const mentorName = me.displayName;
+  after(async () => {
+    await dispatch({
+      key: "JOURNAL_FEEDBACK",
+      to: menteeId,
+      vars: { mentor: mentorName ?? "Your mentor" },
+    });
+  });
 
   revalidatePath(`/mentor-portal/${data.menteeId}`);
 }
