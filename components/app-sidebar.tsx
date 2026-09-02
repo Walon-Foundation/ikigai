@@ -91,7 +91,8 @@ export function AppSidebar({
   const greeting =
     hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
 
-  const initials = (displayName ?? "U")
+  const effectiveName = displayName?.trim() || null;
+  const initials = (effectiveName ?? "U")
     .split(" ")
     .map((n) => n[0])
     .slice(0, 2)
@@ -118,7 +119,7 @@ export function AppSidebar({
           <div>
             <p className="text-[11px] text-muted-foreground">{greeting}</p>
             <p className="text-sm font-semibold leading-tight text-foreground">
-              {displayName ?? roleLabel}
+              {effectiveName ?? roleLabel}
             </p>
             <p className="text-[10px] text-muted-foreground">{roleLabel}</p>
           </div>
