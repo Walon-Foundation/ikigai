@@ -90,6 +90,7 @@ export function EventCard({
   event,
 }: {
   event: {
+    id: string;
     slug: string | null;
     title: string;
     location: string | null;
@@ -157,12 +158,12 @@ export function EventCard({
   const className =
     "card-lift group block h-full overflow-hidden rounded-2xl border border-border bg-card";
 
-  return event.slug ? (
-    <Link href={`/events/${event.slug}`} className={className}>
+  const href = `/events/${event.slug ?? event.id}`;
+
+  return (
+    <Link href={href} className={className}>
       {inner}
     </Link>
-  ) : (
-    <div className={className}>{inner}</div>
   );
 }
 

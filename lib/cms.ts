@@ -333,13 +333,22 @@ export async function getPastPublicEvents(limit = 24) {
   return rows.filter((e) => isPast(e as Dated, now)).slice(0, limit);
 }
 
-export async function getPublicEvent(slug: string) {
-  const [row] = await db
+export async function getPublicEvent(slugOrId: string) {
+  // Prefer slug match, fall back to id — so events created before slug
+  // generation (slug IS NULL) are still reachable via /events/<id>.
+  const [bySlug] = await db
     .select()
     .from(events)
-    .where(and(eq(events.slug, slug), eq(events.isPublic, true)))
+    .where(and(eq(events.slug, slugOrId), eq(events.isPublic, true)))
     .limit(1);
-  return row ?? null;
+  if (bySlug) return bySlug;
+
+  const [byId] = await db
+    .select()
+    .from(events)
+    .where(and(eq(events.id, slugOrId), eq(events.isPublic, true)))
+    .limit(1);
+  return byId ?? null;
 }
 
 /** Published page-builder blocks for one page, in display order. */

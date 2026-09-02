@@ -56,7 +56,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           .from(stories)
           .where(eq(stories.published, true)),
         db
-          .select({ slug: events.slug })
+          .select({ slug: events.slug, id: events.id })
           .from(events)
           .where(and(eq(events.isPublic, true))),
         db
@@ -98,14 +98,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: 0.5,
       }));
 
-    const eventUrls: MetadataRoute.Sitemap = eventRows
-      .filter((r) => r.slug)
-      .map((r) => ({
-        url: `${base}/events/${r.slug}`,
-        lastModified: new Date(),
-        changeFrequency: "weekly",
-        priority: 0.5,
-      }));
+    const eventUrls: MetadataRoute.Sitemap = eventRows.map((r) => ({
+      url: `${base}/events/${r.slug ?? r.id}`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.5,
+    }));
 
     const customUrls: MetadataRoute.Sitemap = customPages.map((r) => ({
       url: `${base}/${r.slug}`,

@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db/db";
 import { eventAttendance, events } from "@/db/schema";
+import { slugify } from "@/lib/cms-admin";
 import { requireAdmin } from "@/lib/db-user";
 
 const MAX_TITLE = 200;
@@ -61,8 +62,21 @@ export async function createEvent(data: {
   const unlockAtPercent =
     Number.isFinite(unlockNum) && unlockNum > 0 ? Math.min(100, unlockNum) : 0;
 
+  // Slug so the public detail page (/events/[slug]) is always reachable.
+  // Falls back to id-suffix on collision (uniqueIndex on events.slug).
+  let slug = slugify(title);
+  if (slug) {
+    const [existing] = await db
+      .select({ id: events.id })
+      .from(events)
+      .where(eq(events.slug, slug))
+      .limit(1);
+    if (existing) slug = `${slug}-${Date.now().toString(36).slice(-4)}`;
+  }
+
   await db.insert(events).values({
     title,
+    slug: slug || null,
     description: str(data.description, MAX_DESC) || null,
     location: str(data.location, MAX_LOCATION) || null,
     region,
