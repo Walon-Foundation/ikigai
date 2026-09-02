@@ -7,6 +7,7 @@ import { db } from "@/db/db";
 import { enquiries } from "@/db/schema";
 import { requireAdmin } from "@/lib/db-user";
 import { pwaInstallUrl, sendMail } from "@/lib/email";
+import { escapeHtml, sendableAddress } from "@/lib/email/templates";
 
 // The outcomes an enquiry can be moved to.
 //
@@ -39,33 +40,6 @@ const EMAILS_THE_ENQUIRER = "handled";
 // DKIM-signed domain, which is exactly the envelope that makes such a message
 // believable. Escaped at the point of interpolation, it can only ever be text.
 //
-// This is deliberately module-local rather than shared: a "use server" module
-// may only export async functions, so a helper defined here cannot be exported.
-// Its twin lives in the mentor verify action for the same reason.
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
-
-// Nodemailer's `to` accepts a comma-separated address LIST, and this address
-// was typed into a public form by whoever submitted it. A stored value like
-// "attacker@evil.com, victim@school.edu" therefore fans one acceptance email
-// out to recipients Ikigai never intended, signed by Ikigai's domain — a
-// spam relay, driven entirely by an unauthenticated form and one admin click.
-// Only a single, plainly well-formed address is sendable; anything else gets
-// no mail rather than a best-effort guess at what was meant.
-function sendableAddress(value: string | null | undefined): string | null {
-  if (typeof value !== "string") return null;
-  const address = value.trim();
-  if (address.length > 254) return null;
-  return /^[^\s@,;:<>"()[\]\\]+@[^\s@,;:<>"()[\]\\]+\.[a-z]{2,}$/i.test(address)
-    ? address
-    : null;
-}
 
 export async function setEnquiryStatus(id: string, status: string) {
   const admin = await requireAdmin();

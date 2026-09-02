@@ -6,7 +6,7 @@ import { after } from "next/server";
 import { db } from "@/db/db";
 import { schools } from "@/db/schema";
 import { requireAdmin } from "@/lib/db-user";
-import { notifyUser } from "@/lib/notify";
+import { dispatch } from "@/lib/notifications/dispatch";
 
 // Approve or reject a school clubhouse registration.
 //
@@ -50,23 +50,10 @@ export async function vetSchool(data: {
   if (school.clubLeadId) {
     const clubLeadId = school.clubLeadId;
     after(async () => {
-      await notifyUser(
-        approved
-          ? {
-              userId: clubLeadId,
-              title: "Your school clubhouse is approved! 🏫",
-              body: "You can start inviting members to your clubhouse now.",
-              type: "milestone",
-              url: "/groups",
-            }
-          : {
-              userId: clubLeadId,
-              title: "School registration update",
-              body: "Your school registration needs more information. Please check your email from the ikigai team.",
-              type: "milestone",
-              url: "/dashboard",
-            },
-      );
+      await dispatch({
+        key: approved ? "SCHOOL_APPROVED" : "SCHOOL_REJECTED",
+        to: clubLeadId,
+      });
     });
   }
 

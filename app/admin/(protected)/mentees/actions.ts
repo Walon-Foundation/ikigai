@@ -6,7 +6,7 @@ import { after } from "next/server";
 import { db } from "@/db/db";
 import { users } from "@/db/schema";
 import { requireAdmin } from "@/lib/db-user";
-import { notifyUser } from "@/lib/notify";
+import { dispatch } from "@/lib/notifications/dispatch";
 
 const MAX_REASON_LENGTH = 2000;
 
@@ -72,23 +72,10 @@ export async function verifyMentee(data: {
     .where(eq(users.id, data.menteeId));
 
   after(async () => {
-    await notifyUser(
-      approved
-        ? {
-            userId: data.menteeId,
-            title: "You're approved! 🎉",
-            body: "You can now request a mentor and start your journey.",
-            type: "milestone",
-            url: "/mentors",
-          }
-        : {
-            userId: data.menteeId,
-            title: "About your application",
-            body: "Someone from the ikigai team will be in touch with you soon.",
-            type: "milestone",
-            url: "/dashboard",
-          },
-    );
+    await dispatch({
+      key: approved ? "MENTEE_APPROVED" : "MENTEE_REJECTED",
+      to: data.menteeId,
+    });
   });
 
   revalidatePath("/admin/mentees");
