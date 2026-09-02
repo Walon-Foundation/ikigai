@@ -2,9 +2,11 @@
 
 import { auth } from "@clerk/nextjs/server";
 import { and, count, eq, isNotNull } from "drizzle-orm";
+import { after } from "next/server";
 import { db } from "@/db/db";
 import { mentorships, users } from "@/db/schema";
 import { MENTOR_CAPACITY, matchScore } from "@/lib/match";
+import { dispatch } from "@/lib/notifications/dispatch";
 
 // A mentee requests a mentor. Creates a 'requested' mentorship the mentor must
 // accept before chat or tasks unlock. The match score is computed from the
@@ -17,6 +19,7 @@ export async function requestMentor(mentorId: string) {
     .select({
       id: users.id,
       role: users.role,
+      displayName: users.displayName,
       interestTags: users.interestTags,
       verifiedAt: users.verifiedAt,
       rejectedAt: users.rejectedAt,
@@ -99,6 +102,19 @@ export async function requestMentor(mentorId: string) {
       matchScore: matchScore(me.interestTags, mentor.interestTags),
     })
     .returning({ id: mentorships.id });
+
+  // Until this existed, a mentor learned they had been asked only by opening
+  // /mentor-portal and noticing. A request that nobody is told about is a
+  // request the mentee watches go unanswered.
+  const menteeName = me.displayName;
+  after(async () => {
+    await dispatch({
+      key: "MENTOR_REQUEST_RECEIVED",
+      to: mentorId,
+      vars: { mentee: menteeName ?? "A mentee" },
+      dedupe: row.id,
+    });
+  });
 
   return { mentorshipId: row.id };
 }

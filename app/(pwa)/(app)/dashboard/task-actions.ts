@@ -6,7 +6,7 @@ import { after } from "next/server";
 import { db } from "@/db/db";
 import { mentorships, taskSubmissions, tasks } from "@/db/schema";
 import { requireRole } from "@/lib/db-user";
-import { notifyUser } from "@/lib/notify";
+import { dispatch } from "@/lib/notifications/dispatch";
 import {
   gradeTest,
   isEvidenceKind,
@@ -205,13 +205,7 @@ export async function submitTaskForReview(taskId: string, note?: string) {
   if (task.mentorId) {
     const mentorId = task.mentorId;
     after(async () => {
-      await notifyUser({
-        userId: mentorId,
-        title: "A task is ready for review",
-        body: "Your mentee submitted their evidence. Review it to mark the task complete.",
-        type: "task",
-        url: "/mentor-portal",
-      });
+      await dispatch({ key: "TASK_SUBMITTED", to: mentorId });
     });
   }
 

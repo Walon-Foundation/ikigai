@@ -2,8 +2,10 @@
 
 import { auth } from "@clerk/nextjs/server";
 import { eq } from "drizzle-orm";
+import { after } from "next/server";
 import { db } from "@/db/db";
 import { milestones, safetyReports, users } from "@/db/schema";
+import { dispatchToAdmins } from "@/lib/notifications/dispatch";
 
 const REPORT_TYPES = ["inappropriate", "concern"] as const;
 const MAX_REPORT_NOTES = 5_000;
@@ -47,10 +49,29 @@ export async function submitSafetyReport(data: {
   // Any role may file a report: a mentor or parent raising a concern about a
   // young person is exactly as valid as a mentee raising one, so there is no
   // role check here beyond being signed in.
-  await db.insert(safetyReports).values({
-    reporterId: user.id,
-    type,
-    notes,
+  const [report] = await db
+    .insert(safetyReports)
+    .values({
+      reporterId: user.id,
+      type,
+      notes,
+    })
+    .returning({ id: safetyReports.id });
+
+  // Tell the safeguarding team now, rather than whenever somebody next happens
+  // to open the queue. A report from a child about their own safety sitting
+  // unread because nobody knew it existed is the one outcome this feature
+  // cannot have — and until this existed, that was the only outcome available.
+  //
+  // The notification deliberately carries no detail: it says a report was
+  // filed and links to the queue, where identity and content are behind
+  // requireAdmin(). A push preview appears on a lock screen.
+  after(async () => {
+    await dispatchToAdmins({
+      key: "SAFETY_REPORT_FILED",
+      vars: { reportId: report.id },
+      dedupe: report.id,
+    });
   });
 }
 

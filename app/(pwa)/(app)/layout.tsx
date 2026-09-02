@@ -1,6 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import { AppNav } from "@/components/app-nav";
 
 export const metadata: Metadata = {
@@ -13,6 +14,7 @@ import { NavProgressProvider } from "@/components/nav-progress";
 import { NotificationsProvider } from "@/components/notifications";
 import { ToastProvider } from "@/components/toast";
 import { getOrCreateDbUser } from "@/lib/db-user";
+import { touchLastActive } from "@/lib/notifications/activity";
 
 type OnboardingData = {
   roleSelected?: boolean;
@@ -55,6 +57,14 @@ export default async function AppLayout({
   if (!userId) redirect("/sign-in");
 
   const user = await getOrCreateDbUser();
+
+  // The only place the app records that a person was here. Deferred past the
+  // response and rate-limited to once every few hours, so it costs a navigation
+  // nothing; the inactivity notifications have no other signal to read.
+  after(async () => {
+    await touchLastActive(user);
+  });
+
   const data = (user.onboardingData as OnboardingData | null) ?? {};
 
   // Resume logic: redirect to the correct onboarding step if not complete.

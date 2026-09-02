@@ -53,12 +53,21 @@ if (!parsed.success) {
   );
 }
 
+const adminHostname = parsed.data.ADMIN_HOSTNAME;
+
 export const env = {
   databaseUrl: parsed.data.DATABASE_URL,
   clerkPublishableKey: parsed.data.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
   clerkSecretKey: parsed.data.CLERK_SECRET_KEY,
   clerkWebhookSecret: parsed.data.CLERK_WEBHOOK_SECRET,
-  adminHostname: parsed.data.ADMIN_HOSTNAME,
+  adminHostname,
+  /**
+   * Absolute base URL of the admin panel. Needed because admin-facing
+   * notifications are delivered through the same feed and service worker as
+   * everything else, but point at a different origin — a relative "/reports"
+   * would resolve against the PWA, which has no such page.
+   */
+  adminUrl: `${adminHostname.includes("localhost") ? "http" : "https"}://${adminHostname}`,
   vapidPrivateKey: parsed.data.VAPID_PRIVATE_KEY,
   vapidSubject: parsed.data.VAPID_SUBJECT,
   uploadthingToken: parsed.data.UPLOADTHING_TOKEN,

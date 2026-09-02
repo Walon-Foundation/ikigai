@@ -19,6 +19,7 @@ import {
   savePushSubscription,
   updateInterests,
   updateJournalDefault,
+  updateNotificationPrefs,
   updateProfile,
 } from "@/app/(pwa)/(app)/settings/actions";
 import {
@@ -30,6 +31,10 @@ import { PageHeader } from "@/components/page-header";
 import { BusyLabel, Spinner } from "@/components/spinner";
 import { useToast } from "@/components/toast";
 import { INTEREST_TAGS } from "@/lib/constants";
+import {
+  type NotificationPrefs,
+  SETTABLE_CATEGORIES,
+} from "@/lib/notifications/categories";
 import { signOutAndClearOfflineJournal } from "@/lib/offline-journal";
 import { subscribeToPush, unsubscribeFromPush } from "@/lib/push-client";
 import { usePwaInstall } from "@/lib/use-pwa-install";
@@ -43,6 +48,7 @@ type DbUser = {
   growthLevel: number | null;
   interestTags: string[] | null;
   pushEnabled?: boolean;
+  notificationPrefs?: NotificationPrefs;
   journalMentorDefault?: boolean;
   deletionRequestedAt?: string | null;
   deletionGraceDays?: number;
@@ -73,6 +79,11 @@ export function SettingsClient({ user }: { user: DbUser }) {
   const [pushEnabled, setPushEnabled] = useState(user.pushEnabled ?? false);
   const [pushError, setPushError] = useState<string | null>(null);
   const [isPushPending, startPushTransition] = useTransition();
+  const [prefs, setPrefs] = useState<NotificationPrefs>(
+    () => user.notificationPrefs ?? {},
+  );
+  const [prefsError, setPrefsError] = useState(false);
+  const [isPrefsPending, startPrefsTransition] = useTransition();
   const [journalPrivacy, setJournalPrivacy] = useState(
     user.journalMentorDefault ?? false,
   );
@@ -97,6 +108,34 @@ export function SettingsClient({ user }: { user: DbUser }) {
         setJournalPrivacy(!next);
         setJournalError(true);
       }
+    });
+  }
+
+  // Optimistic, then reverted on failure. A notification preference that looks
+  // saved and isn't is the same class of bug as the journal visibility toggle
+  // below: the user believes they have stopped something that is still running.
+  function handlePrefChange(next: NotificationPrefs) {
+    const previous = prefs;
+    setPrefsError(false);
+    setPrefs(next);
+    startPrefsTransition(async () => {
+      try {
+        await updateNotificationPrefs({
+          push: next.push,
+          email: next.email,
+          categories: next.categories as Record<string, boolean>,
+        });
+      } catch {
+        setPrefs(previous);
+        setPrefsError(true);
+      }
+    });
+  }
+
+  function setCategory(id: string, on: boolean) {
+    handlePrefChange({
+      ...prefs,
+      categories: { ...prefs.categories, [id]: on },
     });
   }
 
@@ -177,16 +216,55 @@ export function SettingsClient({ user }: { user: DbUser }) {
 
         {/* Notifications */}
         <SettingsSection title="Notifications" icon={Bell}>
-          <ToggleRow
-            label="Push Notifications"
-            desc="Mentor matches, milestones, nudges"
-            value={pushEnabled}
-            onChange={handlePushToggle}
-            pending={isPushPending}
-          />
-          {pushError && (
-            <p className="mt-2 text-xs text-destructive">{pushError}</p>
-          )}
+          <div className="space-y-4">
+            <ToggleRow
+              label="Push Notifications"
+              desc="Alerts on this device, even when Ikigai is closed"
+              value={pushEnabled}
+              onChange={handlePushToggle}
+              pending={isPushPending}
+            />
+            {pushError && (
+              <p className="text-xs text-destructive">{pushError}</p>
+            )}
+
+            <ToggleRow
+              label="Email Notifications"
+              desc="Important updates and your weekly summary"
+              value={prefs.email !== false}
+              onChange={(v) => handlePrefChange({ ...prefs, email: v })}
+              pending={isPrefsPending}
+            />
+          </div>
+
+          <div className="mt-5 border-t border-border pt-4">
+            <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              What you hear about
+            </p>
+            {/* Rendered from the same category list the sender reads, so a
+                notification type can never exist without a switch for it. */}
+            <p className="mb-3 text-xs text-muted-foreground">
+              Safety and account messages always come through.
+            </p>
+            <div className="space-y-4">
+              {SETTABLE_CATEGORIES.map((category) => (
+                <ToggleRow
+                  key={category.id}
+                  label={category.label}
+                  desc={category.description}
+                  value={prefs.categories?.[category.id] !== false}
+                  onChange={(v) => setCategory(category.id, v)}
+                  pending={isPrefsPending}
+                />
+              ))}
+            </div>
+            {prefsError && (
+              <p className="mt-3 text-xs font-semibold text-destructive">
+                Couldn&apos;t save that — your notification settings are
+                unchanged.
+              </p>
+            )}
+          </div>
         </SettingsSection>
 
         {/* Privacy */}

@@ -1,5 +1,5 @@
 import "server-only";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, count, eq, inArray } from "drizzle-orm";
 import { db } from "@/db/db";
 import {
   mentorships,
@@ -7,9 +7,11 @@ import {
   skillCategories,
   skillMilestones,
   skillTracks,
+  users,
 } from "@/db/schema";
 import type { DbUser } from "@/lib/db-user";
 import { applyTaskComplete } from "@/lib/growth-tree";
+import { dispatch } from "@/lib/notifications/dispatch";
 import { classifySkillTag } from "@/lib/skill-classifier";
 import {
   nextSkillStage,
@@ -251,6 +253,19 @@ async function maybeAdvanceStage(skillTrackId: string): Promise<void> {
         eq(skillMilestones.status, "locked"),
       ),
     );
+
+  // This is the moment the spec's headline notification describes: a stage
+  // finished and the next set of milestones opened up. It fired nothing at all
+  // before — the mentee's tree quietly grew and they found out by visiting.
+  //
+  // Deduped on track and stage, so a track can announce reaching THRIVE once
+  // and only once however many times this runs.
+  await dispatch({
+    key: "MILESTONE_UNLOCKED",
+    to: track.menteeId,
+    vars: { skill: track.interestTag },
+    dedupe: `${track.id}:${next}`,
+  });
 }
 
 async function loadOwnedMilestone(milestoneId: string, menteeId: string) {
@@ -303,6 +318,41 @@ export async function submitOwnMilestone(
         eq(skillMilestones.status, "available"),
       ),
     );
+
+  // Nothing moves until the mentor reviews it, so the mentee's submission is
+  // stuck until the mentor happens to look. Tell them.
+  const mentorId = await mentorFor(row.track.mentorshipId);
+  if (!mentorId) return;
+
+  const [mentee] = await db
+    .select({ displayName: users.displayName })
+    .from(users)
+    .where(eq(users.id, menteeId))
+    .limit(1);
+
+  await dispatch({
+    key: "MILESTONE_SUBMITTED",
+    to: mentorId,
+    vars: {
+      mentee: mentee?.displayName ?? "Your mentee",
+      milestone: row.template.label,
+      menteeId,
+    },
+    dedupe: `${milestoneId}:${row.milestone.submittedAt?.getTime() ?? "first"}`,
+  });
+}
+
+/** The mentor on an active mentorship, or null if there isn't one. */
+async function mentorFor(mentorshipId: string | null): Promise<string | null> {
+  if (!mentorshipId) return null;
+  const [row] = await db
+    .select({ mentorId: mentorships.mentorId })
+    .from(mentorships)
+    .where(
+      and(eq(mentorships.id, mentorshipId), eq(mentorships.status, "active")),
+    )
+    .limit(1);
+  return row?.mentorId ?? null;
 }
 
 /** A mentor reviews a submitted milestone: approve (awards points) or send back with feedback. */
@@ -351,7 +401,19 @@ export async function reviewMilestone(
         ),
       );
     await applyTaskComplete(row.track.menteeId, row.template.growthPoints);
+
+    await dispatch({
+      key: "MILESTONE_APPROVED",
+      to: row.track.menteeId,
+      vars: { milestone: row.template.label },
+      dedupe: `${milestoneId}:approved`,
+    });
+
+    // Order matters: the approval lands before the stage-unlock announcement
+    // that may follow it, so the two read as a sequence rather than arriving
+    // the wrong way round.
     await maybeAdvanceStage(row.track.id);
+    await maybeCelebrateTotal(row.track.menteeId);
   } else {
     await db
       .update(skillMilestones)
@@ -362,5 +424,46 @@ export async function reviewMilestone(
           eq(skillMilestones.status, "submitted"),
         ),
       );
+
+    // A milestone sent back with notes is the one case where the mentee has
+    // something to do and no way to know: the row simply reverts to
+    // "available" and looks untouched.
+    await dispatch({
+      key: "MILESTONE_REVISION",
+      to: row.track.menteeId,
+      vars: { milestone: row.template.label },
+    });
   }
+}
+
+/** Milestone totals worth marking. Kept small — a rare event stays an event. */
+const ACHIEVEMENT_TOTALS = [5, 10, 25, 50];
+
+/**
+ * Congratulate a mentee on a round number of completed milestones.
+ *
+ * Only fires when the total lands exactly on one of the thresholds, so it is a
+ * handful of notifications over a whole journey rather than a running tally.
+ */
+async function maybeCelebrateTotal(menteeId: string): Promise<void> {
+  const [row] = await db
+    .select({ total: count() })
+    .from(skillMilestones)
+    .innerJoin(skillTracks, eq(skillMilestones.skillTrackId, skillTracks.id))
+    .where(
+      and(
+        eq(skillTracks.menteeId, menteeId),
+        eq(skillMilestones.status, "done"),
+      ),
+    );
+
+  const total = Number(row?.total ?? 0);
+  if (!ACHIEVEMENT_TOTALS.includes(total)) return;
+
+  await dispatch({
+    key: "ACHIEVEMENT",
+    to: menteeId,
+    vars: { count: String(total) },
+    dedupe: `${menteeId}:milestones:${total}`,
+  });
 }

@@ -5,24 +5,34 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/db/db";
 import { schools, users } from "@/db/schema";
 import { requireAdmin } from "@/lib/db-user";
-import { notifyMany } from "@/lib/notify";
+import { dispatchMany } from "@/lib/notifications/dispatch";
 
 const MAX_TITLE = 200;
 const MAX_BODY = 1_000;
+const MAX_URL = 300;
 
-export const AUDIENCES = ["all", "mentees", "mentors", "club_leads"] as const;
+export const AUDIENCES = [
+  "all",
+  "mentees",
+  "mentors",
+  "parents",
+  "club_leads",
+] as const;
 export type Audience = (typeof AUDIENCES)[number];
 
 function str(value: unknown, max: number): string {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
 }
 
-// Everyone the broadcast should reach, with their push subscription already
-// loaded so notifyMany doesn't have to look each one up individually.
+// Everyone the broadcast should reach, with the push subscription, email and
+// notification preferences already loaded so the fan-out costs a fixed number
+// of round-trips rather than four per recipient.
 async function recipientsFor(audience: Audience) {
   const select = {
     id: users.id,
+    email: users.email,
     subscription: users.pushSubscription,
+    prefs: users.notificationPrefs,
   };
 
   if (audience === "club_leads") {
@@ -36,8 +46,17 @@ async function recipientsFor(audience: Audience) {
       .where(and(isNotNull(schools.verifiedAt), isNull(users.deletedAt)));
   }
 
-  if (audience === "mentees" || audience === "mentors") {
-    const role = audience === "mentees" ? "mentee" : "mentor";
+  if (
+    audience === "mentees" ||
+    audience === "mentors" ||
+    audience === "parents"
+  ) {
+    const role =
+      audience === "mentees"
+        ? "mentee"
+        : audience === "mentors"
+          ? "mentor"
+          : "parent";
     return db
       .select(select)
       .from(users)
@@ -70,13 +89,18 @@ async function recipientsFor(audience: Audience) {
  * the same screen: the "Sent History" panel reads push_notifications for real,
  * so the message they'd just "sent" never appeared in it.
  *
- * Returns how many users it reached so the UI can report a true number.
+ * Reports what actually happened per channel. The previous version returned
+ * the number of feed rows written and the screen rendered it as "Sent to N
+ * people" — which counted people who will see it next time they open the app,
+ * not people whose phone lit up. Those are different numbers and an admin
+ * deciding whether a message landed needs both.
  */
 export async function sendBroadcast(data: {
   title: string;
   body: string;
   audience: string;
-}): Promise<{ sent: number }> {
+  url?: string;
+}): Promise<{ persisted: number; pushed: number; skipped: number }> {
   await requireAdmin();
 
   const title = str(data.title, MAX_TITLE);
@@ -84,20 +108,34 @@ export async function sendBroadcast(data: {
   if (!title) throw new Error("Title is required");
   if (!body) throw new Error("Message is required");
 
+  // Where tapping the notification takes them. Must be a path on the PWA, not
+  // an absolute URL: an admin-supplied "https://..." here would send every user
+  // on the platform to somewhere off-product in one click.
+  const rawUrl = str(data.url, MAX_URL);
+  if (rawUrl && !rawUrl.startsWith("/")) {
+    throw new Error("Link must be an in-app path starting with /");
+  }
+
   const audience = (AUDIENCES as readonly string[]).includes(data.audience)
     ? (data.audience as Audience)
     : "all";
 
   const recipients = await recipientsFor(audience);
-  const sent = await notifyMany(recipients, {
-    title,
-    body,
-    type: "broadcast",
-    url: "/dashboard",
+  const result = await dispatchMany(recipients, {
+    key: "BROADCAST",
+    vars: { title, body },
+    url: rawUrl || undefined,
+    // Groups this fan-out so the history can show one broadcast rather than
+    // one row per recipient.
+    broadcastId: crypto.randomUUID(),
   });
 
   // The history panel on this page reads straight from push_notifications.
   revalidatePath("/admin/notifications");
 
-  return { sent };
+  return {
+    persisted: result.persisted,
+    pushed: result.pushed,
+    skipped: result.skipped,
+  };
 }

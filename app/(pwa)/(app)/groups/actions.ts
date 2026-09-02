@@ -1,12 +1,14 @@
 "use server";
 
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull, ne } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { db } from "@/db/db";
-import { groupMembers, groups, messages } from "@/db/schema";
+import { groupMembers, groups, messages, users } from "@/db/schema";
 import { reserveClubSlug } from "@/lib/clubs";
 import { getDbUser } from "@/lib/db-user";
 import { flagsConcern } from "@/lib/journal";
+import { dispatchMany } from "@/lib/notifications/dispatch";
 import type { SkillStage } from "@/lib/skill-stages";
 
 const MAX_NAME = 80;
@@ -158,6 +160,45 @@ export async function postGroupMessage(data: {
     senderId: me.id,
     content,
     keywordFlag: flagsConcern(content),
+  });
+
+  // Club chatter is the one thing here that could genuinely become spam, so it
+  // is the most restrained notification in the system: low priority (in-app
+  // only, never a push), a six-hour cooldown per person, and no message
+  // preview. A busy club produces at most four of these a day, and a member
+  // who does not want them can switch the Community category off.
+  const groupId = data.groupId;
+  const senderId = me.id;
+  after(async () => {
+    const [group] = await db
+      .select({ name: groups.name })
+      .from(groups)
+      .where(eq(groups.id, groupId))
+      .limit(1);
+    if (!group) return;
+
+    const members = await db
+      .select({
+        id: users.id,
+        email: users.email,
+        subscription: users.pushSubscription,
+        prefs: users.notificationPrefs,
+      })
+      .from(groupMembers)
+      .innerJoin(users, eq(groupMembers.userId, users.id))
+      .where(
+        and(
+          eq(groupMembers.groupId, groupId),
+          // Not the person who just posted.
+          ne(groupMembers.userId, senderId),
+          isNull(users.deletedAt),
+        ),
+      );
+
+    await dispatchMany(members, {
+      key: "COMMUNITY_UPDATE",
+      vars: { group: group.name, groupId },
+    });
   });
 
   revalidatePath(`/groups/${data.groupId}`);

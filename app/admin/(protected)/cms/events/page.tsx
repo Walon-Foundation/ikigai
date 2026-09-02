@@ -24,6 +24,12 @@ const FIELDS: Field[] = [
     label: "Ends (optional — volunteering/joining blocked after this)",
   },
   { type: "text", name: "location", label: "Location" },
+  {
+    type: "lines",
+    name: "interestTags",
+    label: "Interest tags, one per line",
+    help: "Mentees whose interests match any of these are notified once, when the event becomes public.",
+  },
   { type: "image", name: "imageUrl", label: "Event image" },
   {
     type: "checkbox",
@@ -80,6 +86,7 @@ export default async function EventsCmsPage() {
       endsAt: toLocalInput(e.endsAt as Date | null),
       location: e.location ?? "",
       imageUrl: e.imageUrl ?? "",
+      interestTags: (e.interestTags ?? []).join("\n"),
       allowVolunteer: e.allowVolunteer === false ? "" : "true",
       allowJoin: e.allowJoin === false ? "" : "true",
       reportSummary: e.reportSummary ?? "",

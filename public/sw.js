@@ -86,13 +86,30 @@ self.addEventListener("fetch", (event) => {
 
 self.addEventListener("push", (event) => {
   if (!event.data) return;
-  const data = event.data.json();
+
+  // A malformed payload must not take down the handler — an exception here
+  // shows the browser's own "This site has been updated in the background"
+  // notification instead, which is worse than showing nothing.
+  let data;
+  try {
+    data = event.data.json();
+  } catch {
+    return;
+  }
+
   event.waitUntil(
     self.registration.showNotification(data.title ?? "Ikigai", {
       body: data.body ?? "",
       icon: data.icon ?? "/icon-192x192.png",
       badge: "/icon-192x192.png",
       vibrate: [100, 50, 100],
+      // Collapses repeats of the same kind of notification into one tray entry
+      // rather than stacking them. Without it, five new messages while the
+      // phone is in a pocket is five separate notifications to dismiss.
+      tag: data.tag ?? undefined,
+      // ...but a replacement should still buzz, or a collapsed notification
+      // arrives in complete silence and is never noticed.
+      renotify: Boolean(data.tag),
       data: { url: data.url ?? "/dashboard" },
     }),
   );
@@ -105,9 +122,59 @@ self.addEventListener("notificationclick", (event) => {
     clients
       .matchAll({ type: "window", includeUncontrolled: true })
       .then((wins) => {
-        const existing = wins.find((w) => w.url.includes(target));
-        if (existing) return existing.focus();
+        // An absolute URL means the admin surface, which is a different origin
+        // — no open window of ours can be reused for it.
+        const sameOrigin = target.startsWith("/");
+        const existing = sameOrigin
+          ? wins.find((w) => new URL(w.url).origin === self.location.origin)
+          : undefined;
+
+        if (existing) {
+          // Focusing alone left the user staring at whatever page they had open
+          // before, with no sign the tap had done anything. Navigate first, and
+          // only fall back to focusing if the client can't be navigated.
+          if ("navigate" in existing) {
+            return existing
+              .navigate(target)
+              .then((w) => (w ?? existing).focus());
+          }
+          return existing.focus();
+        }
         return clients.openWindow(target);
       }),
+  );
+});
+
+// The browser can reissue a push subscription whenever it likes — after a long
+// idle spell, a profile change, or a push-service migration. The old endpoint
+// dies at that moment and starts returning 410, which prunes the stored row.
+//
+// Without this handler that was terminal: push stopped for that user forever,
+// while the Settings toggle still read "on" and nothing anywhere reported a
+// problem. Re-subscribing with the same application server key and telling the
+// server about it makes rotation invisible instead of fatal.
+self.addEventListener("pushsubscriptionchange", (event) => {
+  event.waitUntil(
+    (async () => {
+      const applicationServerKey =
+        event.oldSubscription?.options?.applicationServerKey;
+      if (!applicationServerKey) return;
+
+      try {
+        const subscription = await self.registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey,
+        });
+        await fetch("/api/push/resubscribe", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify(subscription.toJSON()),
+        });
+      } catch {
+        // Nothing useful to do from here. The user can re-enable push from
+        // Settings, which is the same path a first-time subscribe takes.
+      }
+    })(),
   );
 });

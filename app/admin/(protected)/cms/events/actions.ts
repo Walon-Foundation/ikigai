@@ -1,11 +1,20 @@
 "use server";
 
 import { eq } from "drizzle-orm";
+import { after } from "next/server";
 import { db } from "@/db/db";
 import { events } from "@/db/schema";
-import { bool, imageUrl, requiredText, slugify, text } from "@/lib/cms-admin";
+import {
+  bool,
+  imageUrl,
+  lines,
+  requiredText,
+  slugify,
+  text,
+} from "@/lib/cms-admin";
 import { cmsInvalidate } from "@/lib/cms-crud";
 import { requireAdmin } from "@/lib/db-user";
+import { announceEvent } from "@/lib/notifications/opportunities";
 
 // Events are the one CMS entity backed by a table the app also uses. So this
 // action set is bespoke rather than the generic one:
@@ -49,17 +58,31 @@ export async function save(id: string | null, v: Record<string, string>) {
     reportSummary: text(v.reportSummary, 4_000),
     reportPartners: text(v.reportPartners, 500),
     reportImpact: text(v.reportImpact, 500),
+    interestTags: lines(v.interestTags, 12, 60),
     slug: slugify(title),
   };
 
+  let eventId = id;
   if (id) {
     await db.update(events).set(fields).where(eq(events.id, id));
   } else {
     // Created from the CMS → public by default; that is why the admin is here.
-    await db
+    const [row] = await db
       .insert(events)
-      .values({ ...fields, isPublic: true, createdBy: admin.id });
+      .values({ ...fields, isPublic: true, createdBy: admin.id })
+      .returning({ id: events.id });
+    eventId = row.id;
   }
+
+  // Tell the mentees whose interests match. Deduped on the event, so editing
+  // one afterwards — fixing a typo, adding the image — never re-announces it.
+  if (eventId) {
+    const announceId = eventId;
+    after(async () => {
+      await announceEvent(announceId);
+    });
+  }
+
   cmsInvalidate(PATH);
 }
 
@@ -70,6 +93,16 @@ export async function togglePublish(id: string, next: boolean) {
     .update(events)
     .set({ isPublic: next === true })
     .where(eq(events.id, id));
+
+  // An event made public for the first time is the other way one becomes an
+  // opportunity — the CMS create path is not the only route in, since the
+  // operational Events admin creates internal events that are published later.
+  if (next) {
+    after(async () => {
+      await announceEvent(id);
+    });
+  }
+
   cmsInvalidate(PATH);
 }
 
