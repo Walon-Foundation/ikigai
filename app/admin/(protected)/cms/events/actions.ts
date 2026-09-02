@@ -2,8 +2,9 @@
 
 import { eq } from "drizzle-orm";
 import { after } from "next/server";
+import { revalidatePath } from "next/cache";
 import { db } from "@/db/db";
-import { events } from "@/db/schema";
+import { eventAttendance, events } from "@/db/schema";
 import {
   bool,
   imageUrl,
@@ -16,18 +17,13 @@ import { cmsInvalidate } from "@/lib/cms-crud";
 import { requireAdmin } from "@/lib/db-user";
 import { announceEvent } from "@/lib/notifications/opportunities";
 
-// Events are the one CMS entity backed by a table the app also uses. So this
-// action set is bespoke rather than the generic one:
-//
-//   - the publish flag is `isPublic`, not `published` — an event hidden from
-//     the website may still be a live activity inside the app;
-//   - there is no reordering (events order by date);
-//   - deletion is intentionally NOT offered here. An event carries attendance
-//     records, and removing it belongs on the operational /admin/events screen
-//     that manages those, not on the marketing screen. Hiding (isPublic=false)
-//     is the reversible action a content editor needs.
+// Events are the one CMS entity backed by a table the app also uses. This is
+// now the UNIFIED admin for events — previously split between the operational
+// Events screen (capacity/type/attendance) and this CMS screen (image/tags/
+// report). Merged so one route owns the whole `events` row plus its attendance.
 
 const PATH = "/admin/cms/events";
+const ATTENDANCE_STATUSES = ["registered", "attended", "no_show"] as const;
 
 function parseDate(value: string): Date | null {
   if (!value) return null;
@@ -106,8 +102,31 @@ export async function togglePublish(id: string, next: boolean) {
   cmsInvalidate(PATH);
 }
 
-// The manager insists on a `remove`; deletion is disabled via canDelete so this
-// is never reachable, but it must satisfy the type.
-export async function remove(_id: string) {
-  throw new Error("Delete events from the Events admin, not the CMS");
+export async function remove(id: string) {
+  await requireAdmin();
+  if (typeof id !== "string" || !id) throw new Error("Invalid event");
+  await db.delete(eventAttendance).where(eq(eventAttendance.eventId, id));
+  await db.delete(events).where(eq(events.id, id));
+  cmsInvalidate(PATH);
+  revalidatePath(PATH);
+}
+
+export async function setAttendanceStatus(data: {
+  attendanceId: string;
+  status: string;
+}) {
+  await requireAdmin();
+  if (typeof data.attendanceId !== "string" || !data.attendanceId)
+    throw new Error("Invalid attendance record");
+  const status = (ATTENDANCE_STATUSES as readonly string[]).includes(
+    data.status,
+  )
+    ? data.status
+    : "registered";
+  await db
+    .update(eventAttendance)
+    .set({ status })
+    .where(eq(eventAttendance.id, data.attendanceId));
+  cmsInvalidate(PATH);
+  revalidatePath(PATH);
 }

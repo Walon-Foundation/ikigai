@@ -1,12 +1,13 @@
-import { desc } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import {
   type AdminRow,
   type Field,
   ResourceManager,
 } from "@/components/admin/resource-manager";
 import { db } from "@/db/db";
-import { events } from "@/db/schema";
-import { remove, save, togglePublish } from "./actions";
+import { eventAttendance, events, users } from "@/db/schema";
+import { remove, save, setAttendanceStatus, togglePublish } from "./actions";
+import { AttendanceList } from "./attendance-list";
 
 // Format a Date for a datetime-local input ("YYYY-MM-DDTHH:mm"), in local time.
 function toLocalInput(date: Date | null): string {
@@ -56,7 +57,19 @@ const FIELDS: Field[] = [
 ];
 
 export default async function EventsCmsPage() {
-  const rows = await db.select().from(events).orderBy(desc(events.startsAt));
+  const [rows, attendanceRows] = await Promise.all([
+    db.select().from(events).orderBy(desc(events.startsAt)),
+    db
+      .select({
+        id: eventAttendance.id,
+        eventId: eventAttendance.eventId,
+        status: eventAttendance.status,
+        userName: users.displayName,
+        userEmail: users.email,
+      })
+      .from(eventAttendance)
+      .leftJoin(users, eq(eventAttendance.userId, users.id)),
+  ]);
 
   const items: AdminRow[] = rows.map((e) => ({
     id: e.id,
@@ -95,22 +108,38 @@ export default async function EventsCmsPage() {
     },
   }));
 
+  const attendanceByEvent = new Map<string, typeof attendanceRows>();
+  for (const a of attendanceRows) {
+    const list = attendanceByEvent.get(a.eventId) ?? [];
+    list.push(a);
+    attendanceByEvent.set(a.eventId, list);
+  }
+
   return (
-    <>
-      <p className="mb-4 rounded-xl border border-border bg-secondary/40 p-3 text-xs text-muted-foreground">
-        Events created here are public. Events created in the main Events admin
-        stay internal to the app until you make them public here. Attendance and
-        deletion live on that screen.
-      </p>
+    <div className="space-y-8">
       <ResourceManager
         singular="Event"
         fields={FIELDS}
         items={items}
         actions={{ save, togglePublish, remove }}
         canReorder={false}
-        canDelete={false}
+        canDelete={true}
         publishLabel={{ on: "Public", off: "Hidden" }}
       />
-    </>
+
+      <div>
+        <h2 className="mb-4 font-display text-lg font-bold text-foreground">
+          Attendance — who RSVP&apos;d
+        </h2>
+        <p className="mb-4 text-sm text-muted-foreground">
+          RSVPs from the app (mentee/mentor). Change status to mark attended / no-show. Deleting the event above also removes its RSVPs.
+        </p>
+        <AttendanceList
+          rows={rows}
+          attendanceByEvent={attendanceByEvent}
+          setAttendanceStatus={setAttendanceStatus}
+        />
+      </div>
+    </div>
   );
 }
