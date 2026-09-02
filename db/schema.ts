@@ -108,6 +108,23 @@ export const users = pgTable(
     deletionRequestedAt: timestamp("deletion_requested_at"),
     deletedAt: timestamp("deleted_at"),
     pushSubscription: jsonb("push_subscription"), // Web Push subscription object
+    // Per-category notification preferences. A missing column, a missing key,
+    // or a null here all mean "on", so nobody needed a backfill when this
+    // landed and a user who has never opened Settings still gets everything.
+    // Shape lives in lib/notifications/catalog.ts.
+    //
+    // The `account` category deliberately ignores this: approvals, rejections,
+    // safeguarding alerts and admin broadcasts are not opt-out-able.
+    notificationPrefs: jsonb("notification_prefs"),
+    // Last time this person did anything in the PWA. Written from the app shell
+    // at most once every few hours, and read only by the inactivity jobs in the
+    // notifications cron.
+    //
+    // mentorships.lastActivityAt is NOT this. That column is bumped by either
+    // party's chat messages, so a mentee who only ever *receives* messages
+    // looks permanently active there. This one is about a single person's own
+    // actions, which is what "hasn't been seen in a while" has to mean.
+    lastActiveAt: timestamp("last_active_at"),
     onboardingData: jsonb("onboarding_data"),
     createdAt: timestamp("created_at").defaultNow(),
   },
@@ -117,6 +134,9 @@ export const users = pgTable(
     index("users_role_verified_idx").on(t.role, t.verifiedAt),
     // Guardian links resolve a child by email.
     index("users_email_idx").on(t.email),
+    // The daily inactivity jobs scan for mentees whose last action predates a
+    // cutoff. Without this it is a seq scan of every user, once a day, forever.
+    index("users_last_active_idx").on(t.lastActiveAt),
   ],
 );
 
@@ -563,15 +583,74 @@ export const pushNotifications = pgTable(
     userId: uuid("user_id").references(() => users.id),
     title: text("title").notNull(),
     body: text("body").notNull(),
+    // The coarse original category. Kept, and still written on every row, so
+    // that everything reading `type` today keeps working. `key` below is the
+    // precise one — prefer it for anything new.
     type: text("type"), // 'nudge' | 'match' | 'milestone' | 'broadcast' | 'task' | 'guardian'
+    // The catalogue key this row came from, e.g. 'MILESTONE_UNLOCKED'. The
+    // authoritative list is lib/notifications/catalog.ts; this is plain text
+    // rather than an enum because adding a notification type should not need a
+    // migration, and a row whose key was later retired must still render.
+    key: text("key"),
+    category: text("category"), // the Settings toggle this row obeyed
+    priority: text("priority"), // 'high' | 'medium' | 'low'
+    // Which channels dispatch actually attempted, after preferences and
+    // priority were applied. Answers "why didn't I get a push for this?"
+    // without re-deriving the decision.
+    channels: text("channels").array(),
+    // Idempotency key, e.g. `${userId}:MILESTONE_UNLOCKED:${milestoneId}`.
+    // The unique index below is what makes the no-spam rule real: a duplicate
+    // is refused by Postgres rather than by remembering to check first.
+    dedupeKey: text("dedupe_key"),
     url: text("url"), // deep link opened on notification click / feed row tap
     readAt: timestamp("read_at"), // null = unread (drives the bell badge)
+    pushedAt: timestamp("pushed_at"), // web push accepted by the push service
+    emailedAt: timestamp("emailed_at"), // handed to SMTP
+    // Groups the one-row-per-recipient fan-out of a single admin broadcast, so
+    // the admin history can list broadcasts instead of 500 identical rows.
+    broadcastId: uuid("broadcast_id"),
     sentAt: timestamp("sent_at").defaultNow(),
   },
-  // Polled by the bell on an interval for every signed-in user, so this is a
-  // constant background read: one user's feed, newest first.
-  (t) => [index("push_notifications_user_idx").on(t.userId, t.sentAt)],
+  (t) => [
+    // Polled by the bell on an interval for every signed-in user, so this is a
+    // constant background read: one user's feed, newest first.
+    index("push_notifications_user_idx").on(t.userId, t.sentAt),
+    // Partial, because most rows have no dedupe key and multiple NULLs would
+    // otherwise be fine but pointlessly indexed.
+    uniqueIndex("push_notifications_dedupe_idx")
+      .on(t.dedupeKey)
+      .where(sql`${t.dedupeKey} is not null`),
+    // The admin broadcast history groups by this.
+    index("push_notifications_broadcast_idx").on(t.broadcastId, t.sentAt),
+  ],
 );
+
+// Admin-editable overrides for the notification catalogue.
+//
+// lib/notifications/catalog.ts ships a complete default for every key — copy,
+// channels, priority, cooldown. A row here overrides some or all of it, so this
+// table starts EMPTY and the app is fully functional with nothing in it. A
+// null column means "use the code default", which is why none of them are
+// notNull: clearing a field in the admin form must restore the shipped copy
+// rather than blanking the notification.
+//
+// Same idea as app_copy (a key-addressed store the admin edits and the app
+// falls back from), but typed columns rather than jsonb, because these fields
+// are read on every single send and their shape is fixed.
+export const notificationTemplates = pgTable("notification_templates", {
+  key: text("key").primaryKey(), // must match a catalogue key
+  title: text("title"),
+  body: text("body"),
+  // Turns a whole notification type off platform-wide. Distinct from a user's
+  // own preference, and it does not apply to the `account` category.
+  enabled: boolean("enabled").notNull().default(true),
+  channels: text("channels").array(), // subset of 'inapp' | 'push' | 'email'
+  priority: text("priority"), // 'high' | 'medium' | 'low'
+  // Minimum hours between two of this type for the same person. The blunt
+  // instrument behind "do not spam"; the dedupe key is the precise one.
+  cooldownHours: integer("cooldown_hours"),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
 
 export const messages = pgTable(
   "messages",
@@ -740,6 +819,13 @@ export const events = pgTable(
     type: text("type").default("workshop"),
     // Roadmap completion % required to register (e.g. Picnic = 50). 0 = open.
     unlockAtPercent: integer("unlock_at_percent").default(0),
+    // What this activity is about, in the same free vocabulary as
+    // users.interestTags and groups.interestTags — that shared vocabulary is
+    // what makes them comparable, and it is what OPPORTUNITY_MATCH notifies on
+    // (lib/notifications/opportunities.ts). Null or empty means the event is
+    // announced to nobody, which is the safe default for the events that
+    // already exist.
+    interestTags: text("interest_tags").array(),
     createdBy: uuid("created_by").references(() => users.id),
     createdAt: timestamp("created_at").defaultNow(),
 
