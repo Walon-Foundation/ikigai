@@ -23,18 +23,49 @@ const fetchUserByClerkId = cache(
   },
 );
 
+function isPlaceholderName(value: string | null | undefined): boolean {
+  if (!value) return true;
+  const trimmed = value.trim();
+  return trimmed === "" || trimmed === "User";
+}
+
+function deriveDisplayName(
+  clerkUser: { firstName: string | null; lastName: string | null; fullName: string | null } | null | undefined,
+): string {
+  const parts = [clerkUser?.firstName, clerkUser?.lastName]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+  return clerkUser?.fullName?.trim() || parts || "User";
+}
+
 export async function getOrCreateDbUser(): Promise<DbUser> {
   const { userId } = await auth();
   if (!userId) throw new Error("Unauthenticated");
 
   const existing = await fetchUserByClerkId(userId);
-  if (existing) return existing;
+  if (existing) {
+    // A stale placeholder ("User", "", null) is a past bug — if Clerk now has
+    // a real name, heal it here. This is the fast path that fixes every
+    // existing user who was created via the ?? bug or via an email-only sign
+    // up that never ran the onboarding displayName write.
+    if (isPlaceholderName(existing.displayName)) {
+      const clerkUser = await currentUser();
+      const fresh = deriveDisplayName(clerkUser);
+      if (fresh !== "User" && fresh !== existing.displayName) {
+        const [updated] = await db
+          .update(users)
+          .set({ displayName: fresh })
+          .where(eq(users.clerkId, userId))
+          .returning();
+        if (updated) return updated;
+      }
+    }
+    return existing;
+  }
 
   const clerkUser = await currentUser();
-  const parts = [clerkUser?.firstName, clerkUser?.lastName]
-    .filter(Boolean)
-    .join(" ");
-  const displayName = clerkUser?.fullName ?? parts ?? "User";
+  const displayName = deriveDisplayName(clerkUser);
   // ONLY the primary address, and only once Clerk says it is verified. The
   // re-link below hands an existing row to whoever presents this address, so
   // the address has to be one Clerk has proven this person controls. Taking
@@ -82,9 +113,18 @@ export async function getOrCreateDbUser(): Promise<DbUser> {
       .orderBy(desc(users.createdAt))
       .limit(1);
     if (byEmail) {
+      // If the existing row has a placeholder name, replace it with the Clerk
+      // name — re-link is the moment we learn the real name for an orphaned
+      // row (dev→prod swap, res-signup). Don't overwrite a real custom name
+      // the user set in Settings.
+      const shouldHealName =
+        isPlaceholderName(byEmail.displayName) && displayName !== "User";
       const [relinked] = await db
         .update(users)
-        .set({ clerkId: userId })
+        .set({
+          clerkId: userId,
+          ...(shouldHealName ? { displayName } : {}),
+        })
         .where(eq(users.id, byEmail.id))
         .returning();
       return relinked;

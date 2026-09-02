@@ -5,8 +5,8 @@ import { db } from "@/db/db";
 import { users } from "@/db/schema";
 import { env } from "@/lib/env";
 
-type ClerkUserCreatedEvent = {
-  type: "user.created";
+type ClerkUserEvent = {
+  type: "user.created" | "user.updated";
   data: {
     id: string;
     email_addresses: { email_address: string; id: string }[];
@@ -14,10 +14,11 @@ type ClerkUserCreatedEvent = {
     first_name: string | null;
     last_name: string | null;
     full_name: string | null;
+    image_url?: string | null;
   };
 };
 
-type ClerkEvent = ClerkUserCreatedEvent;
+type ClerkEvent = ClerkUserEvent;
 
 export async function POST(request: Request) {
   const secret = env.clerkWebhookSecret;
@@ -51,13 +52,14 @@ export async function POST(request: Request) {
     return Response.json({ error: "Invalid signature" }, { status: 400 });
   }
 
-  if (event.type === "user.created") {
+  if (event.type === "user.created" || event.type === "user.updated") {
     const {
       id: clerkId,
       email_addresses,
       primary_email_address_id,
       first_name,
       last_name,
+      full_name,
     } = event.data;
 
     const primaryEmail =
@@ -66,8 +68,44 @@ export async function POST(request: Request) {
       email_addresses[0]?.email_address ??
       null;
 
-    const displayName =
-      [first_name, last_name].filter(Boolean).join(" ") || "User";
+    const parts = [first_name, last_name].filter(Boolean).join(" ").trim();
+    const displayName = full_name?.trim() || parts || "User";
+
+    if (event.type === "user.updated") {
+      // Clerk name/email changed after signup — sync it. Don't overwrite a
+      // real custom name the user set in Settings with the generic "User"
+      // fallback.
+      const [existing] = await db
+        .select({ id: users.id, displayName: users.displayName })
+        .from(users)
+        .where(eq(users.clerkId, clerkId))
+        .limit(1);
+      if (existing) {
+        const isPlaceholder =
+          !existing.displayName ||
+          existing.displayName.trim() === "" ||
+          existing.displayName === "User";
+        const shouldUpdate =
+          displayName !== "User" && (isPlaceholder || displayName !== existing.displayName);
+        // Only update when we have a real name to write — otherwise a
+        // user.updated that carries no name would blank a good name.
+        if (shouldUpdate) {
+          await db
+            .update(users)
+            .set({ displayName, ...(primaryEmail ? { email: primaryEmail } : {}) })
+            .where(eq(users.clerkId, clerkId));
+        } else if (primaryEmail) {
+          // Email may still have changed even if name didn't.
+          await db
+            .update(users)
+            .set({ email: primaryEmail })
+            .where(eq(users.clerkId, clerkId));
+        }
+        return Response.json({ received: true });
+      }
+      // No row for this clerkId yet — fall through to re-link/insert as
+      // for user.created (covers webhook arriving before getOrCreateDbUser).
+    }
 
     // Same re-link as lib/db-user.ts's getOrCreateDbUser: if this email
     // already has a row under a different (now-stale) clerkId, point that row
@@ -75,7 +113,7 @@ export async function POST(request: Request) {
     // person. See that file for why this happens.
     const [byEmail] = primaryEmail
       ? await db
-          .select({ id: users.id })
+          .select({ id: users.id, displayName: users.displayName })
           .from(users)
           .where(eq(users.email, primaryEmail))
           .orderBy(desc(users.createdAt))
@@ -83,7 +121,17 @@ export async function POST(request: Request) {
       : [];
 
     if (byEmail) {
-      await db.update(users).set({ clerkId }).where(eq(users.id, byEmail.id));
+      const isPlaceholder =
+        !byEmail.displayName ||
+        byEmail.displayName.trim() === "" ||
+        byEmail.displayName === "User";
+      await db
+        .update(users)
+        .set({
+          clerkId,
+          ...(isPlaceholder && displayName !== "User" ? { displayName } : {}),
+        })
+        .where(eq(users.id, byEmail.id));
     } else {
       await db
         .insert(users)
