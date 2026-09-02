@@ -1,5 +1,5 @@
 import { auth } from "@clerk/nextjs/server";
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { db } from "@/db/db";
 import { pushNotifications, users } from "@/db/schema";
@@ -28,6 +28,17 @@ export async function GET() {
       url: pushNotifications.url,
       readAt: pushNotifications.readAt,
       sentAt: pushNotifications.sentAt,
+      // The true unread total, not the unread count of this page.
+      //
+      // This used to be `rows.filter(r => !r.readAt).length` over the 30 rows
+      // below, so the bell silently stopped counting at 30 — someone returning
+      // after a fortnight away saw "9+" whether they had 30 unread or 300, and
+      // clearing 20 of them moved the badge not at all.
+      //
+      // A window function rather than a second query: window functions are
+      // evaluated before LIMIT, so this counts every matching row while still
+      // returning one page, and the poll stays a single round-trip.
+      unread: sql<number>`count(*) filter (where ${pushNotifications.readAt} is null) over ()`,
     })
     .from(pushNotifications)
     .innerJoin(users, eq(pushNotifications.userId, users.id))
@@ -35,10 +46,8 @@ export async function GET() {
     .orderBy(desc(pushNotifications.sentAt))
     .limit(30);
 
-  const unread = rows.filter((r) => !r.readAt).length;
-
   return NextResponse.json({
-    unread,
+    unread: Number(rows[0]?.unread ?? 0),
     items: rows.map((r) => ({
       id: r.id,
       title: r.title,

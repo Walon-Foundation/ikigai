@@ -6,6 +6,12 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/db/db";
 import { users } from "@/db/schema";
 import { INTEREST_TAGS } from "@/lib/constants";
+import {
+  type NotificationCategory,
+  type NotificationPrefs,
+  SETTABLE_CATEGORIES,
+} from "@/lib/notifications/categories";
+import { isStorableSubscription } from "@/lib/notifications/subscription";
 
 const MAX_NAME = 80;
 const MAX_BIO = 500;
@@ -76,17 +82,6 @@ export async function updateJournalDefault(mentorCanSee: boolean) {
   revalidatePath("/journal");
 }
 
-// A browser PushSubscription serializes to an object with an https endpoint and
-// a keys pair. Reject anything that doesn't look like one so we don't persist
-// arbitrary client-supplied JSON.
-function isPushSubscription(
-  value: unknown,
-): value is { endpoint: string; keys?: unknown } {
-  if (typeof value !== "object" || value === null) return false;
-  const endpoint = (value as { endpoint?: unknown }).endpoint;
-  return typeof endpoint === "string" && endpoint.startsWith("https://");
-}
-
 export async function savePushSubscription(subscription: unknown) {
   const { userId } = await auth();
   if (!userId) throw new Error("Unauthenticated");
@@ -101,16 +96,52 @@ export async function savePushSubscription(subscription: unknown) {
     return;
   }
 
-  if (!isPushSubscription(subscription)) {
+  // Same rules as /api/push/resubscribe, which writes this column too.
+  if (!isStorableSubscription(subscription)) {
     throw new Error("Invalid push subscription");
-  }
-  // Bound the stored payload — a valid subscription is well under this.
-  if (JSON.stringify(subscription).length > 4_000) {
-    throw new Error("Push subscription too large");
   }
   await db
     .update(users)
     .set({ pushSubscription: subscription })
+    .where(eq(users.clerkId, userId));
+  revalidatePath("/settings");
+}
+
+// Per-category notification preferences.
+//
+// Written as a whole object rather than one flag at a time: the Settings screen
+// holds the complete state anyway, and a partial write would need a read-modify
+// -write over the neon-http driver for every tap of every checkbox.
+//
+// Categories marked alwaysOn are not in SETTABLE_CATEGORIES and are dropped
+// here rather than trusted from the client — otherwise a hand-crafted request
+// could switch off safeguarding and account notifications, which is exactly the
+// thing this product does not offer.
+export async function updateNotificationPrefs(input: {
+  push?: boolean;
+  email?: boolean;
+  categories?: Record<string, boolean>;
+}) {
+  const { userId } = await auth();
+  if (!userId) throw new Error("Unauthenticated");
+
+  const settable = new Set<string>(SETTABLE_CATEGORIES.map((c) => c.id));
+  const categories: Partial<Record<NotificationCategory, boolean>> = {};
+  for (const [key, on] of Object.entries(input.categories ?? {})) {
+    if (settable.has(key) && typeof on === "boolean") {
+      categories[key as NotificationCategory] = on;
+    }
+  }
+
+  const prefs: NotificationPrefs = {
+    push: input.push !== false,
+    email: input.email !== false,
+    categories,
+  };
+
+  await db
+    .update(users)
+    .set({ notificationPrefs: prefs })
     .where(eq(users.clerkId, userId));
   revalidatePath("/settings");
 }
