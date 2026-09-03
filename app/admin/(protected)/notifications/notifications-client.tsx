@@ -20,7 +20,7 @@ type NotifHistory = {
   id: string;
   title: string;
   body: string;
-  sentAt: Date | null;
+  sentAt: string | null;
   recipients: number;
   /** Phones that actually lit up. */
   pushed: number;

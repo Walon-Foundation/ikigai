@@ -64,14 +64,17 @@ export default async function AdminNotificationsPage() {
           // Neon returns timestamp as "2026-09-03 14:59:07.837174" (no T, no Z).
           // new Date("2026-09-03 14:59:07") is parsed as local time in V8 but
           // can be Invalid Date in other runtimes — normalize to ISO first.
-          let sentAt: Date | null = null;
+          // Pass ISO string (not Date) to the client: RSC serializes plain JSON
+          // and Date objects can trigger "Server Components render" digest in
+          // production builds if the serialization is not supported.
+          let sentAt: string | null = null;
           if (h.sentAt) {
             const raw = String(h.sentAt).trim();
             const iso = raw.includes("T") ? raw : raw.replace(" ", "T");
             // If no timezone suffix, treat as UTC (Neon stores UTC).
             const withTz = /[Z+-]/.test(iso) ? iso : `${iso}Z`;
             const d = new Date(withTz);
-            sentAt = Number.isNaN(d.getTime()) ? null : d;
+            if (!Number.isNaN(d.getTime())) sentAt = d.toISOString();
           }
           return {
             id: h.broadcastId ?? "",
