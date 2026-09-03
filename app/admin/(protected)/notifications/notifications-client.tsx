@@ -28,6 +28,26 @@ type NotifHistory = {
   opened: number;
 };
 
+type FieldErrors = Partial<Record<"title" | "body" | "url", string>>;
+
+function validateUrl(value: string): string | null {
+  const raw = value.trim();
+  if (!raw) return null;
+  if (raw.length > 300) return "Link is too long (max 300 characters)";
+  let norm = raw;
+  if (/^https?:\/\//i.test(norm)) {
+    try {
+      const parsed = new URL(norm);
+      norm = parsed.pathname + parsed.search + parsed.hash || "/";
+    } catch {
+      return `Not a valid URL — use an in-app path like /dashboard`;
+    }
+  }
+  if (!norm.startsWith("/")) return `Must start with / — e.g. /dashboard (you entered "${raw}")`;
+  if (norm.startsWith("//") || norm.includes(":")) return `Must be an in-app path like /dashboard`;
+  return null;
+}
+
 export function NotificationsClient({ history }: { history: NotifHistory[] }) {
   const router = useRouter();
   const [title, setTitle] = useState("");
@@ -36,10 +56,28 @@ export function NotificationsClient({ history }: { history: NotifHistory[] }) {
   const [url, setUrl] = useState("");
   const [result, setResult] = useState<SendResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [pending, startTransition] = useTransition();
 
+  function validate(): FieldErrors {
+    const e: FieldErrors = {};
+    if (!title.trim()) e.title = "Title is required";
+    else if (title.trim().length > 200) e.title = "Title is too long (max 200)";
+    if (!body.trim()) e.body = "Message is required";
+    else if (body.trim().length > 1000) e.body = "Message is too long (max 1000)";
+    const urlErr = validateUrl(url);
+    if (urlErr) e.url = urlErr;
+    return e;
+  }
+
   function handleSend() {
-    if (!title.trim() || !body.trim()) return;
+    const errs = validate();
+    setFieldErrors(errs);
+    if (Object.keys(errs).length > 0) {
+      const first = errs.title || errs.body || errs.url;
+      setError(first ?? null);
+      return;
+    }
     setError(null);
     setResult(null);
     startTransition(async () => {
@@ -53,14 +91,27 @@ export function NotificationsClient({ history }: { history: NotifHistory[] }) {
         setTitle("");
         setBody("");
         setUrl("");
+        setFieldErrors({});
         // The history panel below is server-rendered from push_notifications.
         router.refresh();
       } catch (e) {
-        setError(
-          e instanceof Error
-            ? e.message
-            : "Couldn't send — your message is still here, try again.",
-        );
+        const msg =
+          e instanceof Error ? e.message : "Couldn't send — your message is still here, try again.";
+        // Map server field errors inline so the admin sees *where* to fix
+        const next: FieldErrors = {};
+        let generic: string | null = msg;
+        if (/title/i.test(msg)) {
+          next.title = msg;
+          generic = null;
+        } else if (/message|body/i.test(msg)) {
+          next.body = msg;
+          generic = null;
+        } else if (/link|path|url/i.test(msg)) {
+          next.url = msg;
+          generic = null;
+        }
+        setFieldErrors((prev) => ({ ...prev, ...next }));
+        setError(generic);
       }
     });
   }
@@ -78,36 +129,82 @@ export function NotificationsClient({ history }: { history: NotifHistory[] }) {
 
         <div className="space-y-4">
           <div>
-            <label
-              htmlFor="notif-title"
-              className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground"
-            >
-              Title
-            </label>
+            <div className="mb-1.5 flex items-center justify-between">
+              <label
+                htmlFor="notif-title"
+                className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+              >
+                Title <span className="text-destructive">*</span>
+              </label>
+              <span className="text-[10px] text-muted-foreground">{title.trim().length}/200</span>
+            </div>
             <input
               id="notif-title"
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              maxLength={200}
+              aria-invalid={!!fieldErrors.title}
+              aria-describedby={fieldErrors.title ? "notif-title-error" : undefined}
+              onChange={(e) => {
+                setTitle(e.target.value);
+                if (fieldErrors.title) setFieldErrors((p) => ({ ...p, title: undefined }));
+                if (error) setError(null);
+              }}
+              onBlur={() => {
+                const errs = validate();
+                if (errs.title) setFieldErrors((p) => ({ ...p, title: errs.title }));
+              }}
               placeholder="Notification title"
-              className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none focus:border-primary placeholder:text-muted-foreground"
+              className={`w-full rounded-xl border bg-background px-4 py-3 text-sm outline-none placeholder:text-muted-foreground ${
+                fieldErrors.title
+                  ? "border-destructive focus:border-destructive"
+                  : "border-border focus:border-primary"
+              }`}
             />
+            {fieldErrors.title && (
+              <p id="notif-title-error" className="mt-1.5 text-xs font-medium text-destructive" role="alert">
+                {fieldErrors.title}
+              </p>
+            )}
           </div>
 
           <div>
-            <label
-              htmlFor="notif-body"
-              className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground"
-            >
-              Message
-            </label>
+            <div className="mb-1.5 flex items-center justify-between">
+              <label
+                htmlFor="notif-body"
+                className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+              >
+                Message <span className="text-destructive">*</span>
+              </label>
+              <span className="text-[10px] text-muted-foreground">{body.trim().length}/1000</span>
+            </div>
             <textarea
               id="notif-body"
               value={body}
-              onChange={(e) => setBody(e.target.value)}
+              maxLength={1000}
+              aria-invalid={!!fieldErrors.body}
+              aria-describedby={fieldErrors.body ? "notif-body-error" : undefined}
+              onChange={(e) => {
+                setBody(e.target.value);
+                if (fieldErrors.body) setFieldErrors((p) => ({ ...p, body: undefined }));
+                if (error) setError(null);
+              }}
+              onBlur={() => {
+                const errs = validate();
+                if (errs.body) setFieldErrors((p) => ({ ...p, body: errs.body }));
+              }}
               placeholder="Notification body text..."
               rows={4}
-              className="w-full resize-none rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none focus:border-primary placeholder:text-muted-foreground"
+              className={`w-full resize-none rounded-xl border bg-background px-4 py-3 text-sm outline-none placeholder:text-muted-foreground ${
+                fieldErrors.body
+                  ? "border-destructive focus:border-destructive"
+                  : "border-border focus:border-primary"
+              }`}
             />
+            {fieldErrors.body && (
+              <p id="notif-body-error" className="mt-1.5 text-xs font-medium text-destructive" role="alert">
+                {fieldErrors.body}
+              </p>
+            )}
           </div>
 
           <div>
@@ -141,14 +238,35 @@ export function NotificationsClient({ history }: { history: NotifHistory[] }) {
             <input
               id="notif-url"
               value={url}
-              onChange={(e) => setUrl(e.target.value)}
+              maxLength={300}
+              aria-invalid={!!fieldErrors.url}
+              aria-describedby={fieldErrors.url ? "notif-url-error" : "notif-url-help"}
+              onChange={(e) => {
+                setUrl(e.target.value);
+                if (fieldErrors.url) setFieldErrors((p) => ({ ...p, url: undefined }));
+                if (error) setError(null);
+              }}
+              onBlur={() => {
+                const err = validateUrl(url);
+                if (err) setFieldErrors((p) => ({ ...p, url: err }));
+              }}
               placeholder="/dashboard"
-              className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none focus:border-primary placeholder:text-muted-foreground"
+              className={`w-full rounded-xl border bg-background px-4 py-3 text-sm outline-none placeholder:text-muted-foreground ${
+                fieldErrors.url
+                  ? "border-destructive focus:border-destructive"
+                  : "border-border focus:border-primary"
+              }`}
             />
-            <p className="mt-1.5 text-xs text-muted-foreground">
-              Where tapping the notification takes people. An in-app path such
-              as <code>/activities</code>. Defaults to the dashboard.
-            </p>
+            {fieldErrors.url ? (
+              <p id="notif-url-error" className="mt-1.5 text-xs font-medium text-destructive" role="alert">
+                {fieldErrors.url}
+              </p>
+            ) : (
+              <p id="notif-url-help" className="mt-1.5 text-xs text-muted-foreground">
+                Where tapping the notification takes people. An in-app path such
+                as <code>/activities</code>. Defaults to the dashboard. You can also paste a full URL — we&apos;ll use its path.
+              </p>
+            )}
           </div>
 
           {(title || body) && (
@@ -173,7 +291,7 @@ export function NotificationsClient({ history }: { history: NotifHistory[] }) {
           <button
             type="button"
             onClick={handleSend}
-            disabled={pending || !title.trim() || !body.trim()}
+            disabled={pending}
             aria-busy={pending}
             className="flex w-full items-center justify-center gap-2 rounded-full bg-primary py-3 font-semibold text-primary-foreground transition-colors hover:bg-primary-light disabled:opacity-40"
           >
@@ -182,6 +300,9 @@ export function NotificationsClient({ history }: { history: NotifHistory[] }) {
               Send Notification
             </BusyLabel>
           </button>
+          <p className="text-center text-[10px] text-muted-foreground">
+            {pending ? "Sending to selected audience…" : "Title and message are required"}
+          </p>
 
           {result && (
             <div className="space-y-1 text-center text-sm">
@@ -202,9 +323,12 @@ export function NotificationsClient({ history }: { history: NotifHistory[] }) {
             </div>
           )}
           {error && (
-            <p className="text-center text-sm font-semibold text-destructive">
+            <div
+              className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive"
+              role="alert"
+            >
               {error}
-            </p>
+            </div>
           )}
         </div>
       </div>
