@@ -39,11 +39,22 @@ async function recipientsFor(audience: Audience) {
     // Club leads aren't a role — they're whoever is named as a school's lead.
     // The old stub had a hardcoded count for this audience and no filter behind
     // it anywhere on the server.
-    return db
-      .selectDistinct(select)
+    //
+    // Don't use SELECT DISTINCT over jsonb columns (pushSubscription,
+    // notificationPrefs) — Postgres can compare jsonb but Neon-http + Drizzle
+    // distinct over jsonb is fragile and a user leading two verified schools
+    // would appear twice. De-duplicate by id in JS instead.
+    const rows = await db
+      .select(select)
       .from(users)
       .innerJoin(schools, eq(schools.clubLeadId, users.id))
       .where(and(isNotNull(schools.verifiedAt), isNull(users.deletedAt)));
+    const seen = new Set<string>();
+    return rows.filter((r) => {
+      if (seen.has(r.id)) return false;
+      seen.add(r.id);
+      return true;
+    });
   }
 
   if (
