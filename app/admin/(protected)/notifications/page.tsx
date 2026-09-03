@@ -12,21 +12,35 @@ export default async function AdminNotificationsPage() {
   // every message sent before it. Grouping also gives the numbers that matter
   // after the fact: how many it reached, how many phones lit up, how many
   // people have actually opened it.
-  const history = await db
-    .select({
-      broadcastId: pushNotifications.broadcastId,
-      title: sql<string>`min(${pushNotifications.title})`,
-      body: sql<string>`min(${pushNotifications.body})`,
-      sentAt: sql<Date>`min(${pushNotifications.sentAt})`,
-      recipients: count(),
-      pushed: sql<number>`count(${pushNotifications.pushedAt})`,
-      opened: sql<number>`count(${pushNotifications.readAt})`,
-    })
-    .from(pushNotifications)
-    .where(isNotNull(pushNotifications.broadcastId))
-    .groupBy(pushNotifications.broadcastId)
-    .orderBy(desc(sql`min(${pushNotifications.sentAt})`))
-    .limit(20);
+  let history: {
+    broadcastId: string | null;
+    title: string;
+    body: string;
+    sentAt: string | Date | null;
+    recipients: number | string;
+    pushed: number | string;
+    opened: number | string;
+  }[] = [];
+  try {
+    history = await db
+      .select({
+        broadcastId: pushNotifications.broadcastId,
+        title: sql<string>`min(${pushNotifications.title})`,
+        body: sql<string>`min(${pushNotifications.body})`,
+        sentAt: sql<string>`min(${pushNotifications.sentAt})`,
+        recipients: count(),
+        pushed: sql<string>`count(${pushNotifications.pushedAt})`,
+        opened: sql<string>`count(${pushNotifications.readAt})`,
+      })
+      .from(pushNotifications)
+      .where(isNotNull(pushNotifications.broadcastId))
+      .groupBy(pushNotifications.broadcastId)
+      .orderBy(desc(sql`min(${pushNotifications.sentAt})`))
+      .limit(20);
+  } catch (err) {
+    console.error("admin/notifications: history query failed", err);
+    history = [];
+  }
 
   return (
     <div>
@@ -46,15 +60,29 @@ export default async function AdminNotificationsPage() {
         </p>
       </div>
       <NotificationsClient
-        history={history.map((h) => ({
-          id: h.broadcastId ?? "",
-          title: h.title,
-          body: h.body,
-          sentAt: h.sentAt ? new Date(h.sentAt) : null,
-          recipients: Number(h.recipients),
-          pushed: Number(h.pushed),
-          opened: Number(h.opened),
-        }))}
+        history={history.map((h) => {
+          // Neon returns timestamp as "2026-09-03 14:59:07.837174" (no T, no Z).
+          // new Date("2026-09-03 14:59:07") is parsed as local time in V8 but
+          // can be Invalid Date in other runtimes — normalize to ISO first.
+          let sentAt: Date | null = null;
+          if (h.sentAt) {
+            const raw = String(h.sentAt).trim();
+            const iso = raw.includes("T") ? raw : raw.replace(" ", "T");
+            // If no timezone suffix, treat as UTC (Neon stores UTC).
+            const withTz = /[Z+-]/.test(iso) ? iso : `${iso}Z`;
+            const d = new Date(withTz);
+            sentAt = Number.isNaN(d.getTime()) ? null : d;
+          }
+          return {
+            id: h.broadcastId ?? "",
+            title: h.title ?? "",
+            body: h.body ?? "",
+            sentAt,
+            recipients: Number(h.recipients ?? 0),
+            pushed: Number(h.pushed ?? 0),
+            opened: Number(h.opened ?? 0),
+          };
+        })}
       />
     </div>
   );
