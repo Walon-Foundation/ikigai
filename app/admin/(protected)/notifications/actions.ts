@@ -11,14 +11,14 @@ const MAX_TITLE = 200;
 const MAX_BODY = 1_000;
 const MAX_URL = 300;
 
-export const AUDIENCES = [
+const AUDIENCES = [
   "all",
   "mentees",
   "mentors",
   "parents",
   "club_leads",
 ] as const;
-export type Audience = (typeof AUDIENCES)[number];
+type Audience = (typeof AUDIENCES)[number];
 
 function str(value: unknown, max: number): string {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
