@@ -122,9 +122,26 @@ export async function sendBroadcast(data: {
   // Where tapping the notification takes them. Must be a path on the PWA, not
   // an absolute URL: an admin-supplied "https://..." here would send every user
   // on the platform to somewhere off-product in one click.
-  const rawUrl = str(data.url, MAX_URL);
-  if (rawUrl && !rawUrl.startsWith("/")) {
-    throw new Error("Link must be an in-app path starting with /");
+  // Normalize to be forgiving: full URLs get their pathname extracted,
+  // bare paths like "dashboard" get a leading slash added.
+  let normalizedUrl = str(data.url, MAX_URL).trim();
+  if (normalizedUrl) {
+    if (/^https?:\/\//i.test(normalizedUrl)) {
+      try {
+        const parsed = new URL(normalizedUrl);
+        normalizedUrl = parsed.pathname + parsed.search + parsed.hash || "/";
+      } catch {
+        throw new Error(
+          `Link must be an in-app path like /dashboard — "${str(data.url, MAX_URL)}" is not a valid URL`,
+        );
+      }
+    }
+    if (!normalizedUrl.startsWith("/")) normalizedUrl = `/${normalizedUrl}`;
+    if (normalizedUrl.startsWith("//") || normalizedUrl.includes(":")) {
+      throw new Error(
+        `Link must be an in-app path starting with / (e.g. /dashboard). You entered "${str(data.url, MAX_URL)}"`,
+      );
+    }
   }
 
   const audience = (AUDIENCES as readonly string[]).includes(data.audience)
@@ -135,7 +152,7 @@ export async function sendBroadcast(data: {
   const result = await dispatchMany(recipients, {
     key: "BROADCAST",
     vars: { title, body },
-    url: rawUrl || undefined,
+    url: normalizedUrl || undefined,
     // Groups this fan-out so the history can show one broadcast rather than
     // one row per recipient.
     broadcastId: crypto.randomUUID(),
