@@ -38,7 +38,14 @@ const schema = z.object({
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
   SMTP_FROM: z.string().optional(),
-  SMTP_SECURE: z.coerce.boolean().optional(),
+  SMTP_SECURE: z
+    .union([z.string(), z.boolean()])
+    .transform((v) => {
+      if (typeof v === "boolean") return v;
+      const s = v.trim().toLowerCase();
+      return s === "true" || s === "1" || s === "yes";
+    })
+    .optional(),
 });
 
 // Empty strings (e.g. `MONIME_SPACE_ID=` in .env) should behave like unset.
