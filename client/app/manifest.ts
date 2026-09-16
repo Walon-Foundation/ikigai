@@ -25,7 +25,10 @@ export default function manifest(): MetadataRoute.Manifest {
         type: "image/png",
       },
       {
-        src: "/icon-512x512.png",
+        // Its own file: a maskable icon is cropped to a circle or squircle, so
+        // the logo sits inside the 80% safe zone with more padding than the
+        // plain 512 above.
+        src: "/icon-512x512-maskable.png",
         sizes: "512x512",
         type: "image/png",
         purpose: "maskable",
