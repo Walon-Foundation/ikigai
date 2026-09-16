@@ -52,28 +52,28 @@ Revisit once the product surface is done.
 **This blocks everything else in this document. Settle it first.**
 
 48 tables at `client/db/schema.ts`. Both projects need it during the
-transition: `client/` because marketing and admin read the CMS directly, `api/`
-because it is becoming the owner.
+transition: `client/` because marketing and admin read the CMS directly,
+`api/` because it is becoming the owner.
 
-There is no workspace root, so the two have separate `node_modules` and
-separate tsconfigs.
+The tsconfig-path-alias approach this document originally recommended was
+spiked on 16 September 2026 and **does not work**. Turbopack bundles the
+cross-project import without complaint, but TypeScript rejects it: two copies
+of `drizzle-orm` are two nominal identities even at identical versions,
+because `Column` carries a `protected` member. One shared copy typechecks
+cleanly; two do not.
 
-**Recommended:** the schema moves to `api/src/db/schema.ts`. `client/` reaches
-it through a tsconfig path alias for as long as it still queries directly, and
-drops the import entirely if admin ever moves behind the API. Both install
-`drizzle-orm` — they would regardless.
-
-Prove the path alias resolves through the Next.js bundler **before** committing
-to it. A TypeScript path alias that typechecks but fails at build time is a
-known sharp edge when the target is outside the project root. If it fights,
-the honest fallback is adding a bun workspace root and a `packages/db` — which
-was declined at the layout decision, and is the thing most likely to make that
-decision worth revisiting.
+The decision and its two options are recorded in
+[00-overview.md](./00-overview.md#who-owns-the-database) — a bun workspace
+root, or `client/` giving up direct database access entirely. **Until it is
+made, no module below can be ported.**
 
 Whatever is chosen, **the schema is defined once.** A second copy is not a
 fallback; it is the end of the migration.
 
----
+Fix `drizzle.config.ts` before any schema work either way: it omits the
+`casing: "snake_case"` that `db/db.ts` sets. Invisible today because every
+column has an explicit SQL name, and silent breakage the first time a new
+column relies on the default.
 
 ## Module layout
 

@@ -136,22 +136,61 @@ before or well after its endpoints move.
 
 ### Who owns the database
 
-The schema is 48 tables at `client/db/schema.ts`. Both `api/` and `client/`
-need it during the transition — `client/` because marketing and admin read the
-CMS directly today. There is no workspace root, so they have separate
-`node_modules` and separate tsconfigs.
+**Measured, not assumed — 16 September 2026.** Plan 00 originally recommended
+moving the schema to `api/src/db/schema.ts` and reaching it from `client/`
+through a tsconfig path alias, with a note to prove that resolves before
+committing to it. It was proved. It does not work.
 
-**Recommended:** the schema moves to `api/src/db/schema.ts`, since the API owns
-data. `client/` reaches it through a tsconfig path alias during the transition
-and stops importing it entirely once admin moves behind the API. Both projects
-install `drizzle-orm` — they would anyway.
+The spike: a real `pgTable` defined in `api/`, imported and queried by the
+client's Drizzle instance.
 
-**The alternative worth considering** is adding a bun workspace root after all
-and a `packages/db`. It was declined at the layout decision, but cross-project
-type sharing without one is the thing most likely to make that decision feel
-wrong. Revisit if the path alias fights the bundler.
+| | Result |
+|---|---|
+| Turbopack bundling the cross-project import | **fine** — compiled, no config needed |
+| TypeScript, two copies of `drizzle-orm` @ 0.45.2 | **2 errors** |
+| TypeScript, one shared copy | **0 errors** |
 
-Not yet decided. It blocks Phase 1, so it is the first thing to settle.
+The failure is nominal typing, not versioning:
+
+```
+api/node_modules/drizzle-orm/...   is not assignable to
+client/node_modules/drizzle-orm/...
+  Property 'config' is protected but type 'Column' is not a class
+  derived from 'Column'
+```
+
+Drizzle's `Column` carries a `protected` member, so two copies are two
+identities even at byte-identical versions. **Matching versions are not enough.
+There must be exactly one copy of `drizzle-orm` on disk.**
+
+That rules out the path alias on its own, and leaves two real options:
+
+**A — a bun workspace root.** A root `package.json` with
+`workspaces: ["api", "client", "mobile"]`. Shared dependencies hoist to a root
+`node_modules`; project-specific ones stay put. This is the standard, supported
+answer, and it keeps the one-repo/three-folder layout exactly as chosen — it
+adds a root manifest, nothing more. It does reintroduce a root `node_modules`.
+
+**B — `client/` stops touching the database.** Only `api/` holds Drizzle and
+the schema; the web client gets everything over HTTP. Nothing is shared, so
+nothing can conflict. But this forces all 63 admin actions and the marketing
+CMS reads through the API — precisely the scope
+[01-api-server.md](./01-api-server.md) recommends deferring, and the largest
+single block of work in the plan.
+
+The trade is a root `node_modules` against a much larger migration. **Not yet
+decided; it blocks Phase 1.**
+
+Two smaller facts the spike turned up, both worth keeping:
+
+- `client/tsconfig.json` has `"incremental": true`, and a stale `.tsbuildinfo`
+  reported type errors that no longer existed. Clear it before trusting a
+  typecheck result during this migration.
+- `client/drizzle.config.ts` does **not** set `casing: "snake_case"` while
+  `db/db.ts` does. Harmless today because every column carries an explicit SQL
+  name, and a live hazard the moment a new table relies on the default — the
+  runtime would query `user_id` where push created `"userId"`. Fix it before any
+  schema work, as [02-auth.md](./02-auth.md) also requires.
 
 ### Does admin move behind the API
 
