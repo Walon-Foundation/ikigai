@@ -30,6 +30,43 @@ function str(value: unknown, max: number): string {
   return typeof value === 'string' ? value.trim().slice(0, max) : '';
 }
 
+/**
+ * Normalise a broadcast link to an IN-APP path, or refuse it.
+ *
+ * The link is opened inside the app, so it must be a path. A full URL is
+ * reduced to its path rather than rejected, because an admin pasting their own
+ * site's URL means the page, not the origin. Anything that could still escape
+ * the origin — a protocol-relative "//host", or any scheme — is refused with
+ * the text they typed quoted back, since a broadcast that silently points
+ * somewhere else is worse than one that fails to send.
+ *
+ * Exported for its tests: this is the only user-supplied value in the product
+ * that is sent to every user at once.
+ */
+export function normalizeBroadcastUrl(raw: unknown): string {
+  const input = str(raw, MAX_URL).trim();
+  if (!input) return '';
+
+  let url = input;
+  if (/^https?:\/\//i.test(url)) {
+    try {
+      const parsed = new URL(url);
+      url = parsed.pathname + parsed.search + parsed.hash || '/';
+    } catch {
+      throw new BadRequestException(
+        `Link must be an in-app path like /dashboard — "${input}" is not a valid URL`,
+      );
+    }
+  }
+  if (!url.startsWith('/')) url = `/${url}`;
+  if (url.startsWith('//') || url.includes(':')) {
+    throw new BadRequestException(
+      `Link must be an in-app path starting with / (e.g. /dashboard). You entered "${input}"`,
+    );
+  }
+  return url;
+}
+
 @Injectable()
 export class AdminNotificationsService {
   constructor(@Inject(DATABASE) private readonly db: Db) {}
@@ -94,25 +131,7 @@ export class AdminNotificationsService {
     if (!title) throw new BadRequestException('Title is required');
     if (!body) throw new BadRequestException('Message is required');
 
-    let normalizedUrl = str(data.url, MAX_URL).trim();
-    if (normalizedUrl) {
-      if (/^https?:\/\//i.test(normalizedUrl)) {
-        try {
-          const parsed = new URL(normalizedUrl);
-          normalizedUrl = parsed.pathname + parsed.search + parsed.hash || '/';
-        } catch {
-          throw new BadRequestException(
-            `Link must be an in-app path like /dashboard — "${str(data.url, MAX_URL)}" is not a valid URL`,
-          );
-        }
-      }
-      if (!normalizedUrl.startsWith('/')) normalizedUrl = `/${normalizedUrl}`;
-      if (normalizedUrl.startsWith('//') || normalizedUrl.includes(':')) {
-        throw new BadRequestException(
-          `Link must be an in-app path starting with / (e.g. /dashboard). You entered "${str(data.url, MAX_URL)}"`,
-        );
-      }
-    }
+    const normalizedUrl = normalizeBroadcastUrl(data.url);
 
     const audience = (AUDIENCES as readonly string[]).includes(data.audience)
       ? (data.audience as Audience)
