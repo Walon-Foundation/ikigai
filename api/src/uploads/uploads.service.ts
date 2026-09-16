@@ -22,7 +22,6 @@ import {
   mimeAllowed,
   type RequestUploadDto,
   UPLOAD_KINDS,
-  type UploadKind,
 } from './uploads.dto.js';
 import { R2Service } from './r2.service.js';
 
