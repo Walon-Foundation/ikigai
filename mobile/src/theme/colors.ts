@@ -1,4 +1,6 @@
-import { isDynamicColorAvailable } from '@expo/ui/jetpack-compose';
+import { getMaterialColors, isDynamicColorAvailable, type MaterialColors } from '@expo/ui/jetpack-compose';
+import { useMemo } from 'react';
+import { Platform, useColorScheme } from 'react-native';
 
 /**
  * Ikigai's brand green. Used as the Material 3 seed ONLY where Material You is
@@ -19,3 +21,17 @@ export const BRAND_SEED = '#1A5C3A';
 export const hostSeedColor: string | undefined = isDynamicColorAvailable
   ? undefined
   : BRAND_SEED;
+
+/**
+ * The Material palette for React Native views that sit OUTSIDE a Compose Host —
+ * navigators, tab bars, the strip behind the status bar — so they paint in the
+ * same colors as the Compose screens inside them. Android only; on other
+ * platforms there is no Material palette and callers fall back to defaults.
+ */
+export function useAppPalette(): MaterialColors | undefined {
+  const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
+  return useMemo(
+    () => (Platform.OS === 'android' ? getMaterialColors({ scheme, seedColor: hostSeedColor }) : undefined),
+    [scheme],
+  );
+}

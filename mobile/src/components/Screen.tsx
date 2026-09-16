@@ -1,8 +1,8 @@
-import { Host, useMaterialColors } from '@expo/ui/jetpack-compose';
+import { Host } from '@expo/ui/jetpack-compose';
 import type { ReactNode } from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { hostSeedColor } from '@/theme/colors';
+import { hostSeedColor, useAppPalette } from '@/theme/colors';
 
 /**
  * Root of every screen: a Compose <Host> themed with Material You (or brand
@@ -32,7 +32,7 @@ function AndroidScreen({ children }: { children: ReactNode }) {
   // bottom bars.
   const insets = useSafeAreaInsets();
   // Outside the Host, so resolve the same palette it will use to paint the strip.
-  const surface = useMaterialColors({ seedColor: hostSeedColor }).surface;
+  const surface = useAppPalette()?.surface;
   return (
     <View style={[styles.host, { paddingTop: insets.top, backgroundColor: surface }]}>
       <Host style={styles.host} seedColor={hostSeedColor}>
