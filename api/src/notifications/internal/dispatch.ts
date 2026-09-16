@@ -10,6 +10,7 @@ import {
   render,
   resolveChannels,
 } from "./categories.js";
+import { emitToUser } from "../../realtime/realtime.sink.js";
 import { resolveTemplate } from "./templates.js";
 import {
   emailTo,
@@ -227,6 +228,23 @@ export async function dispatchMany(
     skipped += rows.length - inserted.length;
 
     const pushable = vapidReady();
+    // Realtime first: the row is already written, so this is pure latency.
+    // Someone with the app open sees the bell move now rather than on their
+    // next poll. It never throws — see emitToUser — because a socket failure
+    // must not fail the notification, and the feed endpoint still has the row.
+    for (const { id, userId } of inserted) {
+      if (!userId) continue;
+      emitToUser(userId, "notification", {
+        id,
+        title,
+        body,
+        type: entry.legacyType,
+        url,
+        read: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
     const pushedIds: string[] = [];
     const emailedIds: string[] = [];
 

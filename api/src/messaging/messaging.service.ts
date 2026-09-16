@@ -11,6 +11,7 @@ import { DATABASE } from '../db/database.module.js';
 import type { Db } from '../db/db.js';
 import { mentorships, messages, users } from '../db/schema.js';
 import { dispatch } from '../notifications/internal/dispatch.js';
+import { emitToMentorship } from '../realtime/realtime.sink.js';
 
 const MAX_MESSAGE_LENGTH = 2000;
 const UUID_RE =
@@ -85,13 +86,31 @@ export class MessagingService {
       });
     }
 
+    const timestamp = msg.createdAt?.toISOString() ?? new Date().toISOString();
+
+    // Push it into the thread room. `isMine` is deliberately absent from the
+    // emitted payload: the room holds both parties, and whether a message is
+    // yours depends on who is reading it. Each client compares senderId itself.
+    //
+    // The row is already committed, so this is pure latency — a client that
+    // misses it recovers with GET /messages/:id?after=<cursor>, which is the
+    // same path a reconnect uses.
+    emitToMentorship(mentorshipId, 'message', {
+      id: msg.id,
+      mentorshipId,
+      content: msg.content,
+      senderId: sender.id,
+      senderName: sender.displayName ?? 'User',
+      timestamp,
+    });
+
     // Same shape the thread read uses, so a client can swap its optimistic
     // bubble for the real one without a refetch.
     return {
       id: msg.id,
       content: msg.content,
       senderName: sender.displayName ?? 'You',
-      timestamp: msg.createdAt?.toISOString() ?? new Date().toISOString(),
+      timestamp,
       isMine: true,
     };
   }
