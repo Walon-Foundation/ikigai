@@ -1,0 +1,161 @@
+"use client";
+
+import { Check, Star, X } from "lucide-react";
+import { useState, useTransition } from "react";
+import { BusyLabel } from "@/components/spinner";
+import { acceptRequest, declineRequest } from "./actions";
+
+export type RequestItem = {
+  id: string;
+  menteeName: string;
+  interestTags: string[] | null;
+  matchScore: number | null;
+};
+
+export function PendingRequests({
+  requests,
+  atCapacity,
+}: {
+  requests: RequestItem[];
+  atCapacity: boolean;
+}) {
+  if (requests.length === 0) return null;
+
+  return (
+    <div className="mb-6">
+      <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        Pending requests
+      </p>
+      <div className="space-y-3">
+        {requests.map((r) => (
+          <RequestCard key={r.id} request={r} atCapacity={atCapacity} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Every refusal acceptRequest can return, and what the mentor is told.
+//
+// Keyed off the action's own union so a new reason cannot be added there and
+// silently fall through to "no longer available" here — which is what happened
+// to `already_paired`, a refusal that has nothing to do with availability.
+const REFUSAL: Record<string, string> = {
+  full: "You already have the maximum of two active mentees.",
+  already_paired:
+    "This mentee has already been matched with another mentor. A mentee works with one mentor at a time.",
+  not_found: "This request is no longer available.",
+};
+
+function RequestCard({
+  request,
+  atCapacity,
+}: {
+  request: RequestItem;
+  atCapacity: boolean;
+}) {
+  const [isPending, startTransition] = useTransition();
+  // Accept and decline act on the same request — track which one was
+  // clicked so only that button spins instead of both.
+  const [busyAction, setBusyAction] = useState<"accept" | "decline" | null>(
+    null,
+  );
+  const [error, setError] = useState<string | null>(null);
+
+  const initials =
+    request.menteeName
+      .split(" ")
+      .map((n) => n[0])
+      .slice(0, 2)
+      .join("") || "M";
+
+  return (
+    <div className="rounded-2xl border border-border bg-card p-5">
+      <div className="flex items-start gap-4">
+        <div className="flex size-12 items-center justify-center rounded-full bg-primary-muted/30 font-display text-sm font-bold text-primary">
+          {initials}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <p className="font-semibold text-foreground">
+              {request.menteeName}
+            </p>
+            {request.matchScore !== null && (
+              <span className="flex items-center gap-1 text-xs font-semibold text-primary">
+                <Star className="size-3 fill-accent text-accent" />
+                {request.matchScore}%
+              </span>
+            )}
+          </div>
+          {request.interestTags && request.interestTags.length > 0 && (
+            <div className="mt-1.5 flex flex-wrap gap-1">
+              {request.interestTags.map((tag) => (
+                <span
+                  key={tag}
+                  className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {error && <p className="mt-3 text-xs text-destructive">{error}</p>}
+
+      <div className="mt-4 flex gap-2">
+        <button
+          type="button"
+          disabled={isPending || atCapacity}
+          aria-busy={busyAction === "accept"}
+          onClick={() => {
+            setError(null);
+            setBusyAction("accept");
+            startTransition(async () => {
+              try {
+                const res = await acceptRequest(request.id);
+                if (!res.ok) {
+                  setError(REFUSAL[res.reason ?? "not_found"]);
+                }
+              } finally {
+                setBusyAction(null);
+              }
+            });
+          }}
+          className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-primary py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-50"
+        >
+          <BusyLabel pending={busyAction === "accept"} busy="Accepting…">
+            <Check className="size-4" /> Accept
+          </BusyLabel>
+        </button>
+        <button
+          type="button"
+          disabled={isPending}
+          aria-busy={busyAction === "decline"}
+          onClick={() => {
+            setError(null);
+            setBusyAction("decline");
+            startTransition(async () => {
+              try {
+                await declineRequest(request.id);
+              } finally {
+                setBusyAction(null);
+              }
+            });
+          }}
+          className="flex flex-1 items-center justify-center gap-1 rounded-lg border border-border py-2.5 text-sm font-semibold text-muted-foreground hover:bg-muted disabled:opacity-50"
+        >
+          <BusyLabel pending={busyAction === "decline"} busy="Declining…">
+            <X className="size-4" /> Decline
+          </BusyLabel>
+        </button>
+      </div>
+      {atCapacity && (
+        <p className="mt-2 text-center text-xs text-muted-foreground">
+          Free up a slot to accept new mentees (max two).
+        </p>
+      )}
+    </div>
+  );
+}

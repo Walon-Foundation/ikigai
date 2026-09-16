@@ -1,4 +1,32 @@
-node_modules
+# One repository, three projects: api/ (NestJS), client/ (Next.js), mobile/ (Expo).
+# Each project keeps its own .gitignore for tooling specific to it — this file is
+# only for things that would otherwise be ignored three times over.
+
+# Dependencies — every project installs with bun, each into its own node_modules.
+node_modules/
+
+# Secrets. Every .env stays local; the committed examples are the contract.
 .env
-.claude/
+.env.*
+!.env.example
+
+# Build output
 dist/
+build/
+.next/
+out/
+.expo/
+*.tsbuildinfo
+
+# Test output
+coverage/
+
+# Tooling / editor local state
+.claude/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/
+.DS_Store
+*.pem
+*.log
