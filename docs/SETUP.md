@@ -170,11 +170,26 @@ Routing is **expo-router** (file-based, under `src/app/`).
 
 ---
 
-## 5. Which project do I need?
+## 5. The two projects use different databases locally
+
+This surprises people, so it is worth stating plainly.
+
+`api/` talks to the Docker Postgres. `client/` **cannot** — it uses
+`drizzle-orm/neon-http`, which speaks Neon's HTTP protocol and not the Postgres
+wire protocol, so pointing its `DATABASE_URL` at localhost:5433 fails with
+`Error connecting to database: fetch failed`.
+
+Until the client stops querying Postgres directly, local development needs
+both: a Neon connection string in `client/.env`, and the Docker Postgres for
+`api/`. Every surface that moves behind the API removes a little more of the
+client's need for the first one, and the last one to move deletes `client/db/`
+altogether.
+
+## 6. Which project do I need?
 
 | Working on | Projects to run |
 |---|---|
 | Marketing or admin UI | `client/` |
 | Mobile screens | `mobile/` + `api/` |
 | API endpoints | `api/` (+ `client/` if the surface still calls server actions) |
-| Anything touching the schema | whichever owns it — see [01-api-server.md](./01-api-server.md) |
+| Anything touching the schema | `api/` owns it — run `bun run schema:check` before merging |
