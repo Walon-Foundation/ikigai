@@ -1,20 +1,16 @@
-import { desc, eq } from "drizzle-orm";
 import { PenLine, Target } from "lucide-react";
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
-import { db } from "@/db/db";
-import { goals } from "@/db/schema";
 import { requireRole } from "@/lib/db-user";
 import { dailyReflectionPrompt } from "@/lib/prompts";
+import { type Goal, listGoals } from "./actions";
 import { AddGoalForm, GoalActions } from "./goals-client";
 
 export default async function GoalsPage() {
-  const user = await requireRole(["mentee"]);
-  const rows = await db
-    .select()
-    .from(goals)
-    .where(eq(goals.userId, user.id))
-    .orderBy(desc(goals.createdAt));
+  // requireRole still reads the database directly — it is part of the auth
+  // layer, which moves with docs/02-auth.md rather than with this module.
+  await requireRole(["mentee"]);
+  const rows = await listGoals();
 
   const open = rows.filter((g) => g.status !== "done");
   const done = rows.filter((g) => g.status === "done");
@@ -68,7 +64,7 @@ export default async function GoalsPage() {
   );
 }
 
-function GoalRow({ goal }: { goal: typeof goals.$inferSelect }) {
+function GoalRow({ goal }: { goal: Goal }) {
   const done = goal.status === "done";
   return (
     <div
