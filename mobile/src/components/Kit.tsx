@@ -28,7 +28,7 @@ import {
 } from '@expo/ui/jetpack-compose/modifiers';
 import { router } from 'expo-router';
 import { type ReactNode, useCallback, useRef } from 'react';
-import { Symbol } from './Symbol';
+import { Glyph } from './Glyph';
 import { Type } from './Type';
 
 /**
@@ -58,7 +58,7 @@ export function AppBar({
     >
       {back ? (
         <IconButton onClick={() => router.back()}>
-          <Symbol name="arrow_back" color={c.onSurface} />
+          <Glyph name="arrow_back" color={c.onSurface} />
         </IconButton>
       ) : (
         <Box modifiers={[padding(12, 0, 0, 0)]} />
@@ -200,7 +200,7 @@ export function NavRow({
     <ListItem colors={{ containerColor: c.surface }} modifiers={onPress ? [clickable(onPress)] : []}>
       {leading || icon ? (
         <ListItem.LeadingContent>
-          {leading ?? <Symbol name={icon!} color={c.onSurfaceVariant} />}
+          {leading ?? <Glyph name={icon!} color={c.onSurfaceVariant} />}
         </ListItem.LeadingContent>
       ) : null}
       <ListItem.HeadlineContent>

@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Avatar } from '@/components/Avatar';
 import { NavRow, Page, Paragraph } from '@/components/Kit';
 import { Screen } from '@/components/Screen';
-import { Symbol } from '@/components/Symbol';
+import { Glyph } from '@/components/Glyph';
 import { Type } from '@/components/Type';
 import { notifications as demo } from '@/data/demo';
 
@@ -42,7 +42,7 @@ function Notifications() {
               background={n.read ? c.surfaceContainerHighest : c.primaryContainer}
               color={n.read ? c.onSurfaceVariant : c.onPrimaryContainer}
             >
-              <Symbol name={n.icon} color={n.read ? c.onSurfaceVariant : c.onPrimaryContainer} />
+              <Glyph name={n.icon} color={n.read ? c.onSurfaceVariant : c.onPrimaryContainer} />
             </Avatar>
           }
           title={n.title}

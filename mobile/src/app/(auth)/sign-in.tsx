@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import { Avatar } from '@/components/Avatar';
 import { Field, Page } from '@/components/Kit';
 import { Screen } from '@/components/Screen';
-import { Symbol } from '@/components/Symbol';
+import { Glyph } from '@/components/Glyph';
 import { Type } from '@/components/Type';
 
 export default function SignInScreen() {
@@ -26,7 +26,7 @@ function SignIn() {
         modifiers={[fillMaxWidth(), padding(24, 24, 24, 24)]}
       >
         <Avatar background={c.primaryContainer} color={c.onPrimaryContainer} diameter={72}>
-          <Symbol name="potted_plant" color={c.onPrimaryContainer} size={40} />
+          <Glyph name="potted_plant" color={c.onPrimaryContainer} size={40} />
         </Avatar>
         <Type variant="headlineMedium" color={c.onSurface}>
           Welcome back

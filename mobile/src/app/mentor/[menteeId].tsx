@@ -18,7 +18,7 @@ import { useState } from 'react';
 import { Avatar } from '@/components/Avatar';
 import { Field, Grow, InfoCard, NavRow, Page, Paragraph, Pill, SectionHeader } from '@/components/Kit';
 import { Screen } from '@/components/Screen';
-import { Symbol } from '@/components/Symbol';
+import { Glyph } from '@/components/Glyph';
 import { Type } from '@/components/Type';
 import { curriculum, mentorMentees, pendingReviews, stages, thriveMilestones } from '@/data/demo';
 
@@ -50,7 +50,7 @@ function MenteeDetail() {
       subtitle={`${stageLabel} · active ${mentee.lastActive}`}
       action={
         <IconButton onClick={() => router.push('/thread/mentor')}>
-          <Symbol name="chat" color={c.onSurfaceVariant} />
+          <Glyph name="chat" color={c.onSurfaceVariant} />
         </IconButton>
       }
       bottom={

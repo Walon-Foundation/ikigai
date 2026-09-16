@@ -20,7 +20,7 @@ import {
 import { router } from 'expo-router';
 import { Avatar } from '@/components/Avatar';
 import { Screen } from '@/components/Screen';
-import { Symbol } from '@/components/Symbol';
+import { Glyph } from '@/components/Glyph';
 import { Bubble, ThreadAppBar } from '@/components/Thread';
 import { Type } from '@/components/Type';
 import { me, thriveMilestones, treeThread } from '@/data/demo';
@@ -44,7 +44,7 @@ function TreeThread() {
       <ThreadAppBar
         avatar={
           <Avatar background={c.primary} color={c.onPrimary}>
-            <Symbol name="forest" color={c.onPrimary} />
+            <Glyph name="forest" color={c.onPrimary} />
           </Avatar>
         }
         title="Your tree"
@@ -82,7 +82,7 @@ function TreeThread() {
             horizontalArrangement={{ spacedBy: 12 }}
             modifiers={[background(c.surfaceContainerHigh), padding(14, 12, 14, 12)]}
           >
-            <Symbol name="check_circle" color={c.primary} size={28} />
+            <Glyph name="check_circle" color={c.primary} size={28} />
             <Column>
               <Type variant="titleSmall" color={c.onSurface}>
                 You joined a club

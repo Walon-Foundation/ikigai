@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { Avatar } from '@/components/Avatar';
 import { Grow, Page, Paragraph } from '@/components/Kit';
 import { Screen } from '@/components/Screen';
-import { Symbol } from '@/components/Symbol';
+import { Glyph } from '@/components/Glyph';
 import { Type } from '@/components/Type';
 
 type Role = 'mentee' | 'mentor' | 'parent';
@@ -72,7 +72,7 @@ function ChooseRole() {
             >
               <Row verticalAlignment="center" horizontalArrangement={{ spacedBy: 16 }} modifiers={[paddingAll(16)]}>
                 <Avatar background={c.primaryContainer} color={c.onPrimaryContainer}>
-                  <Symbol name={r.icon} color={c.onPrimaryContainer} />
+                  <Glyph name={r.icon} color={c.onPrimaryContainer} />
                 </Avatar>
                 <Column modifiers={[weight(1)]}>
                   <Type variant="titleMedium" color={c.onSurface}>

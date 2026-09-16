@@ -23,7 +23,7 @@ import {
 import { router } from 'expo-router';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
-import { Symbol } from './Symbol';
+import { Glyph } from './Glyph';
 import { Type } from './Type';
 
 /**
@@ -50,7 +50,7 @@ export function ThreadAppBar({
       modifiers={[fillMaxWidth(), height(64), background(c.surfaceContainer), padding(4, 0, 4, 0)]}
     >
       <IconButton onClick={() => router.back()}>
-        <Symbol name="arrow_back" color={c.onSurface} />
+        <Glyph name="arrow_back" color={c.onSurface} />
       </IconButton>
       {avatar}
       <Column modifiers={[weight(1), padding(8, 0, 0, 0)]}>
@@ -133,7 +133,7 @@ export function MissionCard({
       >
         <Column verticalArrangement={{ spacedBy: 8 }} modifiers={[paddingAll(16)]}>
           <Row verticalAlignment="center" horizontalArrangement={{ spacedBy: 8 }}>
-            <Symbol name="assignment" color={c.primary} size={20} />
+            <Glyph name="assignment" color={c.primary} size={20} />
             <Type variant="labelMedium"  color={c.primary}>
               New mission
             </Type>
@@ -199,7 +199,7 @@ export function Composer({
       {header}
       <Row verticalAlignment="center" horizontalArrangement={{ spacedBy: 4 }} modifiers={[fillMaxWidth()]}>
         <IconButton onClick={() => {}}>
-          <Symbol name="attach_file" color={c.onSurfaceVariant} />
+          <Glyph name="attach_file" color={c.onSurfaceVariant} />
         </IconButton>
         <Box modifiers={[weight(1)]}>
           <TextField key={fieldKey} singleLine={false} maxLines={4} onValueChange={setDraft} modifiers={[fillMaxWidth()]}>
@@ -209,7 +209,7 @@ export function Composer({
           </TextField>
         </Box>
         <FilledIconButton onClick={send}>
-          <Symbol name="send" color={c.onPrimary} />
+          <Glyph name="send" color={c.onPrimary} />
         </FilledIconButton>
       </Row>
     </Column>
