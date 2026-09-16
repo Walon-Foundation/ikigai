@@ -1,30 +1,24 @@
-import { useMaterialColors } from '@expo/ui/jetpack-compose';
 import { ArtDisc, IntroSlide, Orbit } from '@/components/IntroSlide';
 import { Screen } from '@/components/Screen';
+import { BRAND } from '@/theme/brand';
 
 export default function Onboarding2() {
   return (
     <Screen>
-      <Slide />
-    </Screen>
-  );
-}
-
-function Slide() {
-  useMaterialColors();
-  return (
-    <IntroSlide
-      step={2}
-      eyebrow="Mentorship"
-      title="A mentor who has been there"
-      body="Get matched with someone from Sierra Leone who shares your interests. Chat, take on missions, and meet in person."
+      <IntroSlide
+        step={2}
+        accent={{ strong: BRAND.orange, soft: BRAND.orangeSoft }}
+        eyebrow="Mentorship"
+        title="A mentor who has walked the road"
+        body="Get matched with a verified mentor from Sierra Leone who shares your interests. Chat, take on missions together, and meet in person."
       next="/onboarding3"
-      art={
-        <ArtDisc icon="handshake" tone="tertiary">
-          <Orbit icon="chat" x={-108} y={-84} tone="surface" />
-          <Orbit icon="assignment" x={112} y={40} tone="secondary" />
+        art={
+        <ArtDisc accent={{ strong: BRAND.orange, soft: BRAND.orangeSoft }} icon="handshake">
+          <Orbit icon="chat" x={-116} y={-80} color={BRAND.teal} />
+          <Orbit icon="assignment" x={116} y={60} color={BRAND.green} />
         </ArtDisc>
-      }
-    />
+        }
+      />
+    </Screen>
   );
 }

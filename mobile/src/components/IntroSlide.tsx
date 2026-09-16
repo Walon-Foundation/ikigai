@@ -14,6 +14,8 @@ import {
 } from '@expo/ui/jetpack-compose/modifiers';
 import { type Href, router } from 'expo-router';
 import type { ReactNode } from 'react';
+import { type Accent, BRAND } from '@/theme/brand';
+import { BrandMark } from './BrandMark';
 import { Glyph } from './Glyph';
 import { Type } from './Type';
 
@@ -29,6 +31,7 @@ export function IntroSlide({
   eyebrow,
   title,
   body,
+  accent,
   next,
 }: {
   step: number;
@@ -36,6 +39,8 @@ export function IntroSlide({
   eyebrow: string;
   title: string;
   body: string;
+  /** The page's brand color: eyebrow, active dot. */
+  accent: Accent;
   /** Where Next goes. Absent on the last page. */
   next?: Href;
 }) {
@@ -44,8 +49,17 @@ export function IntroSlide({
 
   return (
     <Column modifiers={[fillMaxSize(), background(c.surface)]}>
-      {/* skip */}
-      <Row horizontalArrangement="end" modifiers={[fillMaxWidth(), height(56), padding(8, 0, 8, 0)]}>
+      {/* brand + skip */}
+      <Row
+        verticalAlignment="center"
+        horizontalArrangement={{ spacedBy: 8 }}
+        modifiers={[fillMaxWidth(), height(56), padding(20, 0, 8, 0)]}
+      >
+        <BrandMark size={28} />
+        <Type variant="titleMedium" color={BRAND.green}>
+          Ikigai
+        </Type>
+        <Box modifiers={[weight(1)]} />
         {last ? null : (
           <TextButton onClick={() => router.replace('/sign-in')}>
             <Text>Skip</Text>
@@ -60,7 +74,7 @@ export function IntroSlide({
 
       {/* copy */}
       <Column verticalArrangement={{ spacedBy: 12 }} modifiers={[fillMaxWidth(), padding(24, 0, 24, 24)]}>
-        <Type variant="labelLarge" color={c.primary}>
+        <Type variant="labelLarge" color={accent.strong}>
           {eyebrow}
         </Type>
         <Type variant="headlineLarge" color={c.onSurface}>
@@ -82,7 +96,7 @@ export function IntroSlide({
                 modifiers={[
                   size(current ? 24 : 8, 8),
                   clip(Shapes.RoundedCorner(4)),
-                  background(current ? c.primary : c.outlineVariant),
+                  background(current ? accent.strong : c.outlineVariant),
                 ]}
               />
             );
@@ -110,49 +124,43 @@ export function IntroSlide({
   );
 }
 
-/** A large tonal disc with a symbol in it — the default intro artwork. */
+/**
+ * Intro artwork: a soft disc in the page's accent with either the Ikigai mark
+ * or a symbol at its centre, and small badges orbiting it.
+ */
 export function ArtDisc({
+  accent,
   icon,
-  tone = 'primary',
   children,
 }: {
-  icon: string;
-  tone?: 'primary' | 'secondary' | 'tertiary';
+  accent: Accent;
+  /** A Material Symbol; omit to show the Ikigai mark. */
+  icon?: string;
   children?: ReactNode;
 }) {
-  const c = useMaterialColors();
-  const [outer, inner, fg] =
-    tone === 'secondary'
-      ? [c.secondaryContainer, c.secondary, c.onSecondary]
-      : tone === 'tertiary'
-        ? [c.tertiaryContainer, c.tertiary, c.onTertiary]
-        : [c.primaryContainer, c.primary, c.onPrimary];
   return (
-    <Box contentAlignment="center" modifiers={[size(260, 260)]}>
-      <Box modifiers={[size(260, 260), clip(Shapes.Circle), background(outer)]} />
-      <Box contentAlignment="center" modifiers={[size(136, 136), clip(Shapes.Circle), background(inner)]}>
-        <Glyph name={icon} color={fg} size={72} />
-      </Box>
+    <Box contentAlignment="center" modifiers={[size(280, 280)]}>
+      <Box modifiers={[size(280, 280), clip(Shapes.Circle), background(accent.soft)]} />
+      {icon ? (
+        <Box contentAlignment="center" modifiers={[size(140, 140), clip(Shapes.Circle), background(accent.strong)]}>
+          <Glyph name={icon} color={BRAND.onBrand} size={72} />
+        </Box>
+      ) : (
+        <BrandMark size={176} coin />
+      )}
       {children}
     </Box>
   );
 }
 
-/** A small circular badge placed around an ArtDisc, offset from its centre. */
-export function Orbit({ icon, x, y, tone }: { icon: string; x: number; y: number; tone: 'secondary' | 'tertiary' | 'surface' }) {
-  const c = useMaterialColors();
-  const [bg, fg] =
-    tone === 'secondary'
-      ? [c.secondary, c.onSecondary]
-      : tone === 'tertiary'
-        ? [c.tertiary, c.onTertiary]
-        : [c.surfaceContainerHighest, c.onSurface];
+/** A small badge orbiting an ArtDisc, offset from its centre, in a brand color. */
+export function Orbit({ icon, x, y, color }: { icon: string; x: number; y: number; color: string }) {
   return (
     <Box
       contentAlignment="center"
-      modifiers={[offset(x, y), size(56, 56), clip(Shapes.Circle), background(bg)]}
+      modifiers={[offset(x, y), size(60, 60), clip(Shapes.Circle), background(color)]}
     >
-      <Glyph name={icon} color={fg} size={28} />
+      <Glyph name={icon} color={color === BRAND.sun ? BRAND.greenDeep : BRAND.onBrand} size={30} />
     </Box>
   );
 }
