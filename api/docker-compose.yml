@@ -1,0 +1,50 @@
+# Local Postgres for the API.
+#
+# The client talks to Neon over its HTTP driver, which suits Next.js serverless
+# handlers: no pooled connection is held open between requests. The API is a
+# long-running process and has no such constraint, so it uses a pooled TCP
+# connection instead. That is fewer round-trips, and it is the only way to get
+# interactive transactions — drizzle-orm/neon-http throws
+# "No transactions support in neon-http driver" outright, which Better Auth's
+# create-user-and-account path needs. See docs/02-auth.md.
+#
+# The same connection-string shape works against Neon in production; only the
+# host changes. Nothing here is Neon-specific.
+
+# Compose defaults the project name to the directory name, which here would be
+# the very generic "api" — and this machine already has an unrelated project
+# using it. Pinning it keeps `docker compose` commands addressing OUR containers.
+name: ikigai
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    container_name: ikigai-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ikigai
+      POSTGRES_PASSWORD: ikigai
+      POSTGRES_DB: ikigai
+    ports:
+      # Host port 5433, not 5432: another project on this machine already
+      # publishes 5432. Override with POSTGRES_PORT if 5433 is taken too — the
+      # container side never changes, so DATABASE_URL is the only thing to keep
+      # in step.
+      - "${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      # Postgres 18 changed this: the mount belongs at /var/lib/postgresql, not
+      # at .../data as it was through 17. The image places the cluster in a
+      # major-version subdirectory beneath it so that `pg_upgrade --link` is not
+      # blocked by a mount-point boundary. Using the old path makes the
+      # container refuse to start.
+      # https://github.com/docker-library/postgres/pull/1259
+      - ikigai-postgres-data:/var/lib/postgresql
+    healthcheck:
+      # Compose waits on this before anything depending on the database starts.
+      test: ["CMD-SHELL", "pg_isready -U ikigai -d ikigai"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  ikigai-postgres-data:
