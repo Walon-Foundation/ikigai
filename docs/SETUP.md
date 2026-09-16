@@ -106,11 +106,40 @@ Expose the dev server with a tunnel (e.g. ngrok) and point a Clerk webhook at
 ```bash
 cd api
 bun install
+cp .env.example .env
+bun run db:up        # Postgres 18 in Docker
+bun run db:push      # create the schema
 bun run start:dev
 ```
 
+The server listens on **4000** — the client owns 3000.
+
+### The database
+
+Local Postgres runs in Docker (`docker-compose.yml`). Two things about it are
+deliberate and easy to trip over:
+
+- **Host port 5433, not 5432.** 5432 is commonly already taken by another
+  project on a developer machine. Set `POSTGRES_PORT` to move it again, and keep
+  `DATABASE_URL` in step.
+- **The Compose project is pinned to `ikigai`.** Compose otherwise names the
+  project after the directory — `api` — which collides with any other project
+  doing the same.
+
+The API uses `drizzle-orm/node-postgres` on a real pool, **not** the
+`neon-http` driver the client uses. A long-running server can hold a pool, and
+that is what gives it interactive transactions — `neon-http` throws
+`"No transactions support in neon-http driver"`. The same connection string
+shape works against Neon in production; use the pooled string there.
+
 | Script | Purpose |
 |---|---|
+| `bun run db:up` / `db:down` | Start / stop the Docker Postgres |
+| `bun run db:push` | Push schema changes |
+| `bun run db:generate` / `db:migrate` | Generate / run migrations |
+| `bun run db:studio` | Drizzle Studio |
+| `bun run schema:check` | Fail if the client's schema copy has drifted |
+| `bun run schema:sync` | Copy the canonical schema to the client |
 | `bun run start:dev` | Watch-mode dev server |
 | `bun run build` / `start:prod` | Build / run compiled output |
 | `bun run lint` | oxlint (type-aware) |
@@ -119,7 +148,12 @@ bun run start:dev
 Note this project uses **oxlint and vitest**, not Biome and `bun test` — it is
 the NestJS scaffold's toolchain, and differs from `client/`.
 
----
+### The schema lives here now
+
+`api/src/db/schema.ts` is canonical: 46 tables and 2 enums. `client/db/schema.ts`
+is a byte-identical copy that exists only until the client stops querying
+Postgres directly and goes through the API proxy. `bun run schema:check` fails
+if they drift; run it before merging anything that touches the schema.
 
 ## 4. `mobile/` — Expo app
 

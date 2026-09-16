@@ -31,7 +31,7 @@ means every port afterwards is written against the final auth model, once.
 These conclusions do not change and should not be re-litigated:
 
 - **Better Auth adopts the existing `users` table.** `users.id` (uuid) stays the
-  primary key, so all 48 tables' foreign keys keep pointing at the same rows.
+  primary key, so all 46 tables' foreign keys keep pointing at the same rows.
   No data migration.
 - **Do not run Better Auth's official Clerk migration script.** It creates rows
   keyed on Clerk's `user_xxx` strings, which would duplicate the users and
@@ -136,11 +136,9 @@ should not wait for it. **Disable the endpoint in the Clerk dashboard now.**
 
 Throwaway branch, roughly an hour, against a staging database:
 
-1. **Neon HTTP transactions.** `db.transaction()` throws on the HTTP driver, and
-   Better Auth's create-user-and-account path is transactional by default. This
-   is the likeliest thing to break the whole plan — settle it first. Fallback: a
-   second Drizzle client on `neon-serverless` (WebSocket) used *only* by the
-   auth adapter.
+1. ~~**Neon HTTP transactions.**~~ **Settled — this spike is done.** The API
+   runs `node-postgres` on a pool and transactions work, verified against
+   Postgres 18.6. Nothing further is needed here.
 2. **The `fields` mapping direction** — `{ name: "displayName" }` (JS property
    key), not the SQL column name. Prove it with one signup.
 3. **Whether password reset works with no `account` row**, which decides whether
@@ -210,7 +208,15 @@ permanently.
 
 ## Risks
 
-1. **Neon HTTP transactions** — can invalidate the approach. Phase 0.2.
+1. ~~**Neon HTTP transactions**~~ — **resolved 16 September 2026.** This was
+   the risk that could have invalidated the approach: Better Auth's
+   create-user-and-account path is transactional, and `drizzle-orm/neon-http`
+   throws `"No transactions support in neon-http driver"` rather than merely
+   lacking them. The API now runs `drizzle-orm/node-postgres` on a pooled
+   connection, which a long-running NestJS process can hold and a Next.js
+   serverless handler could not. Verified against Postgres 18.6: commit works,
+   and a throwing transaction rolls back cleanly. No adapter workaround, no
+   second Drizzle client, no `transaction: false`.
 2. **Cookie domain and CORS across four origins** — an unset cookie domain
    should be a **hard boot failure in production**. That single guard is the
    most important line in the migration.

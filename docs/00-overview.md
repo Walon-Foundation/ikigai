@@ -29,7 +29,7 @@ docs/     this plan set
 | — in `app/admin/` | 63 |
 | — in `app/(marketing)/` | 1 |
 | API route handlers | 10 |
-| Database tables | 48, in `client/db/schema.ts` |
+| Database tables | 46 (plus 2 enums), canonical in `api/src/db/schema.ts` |
 | Files importing Clerk | 31 |
 | PWA files / client components | 104 / 54 |
 | Notification types in the catalog | 39 |
@@ -134,63 +134,35 @@ before or well after its endpoints move.
 
 ## Open decisions
 
-### Who owns the database
+### Who owns the database — DECIDED
 
-**Measured, not assumed — 16 September 2026.** Plan 00 originally recommended
-moving the schema to `api/src/db/schema.ts` and reaching it from `client/`
-through a tsconfig path alias, with a note to prove that resolves before
-committing to it. It was proved. It does not work.
+**The API owns it. `client/` stops querying Postgres and calls the API over
+HTTP through a proxy** (`client/app/api/*` forwards to the API server).
 
-The spike: a real `pgTable` defined in `api/`, imported and queried by the
-client's Drizzle instance.
+This is option B from the spike below. It means no shared Drizzle types are
+needed at all, so no workspace root and no root `node_modules` — the constraint
+that made option A awkward simply does not arise.
+
+The spike that forced the decision, run 16 September 2026: a real `pgTable`
+defined in `api/`, imported and queried by the client's Drizzle instance.
 
 | | Result |
 |---|---|
-| Turbopack bundling the cross-project import | **fine** — compiled, no config needed |
+| Turbopack bundling the cross-project import | fine — compiled, no config needed |
 | TypeScript, two copies of `drizzle-orm` @ 0.45.2 | **2 errors** |
-| TypeScript, one shared copy | **0 errors** |
+| TypeScript, one shared copy | 0 errors |
 
-The failure is nominal typing, not versioning:
+The failure was nominal typing, not version skew — Drizzle's `Column` carries a
+`protected` member, so two copies are two identities even at byte-identical
+versions. Sharing a schema across projects therefore required exactly one copy
+of `drizzle-orm` on disk. Routing the client through HTTP avoids the question.
 
-```
-api/node_modules/drizzle-orm/...   is not assignable to
-client/node_modules/drizzle-orm/...
-  Property 'config' is protected but type 'Column' is not a class
-  derived from 'Column'
-```
-
-Drizzle's `Column` carries a `protected` member, so two copies are two
-identities even at byte-identical versions. **Matching versions are not enough.
-There must be exactly one copy of `drizzle-orm` on disk.**
-
-That rules out the path alias on its own, and leaves two real options:
-
-**A — a bun workspace root.** A root `package.json` with
-`workspaces: ["api", "client", "mobile"]`. Shared dependencies hoist to a root
-`node_modules`; project-specific ones stay put. This is the standard, supported
-answer, and it keeps the one-repo/three-folder layout exactly as chosen — it
-adds a root manifest, nothing more. It does reintroduce a root `node_modules`.
-
-**B — `client/` stops touching the database.** Only `api/` holds Drizzle and
-the schema; the web client gets everything over HTTP. Nothing is shared, so
-nothing can conflict. But this forces all 63 admin actions and the marketing
-CMS reads through the API — precisely the scope
-[01-api-server.md](./01-api-server.md) recommends deferring, and the largest
-single block of work in the plan.
-
-The trade is a root `node_modules` against a much larger migration. **Not yet
-decided; it blocks Phase 1.**
-
-Two smaller facts the spike turned up, both worth keeping:
-
-- `client/tsconfig.json` has `"incremental": true`, and a stale `.tsbuildinfo`
-  reported type errors that no longer existed. Clear it before trusting a
-  typecheck result during this migration.
-- `client/drizzle.config.ts` does **not** set `casing: "snake_case"` while
-  `db/db.ts` does. Harmless today because every column carries an explicit SQL
-  name, and a live hazard the moment a new table relies on the default — the
-  runtime would query `user_id` where push created `"userId"`. Fix it before any
-  schema work, as [02-auth.md](./02-auth.md) also requires.
+**Transitional duplication, with an expiry.** `client/db/schema.ts` still
+exists and still works, because the client cannot stop querying until its calls
+are migrated. `api/src/db/schema.ts` is canonical; the client copy is kept
+byte-identical and guarded by `bun run schema:check` in `api/`, which fails on
+drift. Both the copy and the guard are deleted when the client's last direct
+query goes through the proxy.
 
 ### Does admin move behind the API
 
@@ -225,9 +197,17 @@ never. Mobile does not need it, and it is the cheapest scope to cut.
 1. **Two clients, one API.** If a server action keeps its logic instead of
    delegating, the web and mobile products fork. This is the failure mode that
    ends the project, and it happens one convenient shortcut at a time.
-2. **Neon HTTP has no interactive transactions.** `db.transaction()` throws.
-   This constrains auth (see 02) and every multi-write operation the API grows.
-3. **Scope.** 118 actions, 48 tables, 104 PWA files, three runtimes. Every
+2. ~~**Neon HTTP has no interactive transactions.**~~ **Resolved for the API,
+   16 September 2026.** `drizzle-orm/neon-http` does not merely lack
+   transactions, it throws `"No transactions support in neon-http driver"`. The
+   API now uses `drizzle-orm/node-postgres` with a real pool instead, which a
+   long-running server can hold and a serverless handler could not. Verified
+   against Postgres 18.6: a transaction commits, and a throwing transaction
+   rolls back with no row left behind. This was the single risk most likely to
+   invalidate [02-auth.md](./02-auth.md); it no longer applies.
+   **`client/` is still on neon-http** and still cannot transact — which is one
+   more reason its writes belong behind the API.
+3. **Scope.** 118 actions, 46 tables, 104 PWA files, three runtimes. Every
    phase above should ship to `dev` working, not accumulate.
 4. **The safeguarding surfaces are not optional.** Guardian consent, mentor
    vetting and the safety report queue are load-bearing for a platform holding
