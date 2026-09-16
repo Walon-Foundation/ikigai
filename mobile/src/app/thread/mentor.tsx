@@ -1,5 +1,5 @@
 import { IconButton, LazyColumn, useMaterialColors } from '@expo/ui/jetpack-compose';
-import { background, fillMaxSize, fillMaxWidth, padding, weight } from '@expo/ui/jetpack-compose/modifiers';
+import { background, fillMaxSize, fillMaxWidth, imePadding, padding, weight } from '@expo/ui/jetpack-compose/modifiers';
 import { Column } from '@expo/ui/jetpack-compose';
 import { router } from 'expo-router';
 import { useState } from 'react';
@@ -30,7 +30,7 @@ function MentorThread() {
     ]);
 
   return (
-    <Column modifiers={[fillMaxSize(), background(c.surface)]}>
+    <Column modifiers={[fillMaxSize(), background(c.surface), imePadding()]}>
       <ThreadAppBar
         avatar={
           <Avatar

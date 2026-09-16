@@ -21,6 +21,7 @@ import {
   fillMaxSize,
   fillMaxWidth,
   height,
+  imePadding,
   padding,
   paddingAll,
   Shapes,
@@ -102,7 +103,9 @@ export function Page({
 }) {
   const c = useMaterialColors();
   return (
-    <Column modifiers={[fillMaxSize(), background(c.surface)]}>
+    // imePadding: edge-to-edge means the window no longer resizes for the
+    // keyboard, so the layout has to make room for it itself.
+    <Column modifiers={[fillMaxSize(), background(c.surface), imePadding()]}>
       <AppBar title={title} subtitle={subtitle} action={action} back={back} />
       <LazyColumn modifiers={[weight(1), fillMaxWidth()]}>
         {children}

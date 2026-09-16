@@ -9,14 +9,7 @@ import {
   Text,
   useMaterialColors,
 } from '@expo/ui/jetpack-compose';
-import {
-  background,
-  fillMaxSize,
-  fillMaxWidth,
-  padding,
-  paddingAll,
-  weight,
-} from '@expo/ui/jetpack-compose/modifiers';
+import { background, fillMaxSize, fillMaxWidth, imePadding, padding, paddingAll, weight } from '@expo/ui/jetpack-compose/modifiers';
 import { router } from 'expo-router';
 import { Avatar } from '@/components/Avatar';
 import { Screen } from '@/components/Screen';
@@ -40,7 +33,7 @@ function TreeThread() {
   const [first, ...rest] = treeThread;
 
   return (
-    <Column modifiers={[fillMaxSize(), background(c.surface)]}>
+    <Column modifiers={[fillMaxSize(), background(c.surface), imePadding()]}>
       <ThreadAppBar
         avatar={
           <Avatar background={c.primary} color={c.onPrimary}>
