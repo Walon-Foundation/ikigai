@@ -21,6 +21,7 @@ import { MessagingModule } from './messaging/messaging.module.js';
 import { SafetyModule } from './safety/safety.module.js';
 import { MentorshipModule } from './mentorship/mentorship.module.js';
 import { PurposeBookModule } from './purpose-book/purpose-book.module.js';
+import { RealtimeModule } from './realtime/realtime.module.js';
 import { SkillsModule } from './skills/skills.module.js';
 import { OnboardingModule } from './onboarding/onboarding.module.js';
 import { TasksModule } from './tasks/tasks.module.js';
@@ -57,6 +58,7 @@ import { UploadsModule } from './uploads/uploads.module.js';
     AdminModule,
     EnquiriesModule,
     UploadsModule,
+    RealtimeModule,
     GoalsModule,
   ],
   controllers: [AppController],
