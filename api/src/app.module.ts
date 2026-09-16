@@ -7,7 +7,10 @@ import { DatabaseModule } from './db/database.module.js';
 import { GoalsModule } from './goals/goals.module.js';
 import { MailModule } from './mail/mail.module.js';
 import { NotificationsModule } from './notifications/notifications.module.js';
+import { JournalModule } from './journal/journal.module.js';
 import { MentorshipModule } from './mentorship/mentorship.module.js';
+import { PurposeBookModule } from './purpose-book/purpose-book.module.js';
+import { SkillsModule } from './skills/skills.module.js';
 import { OnboardingModule } from './onboarding/onboarding.module.js';
 import { TasksModule } from './tasks/tasks.module.js';
 
@@ -27,6 +30,9 @@ import { TasksModule } from './tasks/tasks.module.js';
     OnboardingModule,
     MentorshipModule,
     TasksModule,
+    SkillsModule,
+    JournalModule,
+    PurposeBookModule,
     GoalsModule,
   ],
   controllers: [AppController],
