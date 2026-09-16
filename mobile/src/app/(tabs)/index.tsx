@@ -25,10 +25,12 @@ import {
 } from '@expo/ui/jetpack-compose/modifiers';
 import { router } from 'expo-router';
 import { Avatar } from '@/components/Avatar';
+import { BrandHero, ON_BRAND_FAINT, ON_BRAND_MUTED } from '@/components/BrandHero';
 import { Screen } from '@/components/Screen';
 import { Glyph } from '@/components/Glyph';
 import { Type } from '@/components/Type';
 import { type ChatSummary, chats, me } from '@/data/demo';
+import { BRAND } from '@/theme/brand';
 
 export default function ChatsScreen() {
   return (
@@ -44,63 +46,58 @@ function Chats() {
   return (
     <Box modifiers={[fillMaxSize(), background(c.surface)]}>
       <LazyColumn modifiers={[fillMaxSize()]}>
-        {/* search */}
-        <Row
-          verticalAlignment="center"
-          horizontalArrangement={{ spacedBy: 16 }}
-          modifiers={[
-            padding(16, 16, 16, 4),
-            fillMaxWidth(),
-            height(56),
-            clip(Shapes.RoundedCorner(28)),
-            background(c.surfaceContainerHigh),
-            padding(16, 0, 8, 0),
-          ]}
+        <BrandHero
+          eyebrow="Ikigai"
+          title={`Kushe, ${me.displayName}`}
+          subtitle={`Thrive · week ${me.weekInStage} · 4-day journal streak`}
+          trailing={
+            <Box
+              contentAlignment="center"
+              modifiers={[size(40, 40), clip(Shapes.Circle), background(ON_BRAND_FAINT), clickable(() => router.push('/notifications'))]}
+            >
+              <Glyph name="notifications" color={BRAND.onBrand} size={22} />
+            </Box>
+          }
         >
-          <Glyph name="search" color={c.onSurfaceVariant} />
-          <Box modifiers={[weight(1)]}>
-            <Type variant="bodyLarge" color={c.onSurfaceVariant}>
+          <Row
+            verticalAlignment="center"
+            horizontalArrangement={{ spacedBy: 12 }}
+            modifiers={[fillMaxWidth(), height(48), clip(Shapes.RoundedCorner(24)), background(ON_BRAND_FAINT), padding(16, 0, 16, 0)]}
+          >
+            <Glyph name="search" color={ON_BRAND_MUTED} size={22} />
+            <Type variant="bodyLarge" color={ON_BRAND_MUTED}>
               Search chats
             </Type>
-          </Box>
-          <Avatar
-            background={c.tertiaryContainer}
-            color={c.onTertiaryContainer}
-            initials={me.initials}
-            diameter={32}
-          />
-        </Row>
-
-        <Box modifiers={[padding(16, 12, 16, 8)]}>
-          <Type variant="headlineMedium" color={c.onSurface}>
-            Chats
-          </Type>
-        </Box>
+          </Row>
+        </BrandHero>
 
         {/* the growth tree, pinned */}
-        <Box modifiers={[padding(16, 0, 16, 8)]}>
+        <Box modifiers={[padding(12, 4, 12, 8)]}>
           <Card
-            colors={{ containerColor: c.primaryContainer }}
+            colors={{ containerColor: BRAND.sunSoft }}
             modifiers={[fillMaxWidth(), clickable(() => router.push('/thread/tree'))]}
           >
-            <Row
-              verticalAlignment="center"
-              horizontalArrangement={{ spacedBy: 16 }}
-              modifiers={[paddingAll(16)]}
-            >
-              <Avatar background={c.primary} color={c.onPrimary} diameter={48}>
-                <Glyph name="forest" color={c.onPrimary} size={28} />
+            <Row verticalAlignment="center" horizontalArrangement={{ spacedBy: 16 }} modifiers={[paddingAll(16)]}>
+              <Avatar background={BRAND.sun} color={BRAND.greenDeep} diameter={48}>
+                <Glyph name="forest" color={BRAND.greenDeep} size={28} />
               </Avatar>
               <Column modifiers={[weight(1)]}>
-                <Type variant="titleMedium" color={c.onPrimaryContainer}>
+                <Type variant="titleMedium" color={BRAND.greenDeep}>
                   Your tree
                 </Type>
-                <Type variant="bodyMedium" color={c.onPrimaryContainer}>
+                <Type variant="bodyMedium" color={BRAND.greenDeep}>
                   One more milestone and you grow a new branch.
                 </Type>
               </Column>
+              <Glyph name="chevron_right" color={BRAND.greenDeep} />
             </Row>
           </Card>
+        </Box>
+
+        <Box modifiers={[padding(20, 8, 16, 4)]}>
+          <Type variant="titleMedium" color={c.onSurface}>
+            Conversations
+          </Type>
         </Box>
 
         {chats.map((chat) => (
@@ -132,12 +129,12 @@ function ChatRow({ chat }: { chat: ChatSummary }) {
 
   const leading =
     chat.kind === 'mentor' ? (
-      <Avatar background={c.tertiaryContainer} color={c.onTertiaryContainer} initials={chat.initials} />
+      <Avatar background={BRAND.orange} color={BRAND.onBrand} initials={chat.initials} />
     ) : chat.kind === 'club' ? (
-      <Avatar background={c.secondaryContainer} color={c.onSecondaryContainer} initials={chat.initials} />
+      <Avatar background={BRAND.teal} color={BRAND.onBrand} initials={chat.initials} />
     ) : (
-      <Avatar background={c.surfaceContainerHighest} color={c.onSurfaceVariant}>
-        <Glyph name={chat.icon ?? 'chat'} color={c.onSurfaceVariant} />
+      <Avatar background={chat.kind === 'journal' ? BRAND.leafSoft : BRAND.orangeSoft}>
+        <Glyph name={chat.icon ?? 'chat'} color={chat.kind === 'journal' ? BRAND.leaf : BRAND.orange} />
       </Avatar>
     );
 
