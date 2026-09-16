@@ -2,12 +2,15 @@ import { Module } from '@nestjs/common';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 import { AccountModule } from './account/account.module.js';
+import { AdminModule } from './admin/admin.module.js';
 import { AuthModule } from './auth/auth.module.js';
+import { CmsModule } from './cms/cms.module.js';
 import { CommonModule } from './common/common.module.js';
 import { DatabaseModule } from './db/database.module.js';
 import { GoalsModule } from './goals/goals.module.js';
 import { MailModule } from './mail/mail.module.js';
 import { NotificationsModule } from './notifications/notifications.module.js';
+import { EnquiriesModule } from './enquiries/enquiries.module.js';
 import { EventsModule } from './events/events.module.js';
 import { GroupsModule } from './groups/groups.module.js';
 import { GuardiansModule } from './guardians/guardians.module.js';
@@ -49,6 +52,9 @@ import { TasksModule } from './tasks/tasks.module.js';
     MessagingModule,
     MatchingModule,
     JobsModule,
+    CmsModule,
+    AdminModule,
+    EnquiriesModule,
     GoalsModule,
   ],
   controllers: [AppController],
