@@ -54,7 +54,7 @@ export type ChatSummary = {
   /** Material Symbol name for rows that show an icon instead of initials. */
   icon?: string;
   /** Route the row opens. Absent rows are not interactive yet. */
-  href?: '/thread/mentor' | '/thread/journal';
+  href?: '/thread/mentor' | '/thread/journal' | '/groups/c1' | '/activities/e1';
 };
 
 export const me: Me = {
@@ -89,6 +89,7 @@ export const chats: ChatSummary[] = [
     preview: 'Isatu: Saturday we build the water filter',
     time: 'Yesterday',
     initials: 'SG',
+    href: '/groups/c1',
   },
   {
     id: 'journal',
@@ -106,6 +107,7 @@ export const chats: ChatSummary[] = [
     preview: "Unlocks at 50% — you're at 57%",
     time: 'Sep 28',
     icon: 'event',
+    href: '/activities/e1',
   },
 ];
 

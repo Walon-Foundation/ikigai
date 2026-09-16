@@ -1,5 +1,6 @@
 import { Column, FilledTonalButton, LazyColumn, ListItem, Text, useMaterialColors } from '@expo/ui/jetpack-compose';
 import { background, fillMaxSize, padding } from '@expo/ui/jetpack-compose/modifiers';
+import { router } from 'expo-router';
 import { Avatar } from '@/components/Avatar';
 import { Screen } from '@/components/Screen';
 import { Type } from '@/components/Type';
@@ -42,7 +43,7 @@ function Match() {
             </Type>
           </ListItem.SupportingContent>
           <ListItem.TrailingContent>
-            <FilledTonalButton onClick={() => {}}>
+            <FilledTonalButton onClick={() => router.push({ pathname: '/mentors/[id]', params: { id: m.id } })}>
               <Text>View</Text>
             </FilledTonalButton>
           </ListItem.TrailingContent>
