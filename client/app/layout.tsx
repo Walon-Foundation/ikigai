@@ -41,13 +41,6 @@ export const metadata: Metadata = {
   description:
     "Ikigai connects youth in Sierra Leone with mentors, growth tools, and a community built for their future.",
   manifest: "/manifest.webmanifest",
-  icons: {
-    icon: [
-      { url: "/favicon.ico" },
-      { url: "/icon", type: "image/png", sizes: "32x32" },
-    ],
-    apple: [{ url: "/apple-icon", sizes: "180x180", type: "image/png" }],
-  },
   openGraph: {
     type: "website",
     locale: "en_SL",
@@ -100,10 +93,10 @@ export default function RootLayout({
     >
       <head>
         <ThemeInit />
-        {/* Icons are declared once, in `metadata.icons` above — Next renders
-            them into <head> for every route. Repeating them as manual <link>
-            tags here emitted each icon twice, with two non-identical
-            rel="icon" tags whose precedence was left to browser heuristics. */}
+        {/* Icons come from the file conventions — app/favicon.ico, app/icon.png,
+            app/apple-icon.png — which Next renders into <head> once for every
+            route. Do not repeat them here or in `metadata.icons`: that emitted
+            each icon twice, with precedence left to browser heuristics. */}
       </head>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
