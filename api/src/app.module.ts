@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 import { AccountModule } from './account/account.module.js';
+import { AuthModule } from './auth/auth.module.js';
 import { CommonModule } from './common/common.module.js';
 import { DatabaseModule } from './db/database.module.js';
 import { GoalsModule } from './goals/goals.module.js';
@@ -24,6 +25,7 @@ import { TasksModule } from './tasks/tasks.module.js';
   imports: [
     DatabaseModule,
     CommonModule,
+    AuthModule,
     MailModule,
     NotificationsModule,
     AccountModule,

@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+  bigint,
   boolean,
   index,
   integer,
@@ -43,7 +44,14 @@ export const users = pgTable(
   "users",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    clerkId: text("clerk_id").notNull().unique(),
+    // NOT NULL dropped, column KEPT. Better Auth inserts a user without it,
+    // and this was the only NOT NULL column with no default — so its first
+    // signup would have failed. Keeping the column is the rollback path: a
+    // reverted cutover picks these rows up by clerk_id again. Dropped in
+    // docs/02-auth.md Phase 3, a week after cutover, not before.
+    clerkId: text("clerk_id").unique(),
+    // Required by Better Auth. BOOLEAN, not a timestamp — that is Auth.js.
+    emailVerified: boolean("email_verified").notNull().default(false),
     email: text("email"),
     role: roleEnum("role").notNull().default("mentee"),
     displayName: text("display_name"),
@@ -126,14 +134,22 @@ export const users = pgTable(
     // actions, which is what "hasn't been seen in a while" has to mean.
     lastActiveAt: timestamp("last_active_at"),
     onboardingData: jsonb("onboarding_data"),
-    createdAt: timestamp("created_at").defaultNow(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    // Required by Better Auth.
+    updatedAt: timestamp("updated_at")
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
   },
   (t) => [
     // The mentor marketplace filters on exactly this pair — and so does the
     // mentee approval queue, which reuses these same decision columns.
     index("users_role_verified_idx").on(t.role, t.verifiedAt),
-    // Guardian links resolve a child by email.
-    index("users_email_idx").on(t.email),
+    // Guardian links resolve a child by email — and Better Auth needs this
+    // UNIQUE, because account linking matches an OAuth identity to an existing
+    // row by address. The column stays nullable: lib/purge.ts nulls it for
+    // tombstones, and Postgres allows many NULLs under a unique index.
+    uniqueIndex("users_email_idx").on(t.email),
     // The daily inactivity jobs scan for mentees whose last action predates a
     // cutoff. Without this it is a seq scan of every user, once a day, forever.
     index("users_last_active_idx").on(t.lastActiveAt),
@@ -1262,3 +1278,113 @@ export const mentorReviews = pgTable(
   },
   (t) => [unique().on(t.mentorId, t.authorId)],
 );
+
+
+// ---------------------------------------------------------------------------
+// Better Auth owns everything below. See docs/02-auth.md.
+//
+// The columns come from `bunx @better-auth/cli generate` against the INSTALLED
+// version — that output, not the docs and not any plan document, is the source
+// of truth. Do not "tidy" these names: the adapter looks them up by the JS
+// property key, so a rename is a silent runtime failure rather than a type
+// error.
+//
+// Three deliberate departures from what the generator emitted:
+//
+//   1. It wanted a new `user` table with a text id. We adopt the existing
+//      `users` instead, so every foreign key across 46 tables keeps pointing at
+//      the same rows — no data migration, no orphans. `modelName` in the auth
+//      config maps it.
+//   2. Every id here is uuid().defaultRandom(), not text. `generateId: false`
+//      is a GLOBAL setting, so Postgres has to mint ids for all three tables,
+//      and userId must be uuid to reference users.id at all.
+//   3. The JS consts are authSessions/authAccounts rather than session/account,
+//      so nothing later collides with a domain concept called "account".
+// ---------------------------------------------------------------------------
+
+export const authSessions = pgTable(
+  "session",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    expiresAt: timestamp("expires_at").notNull(),
+    token: text("token").notNull().unique(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at")
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+    ipAddress: text("ip_address"),
+    userAgent: text("user_agent"),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+  },
+  (t) => [index("session_user_id_idx").on(t.userId)],
+);
+
+export const authAccounts = pgTable(
+  "account",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    accountId: text("account_id").notNull(),
+    providerId: text("provider_id").notNull(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    accessToken: text("access_token"),
+    refreshToken: text("refresh_token"),
+    idToken: text("id_token"),
+    accessTokenExpiresAt: timestamp("access_token_expires_at"),
+    refreshTokenExpiresAt: timestamp("refresh_token_expires_at"),
+    scope: text("scope"),
+    password: text("password"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at")
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (t) => [
+    index("account_user_id_idx").on(t.userId),
+    // One identity per provider. Without this, a repeated OAuth callback can
+    // attach a second account row for the same Google identity.
+    unique("account_provider_account_unique").on(t.providerId, t.accountId),
+  ],
+);
+
+export const authVerifications = pgTable(
+  "verification",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    identifier: text("identifier").notNull(),
+    value: text("value").notNull(),
+    expiresAt: timestamp("expires_at").notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at")
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (t) => [index("verification_identifier_idx").on(t.identifier)],
+);
+
+// Better Auth's default rate limiter is IN-MEMORY, which on more than one
+// instance is per-instance and close to useless. A public sign-in endpoint with
+// no effective rate limit, on a platform holding safeguarding records about
+// minors, is a real regression from what Clerk provided — so storage is the
+// database and this is where it lives. See Risk 4 in docs/02-auth.md.
+export const authRateLimit = pgTable("rate_limit", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  key: text("key"),
+  count: integer("count"),
+  // EPOCH MILLISECONDS, not a timestamp — despite the name.
+  //
+  // `auth generate` does not emit this table, so its shape has to be read off
+  // the rate limiter itself, which writes `lastRequest: now` as a number and
+  // coerces bigint back to Number on read. Declaring it timestamp() type-checks
+  // fine and then fails at runtime with "value.toISOString is not a function"
+  // on the first request that touches the limiter — and ONLY on the HTTP path,
+  // since a direct auth.api call skips rate limiting entirely. That combination
+  // makes it look like a broken request bridge rather than a wrong column.
+  lastRequest: bigint("last_request", { mode: "number" }),
+});
