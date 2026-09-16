@@ -49,6 +49,7 @@ const sections: { title: string; links: Link[] }[] = [
     // Demo only: jump into the flows and portals a mentee would never see.
     title: 'Demo: other views',
     links: [
+      { icon: 'slideshow', title: 'Intro', href: '/onboarding1' },
       { icon: 'login', title: 'Sign in', href: '/sign-in' },
       { icon: 'waving_hand', title: 'Onboarding', href: '/onboarding' },
       { icon: 'school', title: 'Mentor portal', href: '/mentor' },
