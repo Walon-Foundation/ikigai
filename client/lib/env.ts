@@ -20,6 +20,13 @@ const schema = z.object({
   // Optional: the Clerk webhook route returns 500 at runtime when unset.
   CLERK_WEBHOOK_SECRET: z.string().optional(),
   ADMIN_HOSTNAME: z.string().default("admin.localhost:3000"),
+  // The NestJS API. Server-side only — the browser reaches it through
+  // /api/proxy, never directly, because it must not hold the internal token.
+  API_URL: z.url().default("http://localhost:4000"),
+  // Shared secret proving a caller is this app. Transitional: it exists only
+  // while this app owns the session and the API cannot authenticate users
+  // itself. See docs/02-auth.md.
+  INTERNAL_API_TOKEN: z.string().min(1).default("dev-internal-token"),
   // Web Push (VAPID). The public key is exposed via NEXT_PUBLIC_VAPID_PUBLIC_KEY
   // (see env.client.ts). When keys are unset, push send is a no-op — the in-app
   // notification feed still works. Generate with `web-push generate-vapid-keys`.
@@ -68,6 +75,8 @@ export const env = {
   clerkSecretKey: parsed.data.CLERK_SECRET_KEY,
   clerkWebhookSecret: parsed.data.CLERK_WEBHOOK_SECRET,
   adminHostname,
+  apiUrl: parsed.data.API_URL.replace(/\/$/, ""),
+  internalApiToken: parsed.data.INTERNAL_API_TOKEN,
   /**
    * Absolute base URL of the admin panel. Needed because admin-facing
    * notifications are delivered through the same feed and service worker as
