@@ -180,3 +180,364 @@ export const suggestedMentors = [
   { id: 's2', displayName: 'Ibrahim Kamara', initials: 'IK', focus: 'Agriculture · Waterloo', score: 71 },
   { id: 's3', displayName: 'Hawa Bangura', initials: 'HB', focus: 'Health · Freetown', score: 64 },
 ];
+
+// ---------------------------------------------------------------------------
+// Onboarding
+// ---------------------------------------------------------------------------
+
+export const interestOptions = [
+  'Technology', 'Science', 'Art', 'Music', 'Sport', 'Agriculture', 'Health',
+  'Business', 'Writing', 'Fashion', 'Community', 'Environment', 'Teaching', 'Engineering',
+];
+
+export const assessmentQuestions: { key: 'love' | 'skills' | 'community' | 'opportunity'; title: string; hint: string }[] = [
+  { key: 'love', title: 'What do you love?', hint: 'Things you could do for hours without noticing the time.' },
+  { key: 'skills', title: 'What are you good at?', hint: 'Things people come to you for.' },
+  { key: 'community', title: 'What does your community need?', hint: 'Problems you see around you.' },
+  { key: 'opportunity', title: 'What could you be paid for?', hint: 'Work that exists, or could exist, near you.' },
+];
+
+export const valueOptions = [
+  'Family', 'Faith', 'Honesty', 'Courage', 'Kindness', 'Learning', 'Independence', 'Justice', 'Creativity', 'Service',
+];
+
+export const personalityScales: { key: string; left: string; right: string }[] = [
+  { key: 'introvertExtrovert', left: 'Quiet', right: 'Outgoing' },
+  { key: 'structuredFlexible', left: 'Planned', right: 'Spontaneous' },
+  { key: 'creativeAnalytical', left: 'Creative', right: 'Analytical' },
+  { key: 'independentCollaborative', left: 'On my own', right: 'With others' },
+];
+
+export const expertiseOptions = [
+  'Engineering', 'Medicine', 'Nursing', 'Law', 'Teaching', 'Business', 'Agriculture',
+  'Software', 'Design', 'Journalism', 'Finance', 'Public service',
+];
+
+// ---------------------------------------------------------------------------
+// Goals & purpose book
+// ---------------------------------------------------------------------------
+
+export type Goal = { id: string; title: string; detail?: string; target?: string; done: boolean };
+
+export const goals: Goal[] = [
+  { id: 'g1', title: 'Finish my purpose book', detail: 'One section a week', target: '31 Oct', done: false },
+  { id: 'g2', title: 'Learn to solder', detail: 'Ask Isatu at the club', target: '15 Nov', done: false },
+  { id: 'g3', title: 'Read one book this month', done: true },
+];
+
+export const purposeBook = {
+  statement:
+    'You are a balanced, creative individual passionate about technology and community development. You are driven by learning and committed to making a meaningful impact.',
+  interests: ['Technology', 'Engineering', 'Community', 'Science'],
+  values: ['Learning', 'Family', 'Service'],
+  personalityLabel: 'Balanced, Creative',
+  lifeVision:
+    'I want to run a repair workshop in Kissy that also teaches girls how to fix things.',
+};
+
+// ---------------------------------------------------------------------------
+// Clubs
+// ---------------------------------------------------------------------------
+
+export type Club = {
+  id: string;
+  name: string;
+  description: string;
+  members: number;
+  stage?: Stage;
+  tags: string[];
+  joined: boolean;
+  messages: { id: string; from: string; text: string; mine?: boolean }[];
+};
+
+export const clubs: Club[] = [
+  {
+    id: 'c1',
+    name: 'STEM Girls Freetown',
+    description: 'We build things. Saturdays, 10am, at the community centre.',
+    members: 24,
+    stage: 'thrive',
+    tags: ['Science', 'Engineering'],
+    joined: true,
+    messages: [
+      { id: 'cm1', from: 'Isatu', text: 'Saturday we build the water filter' },
+      { id: 'cm2', from: 'Mariatu', text: 'I can bring the sand and gravel' },
+      { id: 'cm3', from: 'You', text: 'I will bring bottles', mine: true },
+    ],
+  },
+  {
+    id: 'c2',
+    name: 'Young Writers Circle',
+    description: 'Short stories, poems and letters. We share one piece every two weeks.',
+    members: 11,
+    tags: ['Writing', 'Art'],
+    joined: false,
+    messages: [],
+  },
+  {
+    id: 'c3',
+    name: 'Green Kissy',
+    description: 'Clean-ups and tree planting across Kissy.',
+    members: 38,
+    stage: 'build',
+    tags: ['Environment', 'Community'],
+    joined: false,
+    messages: [],
+  },
+];
+
+// ---------------------------------------------------------------------------
+// Activities / events
+// ---------------------------------------------------------------------------
+
+export type EventItem = {
+  id: string;
+  title: string;
+  when: string;
+  where: string;
+  description: string;
+  capacity?: number;
+  registered: number;
+  unlockAtPercent?: number;
+  status: 'upcoming' | 'ongoing' | 'past';
+  rsvp: 'none' | 'registered' | 'attended';
+};
+
+/** The mentee's roadmap completion, which gates some events. */
+export const roadmapPercent = 57;
+
+export const events: EventItem[] = [
+  {
+    id: 'e1',
+    title: 'Finding Yourself Picnic',
+    when: 'Sat 28 Sep · 11:00',
+    where: 'Lumley Beach',
+    description: 'A day with your mentor and other mentees. Food, games, and a purpose circle.',
+    capacity: 60,
+    registered: 41,
+    unlockAtPercent: 50,
+    status: 'upcoming',
+    rsvp: 'none',
+  },
+  {
+    id: 'e2',
+    title: 'Pad Her Power workshop',
+    when: 'Today · 14:00–16:00',
+    where: 'Kissy Community Centre',
+    description: 'Making reusable pads, and a safe space to ask questions.',
+    capacity: 30,
+    registered: 30,
+    status: 'ongoing',
+    rsvp: 'registered',
+  },
+  {
+    id: 'e3',
+    title: 'CV and interview day',
+    when: 'Sat 12 Oct · 10:00',
+    where: 'Online',
+    description: 'Practise interviews with volunteers from local businesses.',
+    registered: 18,
+    unlockAtPercent: 75,
+    status: 'upcoming',
+    rsvp: 'none',
+  },
+  {
+    id: 'e4',
+    title: 'Tree planting, Regent',
+    when: 'Sat 7 Sep',
+    where: 'Regent',
+    description: 'Planted 120 seedlings with Green Kissy.',
+    registered: 25,
+    status: 'past',
+    rsvp: 'attended',
+  },
+];
+
+// ---------------------------------------------------------------------------
+// Task detail
+// ---------------------------------------------------------------------------
+
+export const taskDetail = {
+  id: 'task-1',
+  title: 'Interview an elder about your community',
+  description:
+    'Ask an elder how your community has changed in their lifetime. Write down what surprised you, and take a photo of your notes.',
+  due: 'Friday',
+  from: 'Fatmata Sesay',
+  requiresEvidence: true,
+  questions: [
+    {
+      id: 'q1',
+      prompt: 'Who did you interview?',
+      options: ['An elder in my family or community', 'A friend my age', 'Nobody yet'],
+    },
+    {
+      id: 'q2',
+      prompt: 'What is the most useful thing to write down during an interview?',
+      options: ['Exact quotes and surprises', 'Only the date', 'Nothing — just listen'],
+    },
+  ],
+};
+
+// ---------------------------------------------------------------------------
+// Mentorship
+// ---------------------------------------------------------------------------
+
+export type CurriculumItem = {
+  id: string;
+  title: string;
+  description?: string;
+  status: 'planned' | 'in_progress' | 'done';
+  target?: string;
+};
+
+export const curriculum: CurriculumItem[] = [
+  { id: 'cu1', title: 'Getting to know you', description: 'First meeting and purpose quiz review', status: 'done' },
+  { id: 'cu2', title: 'Your community', description: 'Interviews and observation', status: 'in_progress', target: '4 Oct' },
+  { id: 'cu3', title: 'Skills you already have', status: 'planned', target: '25 Oct' },
+  { id: 'cu4', title: 'Your first project', status: 'planned', target: '15 Nov' },
+];
+
+export const meetings = [
+  { number: 1, label: 'First meeting', verified: true, when: '17 Aug', method: 'Location' },
+  { number: 2, label: 'Mid-point check-in', verified: true, when: '7 Sep', method: 'Photo' },
+  { number: 3, label: 'Graduation meeting', verified: false },
+];
+
+export type MentorProfile = {
+  id: string;
+  displayName: string;
+  initials: string;
+  headline: string;
+  bio: string;
+  expertise: string[];
+  languages: string[];
+  rating: number;
+  reviews: { author: string; text: string; stars: number }[];
+  score?: number;
+  isMine?: boolean;
+};
+
+export const mentorProfiles: MentorProfile[] = [
+  {
+    id: 'demo-mentor',
+    displayName: 'Fatmata Sesay',
+    initials: 'FS',
+    headline: 'Civil engineer · Freetown',
+    bio: 'I design water systems for communities around the Western Area. I mentor because nobody told me engineering was for girls until I was twenty.',
+    expertise: ['Engineering', 'Environment', 'Public service'],
+    languages: ['Krio', 'English'],
+    rating: 4.9,
+    reviews: [
+      { author: 'A parent', text: 'My daughter talks about her future now.', stars: 5 },
+      { author: 'A mentee', text: 'She listens properly.', stars: 5 },
+    ],
+    isMine: true,
+  },
+  {
+    id: 's1',
+    displayName: 'Mariama Conteh',
+    initials: 'MC',
+    headline: 'Electrical engineer · Freetown',
+    bio: 'I work on solar mini-grids and teach basic electronics on weekends.',
+    expertise: ['Engineering', 'Software'],
+    languages: ['Krio', 'English', 'Temne'],
+    rating: 4.8,
+    reviews: [{ author: 'A mentee', text: 'Very patient.', stars: 5 }],
+    score: 86,
+  },
+  {
+    id: 's2',
+    displayName: 'Ibrahim Kamara',
+    initials: 'IK',
+    headline: 'Agronomist · Waterloo',
+    bio: 'Farming is a business. I help young people see it that way.',
+    expertise: ['Agriculture', 'Business'],
+    languages: ['Krio', 'English', 'Mende'],
+    rating: 4.6,
+    reviews: [],
+    score: 71,
+  },
+  {
+    id: 's3',
+    displayName: 'Hawa Bangura',
+    initials: 'HB',
+    headline: 'Nurse · Freetown',
+    bio: 'Twelve years in maternity care. I mentor girls interested in health.',
+    expertise: ['Nursing', 'Medicine'],
+    languages: ['Krio', 'English'],
+    rating: 5,
+    reviews: [{ author: 'A parent', text: 'Kind and honest.', stars: 5 }],
+    score: 64,
+  },
+];
+
+// ---------------------------------------------------------------------------
+// Notifications
+// ---------------------------------------------------------------------------
+
+export const notifications: { id: string; icon: string; title: string; body: string; time: string; read: boolean }[] = [
+  { id: 'n1', icon: 'chat', title: 'New message from Fatmata', body: 'How did the interview go?', time: '9:14', read: false },
+  { id: 'n2', icon: 'assignment', title: 'New mission', body: 'Interview an elder about your community', time: 'Mon', read: false },
+  { id: 'n3', icon: 'park', title: 'A new leaf', body: 'You joined STEM Girls Freetown', time: 'Sun', read: true },
+  { id: 'n4', icon: 'event', title: 'Picnic unlocked', body: 'You reached 50% — the Finding Yourself Picnic is open', time: '12 Sep', read: true },
+];
+
+// ---------------------------------------------------------------------------
+// Pad Her Power & safety
+// ---------------------------------------------------------------------------
+
+export const resources: { id: string; name: string; kind: string; area: string; distance: string; phone?: string; lat: number; lng: number }[] = [
+  { id: 'r1', name: 'Kissy Community Centre', kind: 'Free pads · Safe space', area: 'Kissy', distance: '1.2 km', phone: '+232 76 000 101', lat: 8.4712, lng: -13.1897 },
+  { id: 'r2', name: 'Princess Christian Maternity Hospital', kind: 'Health clinic', area: 'Cline Town', distance: '3.4 km', phone: '+232 76 000 102', lat: 8.4891, lng: -13.2206 },
+  { id: 'r3', name: 'Rainbo Initiative', kind: 'Support after violence', area: 'Central Freetown', distance: '5.0 km', phone: '116', lat: 8.4844, lng: -13.2344 },
+  { id: 'r4', name: 'Wellington Health Post', kind: 'Health clinic', area: 'Wellington', distance: '6.1 km', lat: 8.4378, lng: -13.1542 },
+];
+
+export const helpLines: { id: string; name: string; number: string; note: string }[] = [
+  { id: 'h1', name: 'Emergency', number: '999', note: 'Police, fire or ambulance' },
+  { id: 'h2', name: 'Child protection', number: '116', note: 'Free · 24 hours' },
+  { id: 'h3', name: 'Rainbo Initiative', number: '+232 76 000 103', note: 'Support after sexual violence' },
+];
+
+// ---------------------------------------------------------------------------
+// Mentor portal
+// ---------------------------------------------------------------------------
+
+export const mentorRequests: { id: string; menteeName: string; initials: string; score: number; interests: string[]; note: string }[] = [
+  { id: 'rq1', menteeName: 'Kadiatu Turay', initials: 'KT', score: 82, interests: ['Engineering', 'Environment'], note: 'Wants to build solar lamps' },
+  { id: 'rq2', menteeName: 'Mohamed Jalloh', initials: 'MJ', score: 67, interests: ['Business', 'Technology'], note: 'Starting a phone repair stall' },
+];
+
+export const mentorMentees: { id: string; name: string; initials: string; stage: Stage; percent: number; lastActive: string; needsReview: number }[] = [
+  { id: 'demo-mentee', name: 'Aminata Kargbo', initials: 'AK', stage: 'thrive', percent: 57, lastActive: 'Today', needsReview: 1 },
+  { id: 'mt2', name: 'Salamatu Koroma', initials: 'SK', stage: 'discover', percent: 30, lastActive: '5 days ago', needsReview: 0 },
+];
+
+export const mentorCapacity = 2;
+
+export const pendingReviews: { id: string; menteeId: string; milestone: string; evidence: string; submitted: string }[] = [
+  { id: 'pr1', menteeId: 'demo-mentee', milestone: 'Interview an elder', evidence: 'Test passed 2/2 · photo of notes', submitted: 'Today' },
+];
+
+// ---------------------------------------------------------------------------
+// Parent portal
+// ---------------------------------------------------------------------------
+
+export const parentView = {
+  parentName: 'Mrs Kargbo',
+  child: {
+    name: 'Aminata',
+    initials: 'AK',
+    stage: 'Thrive' as const,
+    percent: 57,
+    mentor: 'Fatmata Sesay',
+    lastActive: 'Today',
+    recent: [
+      'Joined STEM Girls Freetown',
+      'Completed 4 of 7 milestones in Thrive',
+      'Verified second meeting with her mentor',
+    ],
+  },
+  pendingInvite: { email: 'kadi@example.com', code: 'IK-4F9K2A' },
+};
