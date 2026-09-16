@@ -1,8 +1,9 @@
-import { Body, Controller, Delete, Patch, Post, Put, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Patch, Post, Put, UseGuards } from '@nestjs/common';
 import { CurrentUserId } from '../auth/current-user.decorator.js';
 import { InternalAuthGuard } from '../auth/internal-auth.guard.js';
 import { ZodValidationPipe } from '../common/zod-validation.pipe.js';
 import { AccountService } from './account.service.js';
+import { DataExportService } from './data-export.service.js';
 import {
   type JournalDefaultDto,
   journalDefaultSchema,
@@ -17,7 +18,16 @@ import {
 @Controller('account')
 @UseGuards(InternalAuthGuard)
 export class AccountController {
-  constructor(private readonly account: AccountService) {}
+  constructor(
+    private readonly account: AccountService,
+    private readonly dataExport: DataExportService,
+  ) {}
+
+  /** "Download your data". Excludes other people's material — see the service. */
+  @Get('export')
+  exportData(@CurrentUserId() userId: string) {
+    return this.dataExport.export(userId);
+  }
 
   @Patch('profile')
   updateProfile(

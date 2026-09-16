@@ -11,7 +11,10 @@ import { NotificationsModule } from './notifications/notifications.module.js';
 import { EventsModule } from './events/events.module.js';
 import { GroupsModule } from './groups/groups.module.js';
 import { GuardiansModule } from './guardians/guardians.module.js';
+import { JobsModule } from './jobs/jobs.module.js';
 import { JournalModule } from './journal/journal.module.js';
+import { MatchingModule } from './matching/matching.module.js';
+import { MessagingModule } from './messaging/messaging.module.js';
 import { SafetyModule } from './safety/safety.module.js';
 import { MentorshipModule } from './mentorship/mentorship.module.js';
 import { PurposeBookModule } from './purpose-book/purpose-book.module.js';
@@ -43,6 +46,9 @@ import { TasksModule } from './tasks/tasks.module.js';
     EventsModule,
     GuardiansModule,
     SafetyModule,
+    MessagingModule,
+    MatchingModule,
+    JobsModule,
     GoalsModule,
   ],
   controllers: [AppController],
