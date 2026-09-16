@@ -1,52 +1,31 @@
-# Ikigai
+# client — marketing site + admin panel
 
-A purpose and mentorship platform for youth in Sierra Leone. Ikigai connects young people with verified mentors, supports journaling and self-discovery, and provides community safety tools — built as a progressive web app optimised for low-bandwidth environments.
+The Next.js 16 half of Ikigai: the public, SEO-indexed marketing site and the
+admin panel. Both are CMS-driven and read the shared Postgres database.
 
----
+Run `bun install && bun run dev`. Setup, including environment variables, is in
+[../docs/SETUP.md](../docs/SETUP.md).
 
-## What it does
+## Surfaces
 
-- **Mentorship** — AI-matched mentor connections with in-app messaging
-- **Journal** — private and mentor-visible journal entries with offline support
-- **Pad Her Power** — resource map and safety information for girls and young women
-- **School Clubs** — club leads can register and manage school ikigai clubs
-- **Growth Tree** — milestone-based visual progress tracker
-- **Admin panel** — separate subdomain (`admin.*`) for platform management
+Subdomain routing lives in `proxy.ts` (Next 16's renamed middleware):
 
-## Tech stack
+| Host | Route group | Audience |
+|---|---|---|
+| `<domain>` | `app/(marketing)/` | public |
+| `admin.<domain>` | `app/admin/` | staff — the `/admin` prefix is never shown |
+| `app.<domain>` | `app/(pwa)/` | the authenticated PWA |
 
-| Layer | Technology |
-|---|---|
-| Framework | Next.js 16 (App Router) |
-| Language | TypeScript |
-| Auth | Clerk v7 |
-| Database | Neon Postgres (serverless) |
-| ORM | Drizzle ORM |
-| Styling | Tailwind CSS v4 |
-| PWA | Service worker + Web App Manifest |
-| Linting | Biome |
+`app/(pwa)/` is being ported to the Expo app in `mobile/`, but **stays working
+here** — the PWA is how users on metered data and low-end devices reach the
+product, and it is not being deleted. See
+[../docs/03-mobile.md](../docs/03-mobile.md).
 
-## Project structure
+## Notes
 
-```
-app/
-  (app)/          — authenticated user-facing pages
-  admin/          — admin panel (subdomain-routed)
-  api/            — API routes
-  onboarding/     — new-user onboarding flow
-components/       — shared UI components
-db/
-  schema.ts       — Drizzle table definitions
-  migrations/     — generated SQL migrations
-lib/              — shared utilities
-scripts/          — one-off admin scripts
-public/           — static assets, icons, SW
-```
-
-## License
-
-Proprietary — see [LICENSE](./LICENSE). All rights reserved.
-
-## Setup
-
-See [SETUP.md](./SETUP.md) for local development instructions.
+- Marketing pages are `force-dynamic` on purpose: admin content edits appear
+  immediately. Correctness over milliseconds.
+- CSP ships **report-only**; `next.config.ts` documents what must happen before
+  it can be enforced.
+- `stories`, `gallery_items`, `partners` and `team_members` are empty in the
+  live database. Do not write copy or code implying they have content.
