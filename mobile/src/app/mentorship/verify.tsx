@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { Grow, InfoCard, NavRow, Page, Paragraph, SectionHeader } from '@/components/Kit';
 import { Screen } from '@/components/Screen';
-import { Symbol } from '@/components/Symbol';
+import { Glyph } from '@/components/Glyph';
 import { Type } from '@/components/Type';
 import { meetings, mentor } from '@/data/demo';
 
@@ -43,7 +43,7 @@ function Verify() {
         }
       >
         <InfoCard tone="primary">
-          <Symbol name="verified" color={c.onPrimaryContainer} />
+          <Glyph name="verified" color={c.onPrimaryContainer} />
           <Type variant="titleLarge" color={c.onPrimaryContainer}>
             {next ? `${next.label} confirmed` : 'All meetings verified'}
           </Type>

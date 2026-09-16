@@ -26,7 +26,7 @@ import {
 import { router } from 'expo-router';
 import { Avatar } from '@/components/Avatar';
 import { Screen } from '@/components/Screen';
-import { Symbol } from '@/components/Symbol';
+import { Glyph } from '@/components/Glyph';
 import { Type } from '@/components/Type';
 import { type ChatSummary, chats, me } from '@/data/demo';
 
@@ -57,7 +57,7 @@ function Chats() {
             padding(16, 0, 8, 0),
           ]}
         >
-          <Symbol name="search" color={c.onSurfaceVariant} />
+          <Glyph name="search" color={c.onSurfaceVariant} />
           <Box modifiers={[weight(1)]}>
             <Type variant="bodyLarge" color={c.onSurfaceVariant}>
               Search chats
@@ -89,7 +89,7 @@ function Chats() {
               modifiers={[paddingAll(16)]}
             >
               <Avatar background={c.primary} color={c.onPrimary} diameter={48}>
-                <Symbol name="forest" color={c.onPrimary} size={28} />
+                <Glyph name="forest" color={c.onPrimary} size={28} />
               </Avatar>
               <Column modifiers={[weight(1)]}>
                 <Type variant="titleMedium" color={c.onPrimaryContainer}>
@@ -116,7 +116,7 @@ function Chats() {
         modifiers={[align('bottomEnd'), padding(0, 0, 16, 16)]}
       >
         <ExtendedFloatingActionButton.Icon>
-          <Symbol name="edit" color={c.onPrimaryContainer} />
+          <Glyph name="edit" color={c.onPrimaryContainer} />
         </ExtendedFloatingActionButton.Icon>
         <ExtendedFloatingActionButton.Text>
           <Text>New entry</Text>
@@ -137,7 +137,7 @@ function ChatRow({ chat }: { chat: ChatSummary }) {
       <Avatar background={c.secondaryContainer} color={c.onSecondaryContainer} initials={chat.initials} />
     ) : (
       <Avatar background={c.surfaceContainerHighest} color={c.onSurfaceVariant}>
-        <Symbol name={chat.icon ?? 'chat'} color={c.onSurfaceVariant} />
+        <Glyph name={chat.icon ?? 'chat'} color={c.onSurfaceVariant} />
       </Avatar>
     );
 

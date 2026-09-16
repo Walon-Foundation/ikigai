@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { Field, Grow, InfoCard, NavRow, Page, Paragraph, SectionHeader } from '@/components/Kit';
 import { Screen } from '@/components/Screen';
-import { Symbol } from '@/components/Symbol';
+import { Glyph } from '@/components/Glyph';
 import { Type } from '@/components/Type';
 
 const REASONS = [
@@ -33,7 +33,7 @@ function Safety() {
     return (
       <Page title="Report sent">
         <InfoCard tone="primary">
-          <Symbol name="shield" color={c.onPrimaryContainer} />
+          <Glyph name="shield" color={c.onPrimaryContainer} />
           <Type variant="titleLarge" color={c.onPrimaryContainer}>
             Thank you for telling us
           </Type>

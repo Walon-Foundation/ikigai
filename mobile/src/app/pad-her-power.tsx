@@ -2,7 +2,7 @@ import { FilledTonalButton, IconButton, Text, useMaterialColors } from '@expo/ui
 import { Linking } from 'react-native';
 import { InfoCard, NavRow, Page, Paragraph, SectionHeader } from '@/components/Kit';
 import { Screen } from '@/components/Screen';
-import { Symbol } from '@/components/Symbol';
+import { Glyph } from '@/components/Glyph';
 import { Type } from '@/components/Type';
 import { resources } from '@/data/demo';
 
@@ -42,7 +42,7 @@ function PadHerPower() {
           trailing={
             r.phone ? (
               <IconButton onClick={() => Linking.openURL(`tel:${r.phone}`)}>
-                <Symbol name="call" color={c.primary} />
+                <Glyph name="call" color={c.primary} />
               </IconButton>
             ) : undefined
           }

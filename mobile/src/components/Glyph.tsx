@@ -12,7 +12,9 @@ import type { ImageSourcePropType } from 'react-native';
  * asynchronously; a same-sized spacer holds the layout meanwhile so rows do not
  * jump when the glyph arrives.
  */
-export function Symbol({
+// Not named `Symbol`: the React Compiler emits `Symbol.for(...)`, and an
+// imported component of that name shadows the global and crashes every screen.
+export function Glyph({
   name,
   color,
   size = 24,

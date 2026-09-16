@@ -2,7 +2,7 @@ import { AssistChip, FlowRow, IconButton, Text, useMaterialColors } from '@expo/
 import { fillMaxWidth, padding } from '@expo/ui/jetpack-compose/modifiers';
 import { InfoCard, Page, Paragraph, SectionHeader } from '@/components/Kit';
 import { Screen } from '@/components/Screen';
-import { Symbol } from '@/components/Symbol';
+import { Glyph } from '@/components/Glyph';
 import { Type } from '@/components/Type';
 import { purposeBook } from '@/data/demo';
 
@@ -33,7 +33,7 @@ function PurposeBook() {
       title="Purpose book"
       action={
         <IconButton onClick={() => {}}>
-          <Symbol name="share" color={c.onSurfaceVariant} />
+          <Glyph name="share" color={c.onSurfaceVariant} />
         </IconButton>
       }
     >

@@ -5,7 +5,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { Avatar } from '@/components/Avatar';
 import { Screen } from '@/components/Screen';
-import { Symbol } from '@/components/Symbol';
+import { Glyph } from '@/components/Glyph';
 import { Bubble, Composer, DayDivider, MissionCard, ThreadAppBar } from '@/components/Thread';
 import { type Message, mentor, mentorThread } from '@/data/demo';
 
@@ -45,11 +45,11 @@ function MentorThread() {
           <>
             {/* The plan: curriculum and meetings. */}
             <IconButton onClick={() => router.push('/mentorship/plan')}>
-              <Symbol name="map" color={c.onSurfaceVariant} />
+              <Glyph name="map" color={c.onSurfaceVariant} />
             </IconButton>
             {/* Verify an in-person meeting. */}
             <IconButton onClick={() => router.push('/mentorship/verify')}>
-              <Symbol name="location_on" color={c.onSurfaceVariant} />
+              <Glyph name="location_on" color={c.onSurfaceVariant} />
             </IconButton>
           </>
         }

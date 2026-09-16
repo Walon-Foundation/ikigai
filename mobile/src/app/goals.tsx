@@ -13,7 +13,7 @@ import { fillMaxWidth, padding, weight } from '@expo/ui/jetpack-compose/modifier
 import { useState } from 'react';
 import { Field, Grow, Page, Paragraph, SectionHeader } from '@/components/Kit';
 import { Screen } from '@/components/Screen';
-import { Symbol } from '@/components/Symbol';
+import { Glyph } from '@/components/Glyph';
 import { Type } from '@/components/Type';
 import { type Goal, goals as demoGoals } from '@/data/demo';
 
@@ -60,7 +60,7 @@ function Goals() {
           <Grow />
           <ExtendedFloatingActionButton onClick={() => setAdding(true)}>
             <ExtendedFloatingActionButton.Icon>
-              <Symbol name="add" color={c.onPrimaryContainer} />
+              <Glyph name="add" color={c.onPrimaryContainer} />
             </ExtendedFloatingActionButton.Icon>
             <ExtendedFloatingActionButton.Text>
               <Text>New goal</Text>

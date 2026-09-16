@@ -12,7 +12,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { Field, Grow, InfoCard, NavRow, Page, Paragraph, SectionHeader } from '@/components/Kit';
 import { Screen } from '@/components/Screen';
-import { Symbol } from '@/components/Symbol';
+import { Glyph } from '@/components/Glyph';
 import { Type } from '@/components/Type';
 import { taskDetail as task } from '@/data/demo';
 
@@ -48,7 +48,7 @@ function Task() {
         }
       >
         <InfoCard tone="primary">
-          <Symbol name="task_alt" color={c.onPrimaryContainer} />
+          <Glyph name="task_alt" color={c.onPrimaryContainer} />
           <Type variant="titleLarge" color={c.onPrimaryContainer}>
             Sent to Fatmata
           </Type>

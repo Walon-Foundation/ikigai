@@ -19,7 +19,7 @@ import {
 import { useState } from 'react';
 import { Avatar } from '@/components/Avatar';
 import { Screen } from '@/components/Screen';
-import { Symbol } from '@/components/Symbol';
+import { Glyph } from '@/components/Glyph';
 import { Bubble, Composer, DayDivider, ThreadAppBar } from '@/components/Thread';
 import { Type } from '@/components/Type';
 import { type JournalEntry, type JournalVisibility, journal, journalPrompt } from '@/data/demo';
@@ -52,7 +52,7 @@ function Journal() {
       <ThreadAppBar
         avatar={
           <Avatar background={c.surfaceContainerHighest} color={c.onSurfaceVariant}>
-            <Symbol name="menu_book" color={c.onSurfaceVariant} />
+            <Glyph name="menu_book" color={c.onSurfaceVariant} />
           </Avatar>
         }
         title="My journal"
@@ -88,7 +88,7 @@ function Journal() {
                 verticalAlignment="center"
                 modifiers={[fillMaxWidth(), padding(0, 0, 4, 0)]}
               >
-                <Symbol
+                <Glyph
                   name={shared ? 'group' : 'lock'}
                   color={shared ? c.primary : c.onSurfaceVariant}
                   size={14}

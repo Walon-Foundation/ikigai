@@ -3,7 +3,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { Field, Grow, InfoCard, Page, Paragraph, StepProgress } from '@/components/Kit';
 import { Screen } from '@/components/Screen';
-import { Symbol } from '@/components/Symbol';
+import { Glyph } from '@/components/Glyph';
 import { Type } from '@/components/Type';
 import { purposeBook } from '@/data/demo';
 
@@ -34,7 +34,7 @@ function MenteeProfile() {
         }
       >
         <InfoCard tone="primary">
-          <Symbol name="auto_awesome" color={c.onPrimaryContainer} />
+          <Glyph name="auto_awesome" color={c.onPrimaryContainer} />
           <Type variant="titleLarge" color={c.onPrimaryContainer}>
             This is you
           </Type>

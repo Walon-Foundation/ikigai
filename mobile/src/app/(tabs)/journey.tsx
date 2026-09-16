@@ -22,7 +22,7 @@ import {
 import { router } from 'expo-router';
 import { NavRow, SectionHeader } from '@/components/Kit';
 import { Screen } from '@/components/Screen';
-import { Symbol } from '@/components/Symbol';
+import { Glyph } from '@/components/Glyph';
 import { Type } from '@/components/Type';
 import { me, stages, thriveMilestones } from '@/data/demo';
 
@@ -107,7 +107,7 @@ function Journey() {
         return (
           <ListItem key={stage.id} colors={{ containerColor: c.surface }}>
             <ListItem.LeadingContent>
-              <Symbol
+              <Glyph
                 name={finished ? 'check_circle' : 'lock'}
                 color={finished ? c.primary : c.onSurfaceVariant}
                 size={28}

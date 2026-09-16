@@ -1,6 +1,7 @@
-import { Host } from '@expo/ui/jetpack-compose';
+import { Host, useMaterialColors } from '@expo/ui/jetpack-compose';
 import type { ReactNode } from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { hostSeedColor } from '@/theme/colors';
 
 /**
@@ -22,11 +23,22 @@ export function Screen({ children }: { children: ReactNode }) {
       </View>
     );
   }
+  return <AndroidScreen>{children}</AndroidScreen>;
+}
 
+function AndroidScreen({ children }: { children: ReactNode }) {
+  // Edge-to-edge is on, so content would sit under the status bar. The bottom is
+  // left alone: native tabs inset themselves, and pushed screens pad their own
+  // bottom bars.
+  const insets = useSafeAreaInsets();
+  // Outside the Host, so resolve the same palette it will use to paint the strip.
+  const surface = useMaterialColors({ seedColor: hostSeedColor }).surface;
   return (
-    <Host style={styles.host} seedColor={hostSeedColor}>
-      {children}
-    </Host>
+    <View style={[styles.host, { paddingTop: insets.top, backgroundColor: surface }]}>
+      <Host style={styles.host} seedColor={hostSeedColor}>
+        {children}
+      </Host>
+    </View>
   );
 }
 

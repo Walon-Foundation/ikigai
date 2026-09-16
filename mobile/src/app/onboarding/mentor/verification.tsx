@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { Field, Grow, InfoCard, NavRow, Page, Paragraph, SectionHeader, StepProgress } from '@/components/Kit';
 import { Screen } from '@/components/Screen';
-import { Symbol } from '@/components/Symbol';
+import { Glyph } from '@/components/Glyph';
 import { Type } from '@/components/Type';
 
 export default function MentorVerificationScreen() {
@@ -38,7 +38,7 @@ function Verification() {
         }
       >
         <InfoCard tone="tertiary">
-          <Symbol name="hourglass_top" color={c.onTertiaryContainer} />
+          <Glyph name="hourglass_top" color={c.onTertiaryContainer} />
           <Type variant="titleLarge" color={c.onTertiaryContainer}>
             We are checking your documents
           </Type>
