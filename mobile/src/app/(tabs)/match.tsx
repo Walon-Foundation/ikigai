@@ -2,9 +2,11 @@ import { Column, FilledTonalButton, LazyColumn, ListItem, Text, useMaterialColor
 import { background, fillMaxSize, padding } from '@expo/ui/jetpack-compose/modifiers';
 import { router } from 'expo-router';
 import { Avatar } from '@/components/Avatar';
+import { BrandHero } from '@/components/BrandHero';
 import { Screen } from '@/components/Screen';
 import { Type } from '@/components/Type';
 import { suggestedMentors } from '@/data/demo';
+import { accentFor } from '@/theme/brand';
 
 export default function MatchScreen() {
   return (
@@ -19,18 +21,15 @@ function Match() {
   const c = useMaterialColors();
   return (
     <LazyColumn modifiers={[fillMaxSize(), background(c.surface)]}>
-      <Column modifiers={[padding(16, 24, 16, 8)]}>
-        <Type variant="headlineMedium" color={c.onSurface}>
-          Match
-        </Type>
-        <Type variant="bodyMedium" color={c.onSurfaceVariant}>
-          You already have a mentor. These are others who share your interests.
-        </Type>
-      </Column>
+      <BrandHero
+        eyebrow="Match"
+        title="Mentors like you"
+        subtitle="You already have Fatmata. These mentors share your interests too."
+      />
       {suggestedMentors.map((m) => (
         <ListItem key={m.id} colors={{ containerColor: c.surface }}>
           <ListItem.LeadingContent>
-            <Avatar background={c.secondaryContainer} color={c.onSecondaryContainer} initials={m.initials} />
+            <Avatar background={accentFor(m.displayName).strong} initials={m.initials} diameter={48} />
           </ListItem.LeadingContent>
           <ListItem.HeadlineContent>
             <Type variant="bodyLarge" color={c.onSurface}>
@@ -39,7 +38,10 @@ function Match() {
           </ListItem.HeadlineContent>
           <ListItem.SupportingContent>
             <Type variant="bodyMedium" color={c.onSurfaceVariant}>
-              {`${m.focus} · ${m.score}% match`}
+              {m.focus}
+            </Type>
+            <Type variant="labelLarge" color={accentFor(m.displayName).strong}>
+              {`${m.score}% match`}
             </Type>
           </ListItem.SupportingContent>
           <ListItem.TrailingContent>
