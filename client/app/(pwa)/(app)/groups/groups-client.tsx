@@ -1,0 +1,171 @@
+"use client";
+
+import { Plus, Send } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
+import { BusyLabel, Spinner } from "@/components/spinner";
+import { createGroup, joinGroup, postGroupMessage } from "./actions";
+
+export function CreateGroupForm() {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [pending, startTransition] = useTransition();
+
+  function handle(formData: FormData) {
+    startTransition(async () => {
+      const res = await createGroup({
+        name: String(formData.get("name") ?? ""),
+        description: String(formData.get("description") ?? ""),
+        // Comma-separated in one field rather than a tag picker: the club's
+        // subject is whatever the mentee says it is, in the same open
+        // vocabulary their own interests use — that shared vocabulary is what
+        // lets clubs be recommended to people at all.
+        interestTags: String(formData.get("interestTags") ?? "")
+          .split(",")
+          .map((t) => t.trim())
+          .filter(Boolean),
+        stage: String(formData.get("stage") ?? ""),
+      });
+      setOpen(false);
+      router.push(`/groups/${res.groupId}`);
+    });
+  }
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="mb-4 inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+      >
+        <Plus className="size-4" /> New group
+      </button>
+    );
+  }
+
+  return (
+    <form
+      action={handle}
+      className="mb-4 space-y-3 rounded-2xl border border-border bg-card p-4"
+    >
+      <input
+        name="name"
+        required
+        placeholder="Group name"
+        className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm outline-none focus:border-primary"
+      />
+      <input
+        name="description"
+        placeholder="What's it about? (optional)"
+        className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm outline-none focus:border-primary"
+      />
+      <input
+        name="interestTags"
+        placeholder="Topics, separated by commas — e.g. coding, robotics"
+        className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm outline-none focus:border-primary"
+      />
+      <label
+        htmlFor="club-stage"
+        className="block text-xs font-semibold text-muted-foreground"
+      >
+        Which stage is this club best for?
+      </label>
+      <select
+        id="club-stage"
+        name="stage"
+        defaultValue=""
+        className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm outline-none focus:border-primary"
+      >
+        <option value="">Any stage</option>
+        <option value="discover">Discover</option>
+        <option value="thrive">Thrive</option>
+        <option value="build">Build</option>
+        <option value="lead">Lead</option>
+      </select>
+      <p className="text-xs text-muted-foreground">
+        Your club appears on the ikigai website as soon as you create it.
+      </p>
+      <div className="flex gap-2">
+        <button
+          type="submit"
+          disabled={pending}
+          aria-busy={pending}
+          className="rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-40"
+        >
+          <BusyLabel pending={pending} busy="Creating…">
+            Create
+          </BusyLabel>
+        </button>
+        <button
+          type="button"
+          onClick={() => setOpen(false)}
+          className="rounded-full border border-border px-4 py-2 text-sm text-muted-foreground"
+        >
+          Cancel
+        </button>
+      </div>
+    </form>
+  );
+}
+
+export function JoinGroupButton({ groupId }: { groupId: string }) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  return (
+    <button
+      type="button"
+      onClick={() =>
+        startTransition(async () => {
+          await joinGroup(groupId);
+          router.refresh();
+        })
+      }
+      disabled={pending}
+      aria-busy={pending}
+      className="rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-40"
+    >
+      <BusyLabel pending={pending} busy="Joining…">
+        Join group
+      </BusyLabel>
+    </button>
+  );
+}
+
+export function GroupMessageForm({ groupId }: { groupId: string }) {
+  const router = useRouter();
+  const [value, setValue] = useState("");
+  const [pending, startTransition] = useTransition();
+
+  function send() {
+    if (!value.trim()) return;
+    const content = value;
+    setValue("");
+    startTransition(async () => {
+      await postGroupMessage({ groupId, content });
+      router.refresh();
+    });
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <input
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") send();
+        }}
+        placeholder="Message the group…"
+        className="flex-1 rounded-full border border-border bg-background px-4 py-2.5 text-sm outline-none focus:border-primary"
+      />
+      <button
+        type="button"
+        onClick={send}
+        disabled={pending || !value.trim()}
+        aria-busy={pending}
+        className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground disabled:opacity-40"
+      >
+        {pending ? <Spinner className="size-4" /> : <Send className="size-4" />}
+      </button>
+    </div>
+  );
+}
