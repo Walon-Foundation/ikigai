@@ -25,10 +25,12 @@ import {
   padding,
   paddingAll,
   Shapes,
+  size,
   weight,
 } from '@expo/ui/jetpack-compose/modifiers';
 import { router } from 'expo-router';
 import { type ReactNode, useCallback, useRef } from 'react';
+import type { Accent } from '@/theme/brand';
 import { Glyph } from './Glyph';
 import { Type } from './Type';
 
@@ -190,6 +192,7 @@ export function NavRow({
   onPress,
   trailing,
   leading,
+  tint,
 }: {
   icon?: string;
   title: string;
@@ -197,13 +200,24 @@ export function NavRow({
   onPress?: () => void;
   trailing?: ReactNode;
   leading?: ReactNode;
+  /** Put the icon in a soft brand-colored circle instead of plain grey. */
+  tint?: Accent;
 }) {
   const c = useMaterialColors();
+  const icoNode = icon ? (
+    tint ? (
+      <Box contentAlignment="center" modifiers={[size(40, 40), clip(Shapes.Circle), background(tint.soft)]}>
+        <Glyph name={icon} color={tint.strong} size={22} />
+      </Box>
+    ) : (
+      <Glyph name={icon} color={c.onSurfaceVariant} />
+    )
+  ) : null;
   return (
     <ListItem colors={{ containerColor: c.surface }} modifiers={onPress ? [clickable(onPress)] : []}>
       {leading || icon ? (
         <ListItem.LeadingContent>
-          {leading ?? <Glyph name={icon!} color={c.onSurfaceVariant} />}
+          {leading ?? icoNode}
         </ListItem.LeadingContent>
       ) : null}
       <ListItem.HeadlineContent>

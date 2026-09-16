@@ -1,11 +1,10 @@
 import { Button, Column, OutlinedButton, Row, Text, TextButton, useMaterialColors } from '@expo/ui/jetpack-compose';
 import { fillMaxWidth, padding } from '@expo/ui/jetpack-compose/modifiers';
 import { router } from 'expo-router';
-import { Avatar } from '@/components/Avatar';
+import { BrandMark } from '@/components/BrandMark';
 import { Field, Page } from '@/components/Kit';
 import { Screen } from '@/components/Screen';
 import { signIn } from '@/state/session';
-import { Glyph } from '@/components/Glyph';
 import { Type } from '@/components/Type';
 
 function enter() {
@@ -31,9 +30,7 @@ function SignIn() {
         verticalArrangement={{ spacedBy: 12 }}
         modifiers={[fillMaxWidth(), padding(24, 24, 24, 24)]}
       >
-        <Avatar background={c.primaryContainer} color={c.onPrimaryContainer} diameter={72}>
-          <Glyph name="potted_plant" color={c.onPrimaryContainer} size={40} />
-        </Avatar>
+        <BrandMark size={96} coin />
         <Type variant="headlineMedium" color={c.onSurface}>
           Welcome back
         </Type>

@@ -1,11 +1,13 @@
 import { Column, LazyColumn, Row, useMaterialColors } from '@expo/ui/jetpack-compose';
-import { background, fillMaxSize, padding } from '@expo/ui/jetpack-compose/modifiers';
+import { background, fillMaxSize, fillMaxWidth } from '@expo/ui/jetpack-compose/modifiers';
 import { type Href, router } from 'expo-router';
 import { Avatar } from '@/components/Avatar';
+import { BrandHero, HeroStat } from '@/components/BrandHero';
 import { NavRow, SectionHeader } from '@/components/Kit';
 import { Screen } from '@/components/Screen';
 import { Type } from '@/components/Type';
 import { me, notifications } from '@/data/demo';
+import { ACCENTS, BRAND } from '@/theme/brand';
 
 export default function MeScreen() {
   return (
@@ -60,22 +62,30 @@ function Profile() {
   const c = useMaterialColors();
   return (
     <LazyColumn modifiers={[fillMaxSize(), background(c.surface)]}>
-      <Row verticalAlignment="center" horizontalArrangement={{ spacedBy: 16 }} modifiers={[padding(16, 24, 16, 8)]}>
-        <Avatar background={c.tertiaryContainer} color={c.onTertiaryContainer} initials={me.initials} diameter={64} />
-        <Column>
-          <Type variant="headlineSmall" color={c.onSurface}>
-            {me.displayName}
-          </Type>
-          <Type variant="bodyMedium" color={c.onSurfaceVariant}>
-            {`Thrive · week ${me.weekInStage}`}
-          </Type>
-        </Column>
-      </Row>
+      <BrandHero
+        eyebrow="Me"
+        title={me.displayName}
+        subtitle={`Thrive · week ${me.weekInStage} · mentored by Fatmata`}
+        trailing={<Avatar background={BRAND.sun} color={BRAND.greenDeep} initials={me.initials} diameter={44} />}
+      >
+        <Row modifiers={[fillMaxWidth()]}>
+          <HeroStat value="4/7" label="Milestones" />
+          <HeroStat value="4 days" label="Journal streak" />
+          <HeroStat value="1" label="Club" />
+        </Row>
+      </BrandHero>
       {sections.map((section) => (
         <Column key={section.title}>
           <SectionHeader>{section.title}</SectionHeader>
-          {section.links.map((l) => (
-            <NavRow key={l.title} icon={l.icon} title={l.title} detail={l.detail} onPress={() => router.push(l.href)} />
+          {section.links.map((l, i) => (
+            <NavRow
+              key={l.title}
+              icon={l.icon}
+              tint={ACCENTS[i % ACCENTS.length]}
+              title={l.title}
+              detail={l.detail}
+              onPress={() => router.push(l.href)}
+            />
           ))}
         </Column>
       ))}
