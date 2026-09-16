@@ -1,20 +1,16 @@
 import { Module } from '@nestjs/common';
-import { createObserveModule } from '@nestjs/observe';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
+import { DatabaseModule } from './db/database.module.js';
 
-export const { ObserveModule, ObserveInstrument } = createObserveModule();
+// The scaffold shipped @nestjs/observe wired to a hosted telemetry service with
+// literal 'YOUR_APP_KEY' / 'YOUR_APP_SECRET' placeholders. Removed rather than
+// left to fail at boot: this platform holds safeguarding records about minors,
+// and third-party tracing is a decision to make deliberately, not one to
+// inherit from a scaffold. Re-add it consciously if it is wanted.
 
 @Module({
-  imports: [
-    // Distributed tracing, auto-correlated logs, request/job metrics, error
-    // telemetry, alarms, and more — out of the box. Sign up at https://observe.nestjs.com
-    ObserveModule.forRoot({
-      appKey: 'YOUR_APP_KEY',
-      appSecret: 'YOUR_APP_SECRET',
-      serviceId: 'api',
-    }),
-  ],
+  imports: [DatabaseModule],
   controllers: [AppController],
   providers: [AppService],
 })
