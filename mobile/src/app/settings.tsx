@@ -1,7 +1,9 @@
 import { AlertDialog, Switch, Text, TextButton, useMaterialColors } from '@expo/ui/jetpack-compose';
+import { router } from 'expo-router';
 import { useState } from 'react';
 import { NavRow, Page, SectionHeader } from '@/components/Kit';
 import { Screen } from '@/components/Screen';
+import { signOut } from '@/state/session';
 
 export default function SettingsScreen() {
   return (
@@ -59,7 +61,14 @@ function Settings() {
         detail={deletionRequested ? 'In 30 days. Tap to cancel.' : 'You have 30 days to change your mind'}
         onPress={() => (deletionRequested ? setDeletionRequested(false) : setConfirmDelete(true))}
       />
-      <NavRow icon="logout" title="Sign out" />
+      <NavRow
+        icon="logout"
+        title="Sign out"
+        onPress={() => {
+          signOut();
+          router.replace('/onboarding1');
+        }}
+      />
 
       {confirmDelete ? (
         <AlertDialog onDismissRequest={() => setConfirmDelete(false)}>

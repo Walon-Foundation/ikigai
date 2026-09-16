@@ -1,4 +1,6 @@
+import { Redirect } from 'expo-router';
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
+import { isSignedIn } from '@/state/session';
 import { useAppPalette } from '@/theme/colors';
 
 /**
@@ -12,6 +14,8 @@ import { useAppPalette } from '@/theme/colors';
  */
 export default function TabsLayout() {
   const c = useAppPalette();
+  // First launch: tell them what Ikigai is, then sign in, then the app.
+  if (!isSignedIn()) return <Redirect href="/onboarding1" />;
   return (
     <NativeTabs
       backgroundColor={c?.surfaceContainer}
