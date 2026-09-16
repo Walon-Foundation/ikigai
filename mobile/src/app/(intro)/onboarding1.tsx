@@ -1,34 +1,26 @@
-import { useMaterialColors } from '@expo/ui/jetpack-compose';
 import { ArtDisc, IntroSlide, Orbit } from '@/components/IntroSlide';
 import { Screen } from '@/components/Screen';
+import { BRAND } from '@/theme/brand';
 
 export default function Onboarding1() {
   return (
     <Screen>
-      <Slide />
-    </Screen>
-  );
-}
-
-// Ikigai: where what you love, what you're good at, what the world needs and
-// what you can be paid for meet. The four orbits are those four circles.
-function Slide() {
-  useMaterialColors();
-  return (
-    <IntroSlide
-      step={1}
-      eyebrow="Welcome to Ikigai"
-      title="Find your reason for being"
-      body="Where what you love, what you are good at, and what your community needs all meet."
+      <IntroSlide
+        step={1}
+        accent={{ strong: BRAND.green, soft: BRAND.leafSoft }}
+        eyebrow="Welcome to Ikigai"
+        title="Find your reason for being"
+        body="Ikigai helps young people in Sierra Leone discover what they love, what they are good at, and how they can serve their community."
       next="/onboarding2"
-      art={
-        <ArtDisc icon="potted_plant">
-          <Orbit icon="favorite" x={-104} y={-96} tone="tertiary" />
-          <Orbit icon="star" x={104} y={-96} tone="secondary" />
-          <Orbit icon="diversity_3" x={-104} y={96} tone="secondary" />
-          <Orbit icon="payments" x={104} y={96} tone="tertiary" />
+        art={
+        <ArtDisc accent={{ strong: BRAND.green, soft: BRAND.leafSoft }}>
+          <Orbit icon="favorite" x={-112} y={-100} color={BRAND.orange} />
+          <Orbit icon="star" x={112} y={-100} color={BRAND.sun} />
+          <Orbit icon="diversity_3" x={-112} y={100} color={BRAND.teal} />
+          <Orbit icon="payments" x={112} y={100} color={BRAND.leaf} />
         </ArtDisc>
-      }
-    />
+        }
+      />
+    </Screen>
   );
 }

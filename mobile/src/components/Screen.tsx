@@ -2,11 +2,11 @@ import { Host } from '@expo/ui/jetpack-compose';
 import type { ReactNode } from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { hostSeedColor, useAppPalette } from '@/theme/colors';
+import { APP_SCHEME, hostSeedColor, useAppPalette } from '@/theme/colors';
 
 /**
- * Root of every screen: a Compose <Host> themed with Material You (or brand
- * green on phones without it — see theme/colors.ts).
+ * Root of every screen: a Compose <Host> themed from Ikigai green, in light
+ * mode (see theme/colors.ts).
  *
  * The screens are built from Jetpack Compose components, which render on
  * Android only. iOS will get SwiftUI equivalents (and Liquid Glass via
@@ -35,7 +35,7 @@ function AndroidScreen({ children }: { children: ReactNode }) {
   const surface = useAppPalette()?.surface;
   return (
     <View style={[styles.host, { paddingTop: insets.top, backgroundColor: surface }]}>
-      <Host style={styles.host} seedColor={hostSeedColor}>
+      <Host style={styles.host} seedColor={hostSeedColor} colorScheme={APP_SCHEME}>
         {children}
       </Host>
     </View>

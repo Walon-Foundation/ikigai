@@ -4,8 +4,14 @@ import { router } from 'expo-router';
 import { Avatar } from '@/components/Avatar';
 import { Field, Page } from '@/components/Kit';
 import { Screen } from '@/components/Screen';
+import { signIn } from '@/state/session';
 import { Glyph } from '@/components/Glyph';
 import { Type } from '@/components/Type';
+
+function enter() {
+  signIn();
+  router.replace('/(tabs)');
+}
 
 export default function SignInScreen() {
   return (
@@ -37,7 +43,7 @@ function SignIn() {
       </Column>
 
       <Column modifiers={[fillMaxWidth(), padding(16, 0, 16, 8)]}>
-        <OutlinedButton onClick={() => router.replace('/(tabs)')} modifiers={[fillMaxWidth()]}>
+        <OutlinedButton onClick={() => enter()} modifiers={[fillMaxWidth()]}>
           <Text>Continue with Google</Text>
         </OutlinedButton>
       </Column>
@@ -52,10 +58,10 @@ function SignIn() {
       <Field label="Password" password />
 
       <Column verticalArrangement={{ spacedBy: 4 }} modifiers={[fillMaxWidth(), padding(16, 12, 16, 0)]}>
-        <Button onClick={() => router.replace('/(tabs)')} modifiers={[fillMaxWidth()]}>
+        <Button onClick={() => enter()} modifiers={[fillMaxWidth()]}>
           <Text>Sign in</Text>
         </Button>
-        <TextButton onClick={() => router.push('/sign-up')} modifiers={[fillMaxWidth()]}>
+        <TextButton onClick={() => router.replace('/sign-up')} modifiers={[fillMaxWidth()]}>
           <Text>New here? Create an account</Text>
         </TextButton>
       </Column>
