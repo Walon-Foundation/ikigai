@@ -8,14 +8,7 @@ import {
   Text,
   useMaterialColors,
 } from '@expo/ui/jetpack-compose';
-import {
-  background,
-  fillMaxSize,
-  fillMaxWidth,
-  padding,
-  paddingAll,
-  weight,
-} from '@expo/ui/jetpack-compose/modifiers';
+import { background, fillMaxSize, fillMaxWidth, imePadding, padding, paddingAll, weight } from '@expo/ui/jetpack-compose/modifiers';
 import { useState } from 'react';
 import { Avatar } from '@/components/Avatar';
 import { Screen } from '@/components/Screen';
@@ -48,7 +41,7 @@ function Journal() {
   let lastDay = '';
 
   return (
-    <Column modifiers={[fillMaxSize(), background(c.surface)]}>
+    <Column modifiers={[fillMaxSize(), background(c.surface), imePadding()]}>
       <ThreadAppBar
         avatar={
           <Avatar background={c.surfaceContainerHighest} color={c.onSurfaceVariant}>

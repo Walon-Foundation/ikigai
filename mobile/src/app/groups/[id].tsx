@@ -1,5 +1,5 @@
 import { Button, Column, Text, useMaterialColors } from '@expo/ui/jetpack-compose';
-import { fillMaxSize, fillMaxWidth, padding, weight, background } from '@expo/ui/jetpack-compose/modifiers';
+import { background, fillMaxSize, fillMaxWidth, imePadding, padding, weight } from '@expo/ui/jetpack-compose/modifiers';
 import { LazyColumn } from '@expo/ui/jetpack-compose';
 import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
@@ -51,7 +51,7 @@ function Club() {
   }
 
   return (
-    <Column modifiers={[fillMaxSize(), background(c.surface)]}>
+    <Column modifiers={[fillMaxSize(), background(c.surface), imePadding()]}>
       <ThreadAppBar
         avatar={<Avatar background={c.secondaryContainer} color={c.onSecondaryContainer} initials="SG" diameter={40} />}
         title={club.name}
