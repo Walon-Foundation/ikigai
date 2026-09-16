@@ -1,6 +1,7 @@
 import { Button, Column, OutlinedButton, Row, Text, TextButton, useMaterialColors } from '@expo/ui/jetpack-compose';
 import { fillMaxWidth, padding } from '@expo/ui/jetpack-compose/modifiers';
 import { router } from 'expo-router';
+import { BrandMark } from '@/components/BrandMark';
 import { Field, Page, Paragraph } from '@/components/Kit';
 import { Screen } from '@/components/Screen';
 import { signIn } from '@/state/session';
@@ -23,6 +24,9 @@ function SignUp() {
   const c = useMaterialColors();
   return (
     <Page title="Create your account">
+      <Row horizontalArrangement="center" modifiers={[fillMaxWidth(), padding(0, 8, 0, 8)]}>
+        <BrandMark size={72} coin />
+      </Row>
       <Paragraph muted>Ikigai pairs young people in Sierra Leone with mentors who help them find their purpose.</Paragraph>
 
       <Column modifiers={[fillMaxWidth(), padding(16, 12, 16, 8)]}>
