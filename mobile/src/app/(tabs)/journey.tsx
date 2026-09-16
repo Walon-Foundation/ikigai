@@ -1,7 +1,6 @@
 import {
   Box,
   Card,
-  Checkbox,
   Column,
   LazyColumn,
   LinearProgressIndicator,
@@ -17,14 +16,17 @@ import {
   padding,
   paddingAll,
   Shapes,
+  size,
   weight,
 } from '@expo/ui/jetpack-compose/modifiers';
 import { router } from 'expo-router';
 import { NavRow, SectionHeader } from '@/components/Kit';
+import { BrandHero, ON_BRAND_FAINT, ON_BRAND_MUTED } from '@/components/BrandHero';
 import { Screen } from '@/components/Screen';
 import { Glyph } from '@/components/Glyph';
 import { Type } from '@/components/Type';
 import { me, stages, thriveMilestones } from '@/data/demo';
+import { ACCENTS, BRAND, STAGE_ACCENT } from '@/theme/brand';
 
 export default function JourneyScreen() {
   return (
@@ -42,40 +44,39 @@ function Journey() {
 
   return (
     <LazyColumn modifiers={[fillMaxSize(), background(c.surface)]}>
-      <Column modifiers={[padding(16, 24, 16, 8)]}>
-        <Type variant="headlineMedium" color={c.onSurface}>
-          Journey
+      <BrandHero
+        eyebrow="Your journey"
+        title={stages[currentIndex].label}
+        subtitle={`${done} of ${thriveMilestones.length} milestones · week ${me.weekInStage}`}
+      >
+        <LinearProgressIndicator
+          progress={done / thriveMilestones.length}
+          color={BRAND.sun}
+          trackColor={ON_BRAND_FAINT}
+          modifiers={[fillMaxWidth()]}
+        />
+        <Type variant="bodySmall" color={ON_BRAND_MUTED}>
+          Four stages. Your mentor moves you on when you are ready.
         </Type>
-        <Type variant="bodyMedium" color={c.onSurfaceVariant}>
-          Four stages. Your mentor moves you on.
-        </Type>
-      </Column>
+      </BrandHero>
 
       {stages.map((stage, i) => {
+        const accent = STAGE_ACCENT[stage.id];
         if (i === currentIndex) {
           return (
             <Box key={stage.id} modifiers={[padding(16, 4, 16, 4)]}>
-              <Card
-                colors={{ containerColor: c.surfaceContainerLow }}
-                border={{ width: 1, color: c.outlineVariant }}
-                modifiers={[fillMaxWidth()]}
-              >
+              <Card colors={{ containerColor: accent.soft }} modifiers={[fillMaxWidth()]}>
                 <Column verticalArrangement={{ spacedBy: 12 }} modifiers={[paddingAll(16)]}>
                   <Row verticalAlignment="center" horizontalArrangement="spaceBetween" modifiers={[fillMaxWidth()]}>
-                    <Type variant="titleLarge" color={c.onSurface}>
+                    <Type variant="titleLarge" color={accent.strong}>
                       {stage.label}
                     </Type>
-                    <Box modifiers={[clip(Shapes.RoundedCorner(12)), background(c.tertiaryContainer), padding(10, 4, 10, 4)]}>
-                      <Type variant="labelMedium" color={c.onTertiaryContainer}>
-                        Current stage
+                    <Box modifiers={[clip(Shapes.RoundedCorner(12)), background(accent.strong), padding(10, 4, 10, 4)]}>
+                      <Type variant="labelMedium" color={BRAND.onBrand}>
+                        You are here
                       </Type>
                     </Box>
                   </Row>
-                  <LinearProgressIndicator
-                    progress={done / thriveMilestones.length}
-                    color={c.primary}
-                    modifiers={[fillMaxWidth()]}
-                  />
                   <Column>
                     {thriveMilestones.map((m) => (
                       <Row key={m.id} verticalAlignment="center" modifiers={[fillMaxWidth()]}>
@@ -83,14 +84,20 @@ function Journey() {
                           Read-only on purpose: only a mentor marks a milestone
                           complete. A mentee submits evidence from the mission.
                         */}
-                        <Checkbox value={m.done} enabled={false} />
+                        <Box contentAlignment="center" modifiers={[size(40, 40)]}>
+                          <Glyph
+                            name={m.done ? 'check_circle' : 'radio_button_unchecked'}
+                            color={m.done ? accent.strong : c.outline}
+                            size={24}
+                          />
+                        </Box>
                         <Box modifiers={[weight(1)]}>
                           <Type variant="bodyLarge" color={m.done ? c.onSurfaceVariant : c.onSurface}>
                             {m.label}
                           </Type>
                         </Box>
                         {m.due ? (
-                          <Type variant="labelLarge" color={c.tertiary}>
+                          <Type variant="labelLarge" color={BRAND.orange}>
                             {m.due}
                           </Type>
                         ) : null}
@@ -107,11 +114,12 @@ function Journey() {
         return (
           <ListItem key={stage.id} colors={{ containerColor: c.surface }}>
             <ListItem.LeadingContent>
-              <Glyph
-                name={finished ? 'check_circle' : 'lock'}
-                color={finished ? c.primary : c.onSurfaceVariant}
-                size={28}
-              />
+              <Box
+                contentAlignment="center"
+                modifiers={[size(44, 44), clip(Shapes.Circle), background(finished ? accent.strong : accent.soft)]}
+              >
+                <Glyph name={finished ? 'check' : 'lock'} color={finished ? BRAND.onBrand : accent.strong} size={22} />
+              </Box>
             </ListItem.LeadingContent>
             <ListItem.HeadlineContent>
               <Type variant="bodyLarge" color={finished ? c.onSurface : c.onSurfaceVariant}>
@@ -128,9 +136,9 @@ function Journey() {
       })}
 
       <SectionHeader>Keep growing</SectionHeader>
-      <NavRow icon="map" title="Our plan" detail="What you and your mentor are working on" onPress={() => router.push('/mentorship/plan')} />
-      <NavRow icon="flag" title="Goals" onPress={() => router.push('/goals')} />
-      <NavRow icon="event" title="Activities" detail="Some unlock as you grow" onPress={() => router.push('/activities')} />
+      <NavRow icon="map" tint={ACCENTS[1]} title="Our plan" detail="What you and your mentor are working on" onPress={() => router.push('/mentorship/plan')} />
+      <NavRow icon="flag" tint={ACCENTS[0]} title="Goals" detail="Small steps you set yourself" onPress={() => router.push('/goals')} />
+      <NavRow icon="event" tint={ACCENTS[2]} title="Activities" detail="Some unlock as you grow" onPress={() => router.push('/activities')} />
     </LazyColumn>
   );
 }
