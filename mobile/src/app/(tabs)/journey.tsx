@@ -19,6 +19,8 @@ import {
   Shapes,
   weight,
 } from '@expo/ui/jetpack-compose/modifiers';
+import { router } from 'expo-router';
+import { NavRow, SectionHeader } from '@/components/Kit';
 import { Screen } from '@/components/Screen';
 import { Symbol } from '@/components/Symbol';
 import { Type } from '@/components/Type';
@@ -124,6 +126,11 @@ function Journey() {
           </ListItem>
         );
       })}
+
+      <SectionHeader>Keep growing</SectionHeader>
+      <NavRow icon="map" title="Our plan" detail="What you and your mentor are working on" onPress={() => router.push('/mentorship/plan')} />
+      <NavRow icon="flag" title="Goals" onPress={() => router.push('/goals')} />
+      <NavRow icon="event" title="Activities" detail="Some unlock as you grow" onPress={() => router.push('/activities')} />
     </LazyColumn>
   );
 }

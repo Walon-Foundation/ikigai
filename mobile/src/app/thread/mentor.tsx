@@ -1,6 +1,7 @@
 import { IconButton, LazyColumn, useMaterialColors } from '@expo/ui/jetpack-compose';
 import { background, fillMaxSize, fillMaxWidth, padding, weight } from '@expo/ui/jetpack-compose/modifiers';
 import { Column } from '@expo/ui/jetpack-compose';
+import { router } from 'expo-router';
 import { useState } from 'react';
 import { Avatar } from '@/components/Avatar';
 import { Screen } from '@/components/Screen';
@@ -41,10 +42,16 @@ function MentorThread() {
         title={mentor.displayName}
         subtitle="Your mentor"
         action={
-          // Verify an in-person meeting (location-based).
-          <IconButton onClick={() => {}}>
-            <Symbol name="location_on" color={c.onSurfaceVariant} />
-          </IconButton>
+          <>
+            {/* The plan: curriculum and meetings. */}
+            <IconButton onClick={() => router.push('/mentorship/plan')}>
+              <Symbol name="map" color={c.onSurfaceVariant} />
+            </IconButton>
+            {/* Verify an in-person meeting. */}
+            <IconButton onClick={() => router.push('/mentorship/verify')}>
+              <Symbol name="location_on" color={c.onSurfaceVariant} />
+            </IconButton>
+          </>
         }
       />
 
@@ -56,7 +63,15 @@ function MentorThread() {
         {messages.map((m) => {
           if (m.kind === 'day') return <DayDivider key={m.id} label={m.label} />;
           if (m.kind === 'mission')
-            return <MissionCard key={m.id} title={m.title} detail={m.detail} due={m.due} />;
+            return (
+              <MissionCard
+                key={m.id}
+                title={m.title}
+                detail={m.detail}
+                due={m.due}
+                onOpen={() => router.push({ pathname: '/tasks/[id]', params: { id: 'task-1' } })}
+              />
+            );
           return (
             <Bubble key={m.id} fromMe={m.fromMe}>
               {m.text}

@@ -1,10 +1,11 @@
-import { Column, LazyColumn, ListItem, Row, useMaterialColors } from '@expo/ui/jetpack-compose';
+import { Column, LazyColumn, Row, useMaterialColors } from '@expo/ui/jetpack-compose';
 import { background, fillMaxSize, padding } from '@expo/ui/jetpack-compose/modifiers';
+import { type Href, router } from 'expo-router';
 import { Avatar } from '@/components/Avatar';
+import { NavRow, SectionHeader } from '@/components/Kit';
 import { Screen } from '@/components/Screen';
-import { Symbol } from '@/components/Symbol';
 import { Type } from '@/components/Type';
-import { me } from '@/data/demo';
+import { me, notifications } from '@/data/demo';
 
 export default function MeScreen() {
   return (
@@ -14,18 +15,53 @@ export default function MeScreen() {
   );
 }
 
-// Not yet designed in the guide — a plain Material settings list until it is.
+type Link = { icon: string; title: string; detail?: string; href: Href };
+
+const unread = notifications.filter((n) => !n.read).length;
+
+const sections: { title: string; links: Link[] }[] = [
+  {
+    title: 'Your growth',
+    links: [
+      { icon: 'auto_stories', title: 'Purpose book', detail: 'Who you are and where you are going', href: '/purpose-book' },
+      { icon: 'flag', title: 'Goals', detail: 'Small steps you set yourself', href: '/goals' },
+      { icon: 'map', title: 'Our plan', detail: 'Curriculum and meetings with your mentor', href: '/mentorship/plan' },
+      { icon: 'groups', title: 'Clubs', href: '/groups' },
+      { icon: 'event', title: 'Activities', href: '/activities' },
+    ],
+  },
+  {
+    title: 'Support',
+    links: [
+      { icon: 'volunteer_activism', title: 'Pad Her Power', detail: 'Free pads and clinics near you', href: '/pad-her-power' },
+      { icon: 'health_and_safety', title: 'Safety', detail: 'Report a concern or get help', href: '/safety' },
+      { icon: 'family_restroom', title: 'Family', detail: 'Link a parent or guardian', href: '/family' },
+    ],
+  },
+  {
+    title: 'Account',
+    links: [
+      { icon: 'notifications', title: 'Notifications', detail: unread ? `${unread} unread` : undefined, href: '/notifications' },
+      { icon: 'settings', title: 'Settings', detail: 'Notifications, privacy, your data', href: '/settings' },
+    ],
+  },
+  {
+    // Demo only: jump into the flows and portals a mentee would never see.
+    title: 'Demo: other views',
+    links: [
+      { icon: 'login', title: 'Sign in', href: '/sign-in' },
+      { icon: 'waving_hand', title: 'Onboarding', href: '/onboarding' },
+      { icon: 'school', title: 'Mentor portal', href: '/mentor' },
+      { icon: 'family_restroom', title: 'Parent portal', href: '/parent' },
+    ],
+  },
+];
+
 function Profile() {
   const c = useMaterialColors();
-  const rows: { icon: string; title: string; detail: string }[] = [
-    { icon: 'notifications', title: 'Notifications', detail: 'Push, email, and what you hear about' },
-    { icon: 'lock', title: 'Journal privacy', detail: 'New entries are private by default' },
-    { icon: 'download', title: 'Download your data', detail: 'Everything you have on Ikigai' },
-    { icon: 'health_and_safety', title: 'Safety', detail: 'Report a concern or get help' },
-  ];
   return (
     <LazyColumn modifiers={[fillMaxSize(), background(c.surface)]}>
-      <Row verticalAlignment="center" horizontalArrangement={{ spacedBy: 16 }} modifiers={[padding(16, 24, 16, 16)]}>
+      <Row verticalAlignment="center" horizontalArrangement={{ spacedBy: 16 }} modifiers={[padding(16, 24, 16, 8)]}>
         <Avatar background={c.tertiaryContainer} color={c.onTertiaryContainer} initials={me.initials} diameter={64} />
         <Column>
           <Type variant="headlineSmall" color={c.onSurface}>
@@ -36,22 +72,13 @@ function Profile() {
           </Type>
         </Column>
       </Row>
-      {rows.map((r) => (
-        <ListItem key={r.title} colors={{ containerColor: c.surface }}>
-          <ListItem.LeadingContent>
-            <Symbol name={r.icon} color={c.onSurfaceVariant} />
-          </ListItem.LeadingContent>
-          <ListItem.HeadlineContent>
-            <Type variant="bodyLarge" color={c.onSurface}>
-              {r.title}
-            </Type>
-          </ListItem.HeadlineContent>
-          <ListItem.SupportingContent>
-            <Type variant="bodyMedium" color={c.onSurfaceVariant}>
-              {r.detail}
-            </Type>
-          </ListItem.SupportingContent>
-        </ListItem>
+      {sections.map((section) => (
+        <Column key={section.title}>
+          <SectionHeader>{section.title}</SectionHeader>
+          {section.links.map((l) => (
+            <NavRow key={l.title} icon={l.icon} title={l.title} detail={l.detail} onPress={() => router.push(l.href)} />
+          ))}
+        </Column>
       ))}
     </LazyColumn>
   );
