@@ -8,7 +8,11 @@ import { DatabaseModule } from './db/database.module.js';
 import { GoalsModule } from './goals/goals.module.js';
 import { MailModule } from './mail/mail.module.js';
 import { NotificationsModule } from './notifications/notifications.module.js';
+import { EventsModule } from './events/events.module.js';
+import { GroupsModule } from './groups/groups.module.js';
+import { GuardiansModule } from './guardians/guardians.module.js';
 import { JournalModule } from './journal/journal.module.js';
+import { SafetyModule } from './safety/safety.module.js';
 import { MentorshipModule } from './mentorship/mentorship.module.js';
 import { PurposeBookModule } from './purpose-book/purpose-book.module.js';
 import { SkillsModule } from './skills/skills.module.js';
@@ -35,6 +39,10 @@ import { TasksModule } from './tasks/tasks.module.js';
     SkillsModule,
     JournalModule,
     PurposeBookModule,
+    GroupsModule,
+    EventsModule,
+    GuardiansModule,
+    SafetyModule,
     GoalsModule,
   ],
   controllers: [AppController],
