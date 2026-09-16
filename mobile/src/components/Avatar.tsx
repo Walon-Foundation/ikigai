@@ -12,7 +12,8 @@ export function Avatar({
   children,
 }: {
   background: string;
-  color: string;
+  /** Initials color; not needed when a child is given. */
+  color?: string;
   initials?: string;
   diameter?: number;
   children?: ReactNode;
@@ -23,7 +24,7 @@ export function Avatar({
       modifiers={[size(diameter, diameter), clip(Shapes.Circle), background(bg)]}
     >
       {children ?? (
-        <Type variant="titleSmall" color={color} >
+        <Type variant="titleSmall" color={color ?? "#FFFFFF"}>
           {initials}
         </Type>
       )}
