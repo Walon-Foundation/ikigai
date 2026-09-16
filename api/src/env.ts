@@ -25,6 +25,21 @@ const schema = z.object({
     .enum(['development', 'test', 'production'])
     .default('development'),
 
+  // --- Better Auth -------------------------------------------------------
+  // Signing secret. Defaulted in development so the API boots from a clone;
+  // the refinement below makes it a hard boot failure in production, because a
+  // guessable secret here forges any session.
+  BETTER_AUTH_SECRET: z.string().min(32).default('dev-only-better-auth-secret-not-for-production-use'),
+  // Absolute base URL of THIS server. Must be set explicitly or OAuth returns
+  // redirect_uri_mismatch in production.
+  BETTER_AUTH_URL: z.url().default('http://localhost:4000'),
+  // Parent domain the session cookie is set on, so apex, app.* and admin.*
+  // share one session. REQUIRED in production — see the refinement below.
+  AUTH_COOKIE_DOMAIN: z.string().optional(),
+  MARKETING_URL: z.url().default('http://localhost:3000'),
+  GOOGLE_CLIENT_ID: z.string().optional(),
+  GOOGLE_CLIENT_SECRET: z.string().optional(),
+
   // --- Surface hostnames -------------------------------------------------
   // Notifications link to the surface the RECIPIENT uses, and the admin panel
   // is a different origin from the PWA — a relative "/reports" would resolve
@@ -62,15 +77,32 @@ const schema = z.object({
   // The cron routes FAIL CLOSED when unset rather than running
   // unauthenticated: one of them deletes accounts.
   CRON_SECRET: z.string().optional(),
-}).refine(
-  (v) =>
-    v.NODE_ENV !== 'production' || v.INTERNAL_API_TOKEN !== 'dev-internal-token',
-  {
-    path: ['INTERNAL_API_TOKEN'],
+})
+  .refine(
+    (v) =>
+      v.NODE_ENV !== 'production' ||
+      v.INTERNAL_API_TOKEN !== 'dev-internal-token',
+    {
+      path: ['INTERNAL_API_TOKEN'],
+      message:
+        'must be set to a real secret in production, not left at the development default',
+    },
+  )
+  .refine((v) => v.NODE_ENV !== 'production' || !!v.AUTH_COOKIE_DOMAIN, {
+    path: ['AUTH_COOKIE_DOMAIN'],
     message:
-      'must be set to a real secret in production, not left at the development default',
-  },
-);
+      'is required in production — without it the session cookie is not shared across app.* and admin.*, which is the most common cause of a redirect loop',
+  })
+  .refine(
+    (v) =>
+      v.NODE_ENV !== 'production' ||
+      !v.BETTER_AUTH_SECRET.startsWith('dev-only-'),
+    {
+      path: ['BETTER_AUTH_SECRET'],
+      message:
+        'must be set to a real secret in production — a guessable value here forges any session',
+    },
+  );
 
 // Empty strings in a .env should behave like unset.
 const raw = Object.fromEntries(
@@ -92,6 +124,12 @@ function schemeFor(host: string): string {
 export const env = {
   databaseUrl: parsed.data.DATABASE_URL,
   internalApiToken: parsed.data.INTERNAL_API_TOKEN,
+  authSecret: parsed.data.BETTER_AUTH_SECRET,
+  authBaseUrl: parsed.data.BETTER_AUTH_URL,
+  authCookieDomain: parsed.data.AUTH_COOKIE_DOMAIN,
+  marketingUrl: parsed.data.MARKETING_URL,
+  googleClientId: parsed.data.GOOGLE_CLIENT_ID,
+  googleClientSecret: parsed.data.GOOGLE_CLIENT_SECRET,
   appHostname: parsed.data.APP_HOSTNAME,
   appUrl: schemeFor(parsed.data.APP_HOSTNAME) + '://' + parsed.data.APP_HOSTNAME,
   adminHostname: parsed.data.ADMIN_HOSTNAME,
