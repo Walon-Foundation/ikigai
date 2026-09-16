@@ -281,8 +281,18 @@ describe("every notification has somewhere to come from", () => {
     return found;
   }
 
+  // Both projects, because the senders are being moved.
+  //
+  // Dispatch used to live entirely in this app. It is migrating to the NestJS
+  // API (docs/01-api-server.md), so a key dispatched from api/src is delivered
+  // just as surely as one dispatched from app/ — and scanning only this project
+  // would report a dozen false orphans mid-migration, which would train whoever
+  // sees it to ignore this test at exactly the moment it is most useful.
   const code = sources("app")
     .concat(sources("lib").filter((p) => !p.includes("notifications/catalog")))
+    .concat(
+      sources("../api/src").filter((p) => !p.includes("notifications/internal")),
+    )
     .map((p) => readFileSync(p, "utf8"))
     .join("\n");
 

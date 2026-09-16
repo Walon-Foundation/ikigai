@@ -2,11 +2,14 @@ import { Module } from '@nestjs/common';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 import { AccountModule } from './account/account.module.js';
+import { CommonModule } from './common/common.module.js';
 import { DatabaseModule } from './db/database.module.js';
 import { GoalsModule } from './goals/goals.module.js';
 import { MailModule } from './mail/mail.module.js';
 import { NotificationsModule } from './notifications/notifications.module.js';
+import { MentorshipModule } from './mentorship/mentorship.module.js';
 import { OnboardingModule } from './onboarding/onboarding.module.js';
+import { TasksModule } from './tasks/tasks.module.js';
 
 // The scaffold shipped @nestjs/observe wired to a hosted telemetry service with
 // literal 'YOUR_APP_KEY' / 'YOUR_APP_SECRET' placeholders. Removed rather than
@@ -17,10 +20,13 @@ import { OnboardingModule } from './onboarding/onboarding.module.js';
 @Module({
   imports: [
     DatabaseModule,
+    CommonModule,
     MailModule,
     NotificationsModule,
     AccountModule,
     OnboardingModule,
+    MentorshipModule,
+    TasksModule,
     GoalsModule,
   ],
   controllers: [AppController],
