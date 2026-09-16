@@ -18,7 +18,7 @@ import { env } from "@/lib/env";
  * forms already render inline. Keeping the shape means no UI had to change.
  */
 type ApiOptions = {
-  method?: "GET" | "POST" | "PATCH" | "DELETE";
+  method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   body?: unknown;
   /** users.id of the caller. Required — the API rejects a request without it. */
   userId: string;
