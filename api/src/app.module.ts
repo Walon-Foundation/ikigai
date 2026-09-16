@@ -24,6 +24,7 @@ import { PurposeBookModule } from './purpose-book/purpose-book.module.js';
 import { SkillsModule } from './skills/skills.module.js';
 import { OnboardingModule } from './onboarding/onboarding.module.js';
 import { TasksModule } from './tasks/tasks.module.js';
+import { UploadsModule } from './uploads/uploads.module.js';
 
 // The scaffold shipped @nestjs/observe wired to a hosted telemetry service with
 // literal 'YOUR_APP_KEY' / 'YOUR_APP_SECRET' placeholders. Removed rather than
@@ -55,6 +56,7 @@ import { TasksModule } from './tasks/tasks.module.js';
     CmsModule,
     AdminModule,
     EnquiriesModule,
+    UploadsModule,
     GoalsModule,
   ],
   controllers: [AppController],

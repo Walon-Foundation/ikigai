@@ -1,5 +1,4 @@
 import { and, eq, inArray, isNull, lt } from "drizzle-orm";
-import { UTApi } from "uploadthing/server";
 import { db } from "../db/db.js";
 import {
   eventAttendance,
@@ -29,6 +28,23 @@ import {
 // never disagree.
 export { DELETION_GRACE_DAYS } from '../common/deletion.js';
 import { DELETION_GRACE_DAYS } from '../common/deletion.js';
+
+/**
+ * Remove objects from R2.
+ *
+ * A module-level function rather than the injected R2Service, because the purge
+ * helpers are plain functions called from a job — the same arrangement the rest
+ * of this file uses for `db`. It is the same client either way.
+ *
+ * Failure is logged, never thrown: a storage outage must not stop an account
+ * deletion the user asked for. What it leaves behind is an orphaned object with
+ * nothing pointing at it, which is recoverable; a half-purged account is not.
+ */
+async function deleteStoredFiles(keys: string[]): Promise<void> {
+  const { R2Service } = await import("../uploads/r2.service.js");
+  const r2 = new R2Service();
+  await Promise.all(keys.map((key) => r2.delete(key)));
+}
 
 /**
  * Irreversibly scrub a user account.
@@ -140,9 +156,9 @@ export async function purgeUser(userId: string): Promise<void> {
     .from(mentorDocuments)
     .where(eq(mentorDocuments.userId, userId));
   if (docs.length > 0) {
-    await new UTApi()
-      .deleteFiles(docs.map((d) => d.fileKey))
-      .catch((err) => console.error("purge: could not delete documents", err));
+    await deleteStoredFiles(docs.map((d) => d.fileKey)).catch((err) =>
+      console.error("purge: could not delete documents", err),
+    );
     await db.delete(mentorDocuments).where(eq(mentorDocuments.userId, userId));
   }
 
@@ -165,9 +181,9 @@ export async function purgeUser(userId: string): Promise<void> {
     .flatMap((s) => [s.photoFileKey, s.pdfFileKey])
     .filter((k): k is string => !!k);
   if (evidenceKeys.length > 0) {
-    await new UTApi()
-      .deleteFiles(evidenceKeys)
-      .catch((err) => console.error("purge: could not delete evidence", err));
+    await deleteStoredFiles(evidenceKeys).catch((err) =>
+      console.error("purge: could not delete evidence", err),
+    );
   }
   await db.delete(taskSubmissions).where(eq(taskSubmissions.menteeId, userId));
 

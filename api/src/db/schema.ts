@@ -158,15 +158,19 @@ export const users = pgTable(
 
 // Vetting documents a mentor applicant submits: government ID and CV.
 //
-// Stores the UploadThing file KEY, not a URL. These files are set to a private
-// ACL on upload, so there is no URL that works on its own — the admin screen
-// mints a short-lived signed URL from the key at view time. A government ID
-// sitting at a permanent public link, however unguessable, is not something
-// this platform should have in a database column.
+// Stores the object KEY, not a URL. The bucket is private, so there is no URL
+// that works on its own — the admin screen mints a short-lived signed URL from
+// the key at view time. A government ID sitting at a permanent public link,
+// however unguessable, is not something this platform should have in a
+// database column.
 //
-// The bytes never pass through this backend: the browser uploads straight to
-// UploadThing, and onUploadComplete only ever receives the stored file's
-// metadata. See app/api/uploadthing/core.ts.
+// That property is real now. Under the previous provider the free plan REFUSED
+// private files, so these documents sat at permanent unauthenticated URLs
+// despite the code asking for private. R2 buckets are private by default.
+//
+// The bytes never pass through the backend: the client uploads straight to R2
+// with a presigned URL, and the API verifies the stored object afterwards. See
+// api/src/uploads/.
 export const mentorDocuments = pgTable(
   "mentor_documents",
   {

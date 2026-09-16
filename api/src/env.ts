@@ -72,8 +72,24 @@ const schema = z.object({
     })
     .optional(),
 
-  // --- Uploads / jobs — optional -----------------------------------------
-  UPLOADTHING_TOKEN: z.string().optional(),
+  // --- Object storage (Cloudflare R2) — optional -------------------------
+  // Unset disables uploads cleanly: the endpoints return 503 rather than
+  // issuing URLs that would fail at the storage layer.
+  //
+  // R2 buckets are PRIVATE by default and nothing in this codebase makes an
+  // object public. Vetting documents and task evidence are read through
+  // short-lived signed URLs; only CMS imagery lives in the public bucket, which
+  // is served from its own custom domain.
+  R2_ACCOUNT_ID: z.string().optional(),
+  R2_ACCESS_KEY_ID: z.string().optional(),
+  R2_SECRET_ACCESS_KEY: z.string().optional(),
+  R2_BUCKET: z.string().default('ikigai'),
+  R2_PUBLIC_BUCKET: z.string().default('ikigai-public'),
+  // Custom domain bound to the public bucket. The S3 endpoint requires signing
+  // even for a public bucket, so a URL built from it would expire.
+  R2_PUBLIC_BASE_URL: z.url().default('http://localhost:4000/public'),
+
+  // --- Jobs — optional ---------------------------------------------------
   // The cron routes FAIL CLOSED when unset rather than running
   // unauthenticated: one of them deletes accounts.
   CRON_SECRET: z.string().optional(),
@@ -144,7 +160,12 @@ export const env = {
   smtpPass: parsed.data.SMTP_PASS,
   smtpFrom: parsed.data.SMTP_FROM,
   smtpSecure: parsed.data.SMTP_SECURE,
-  uploadthingToken: parsed.data.UPLOADTHING_TOKEN,
+  r2AccountId: parsed.data.R2_ACCOUNT_ID,
+  r2AccessKeyId: parsed.data.R2_ACCESS_KEY_ID,
+  r2SecretAccessKey: parsed.data.R2_SECRET_ACCESS_KEY,
+  r2Bucket: parsed.data.R2_BUCKET,
+  r2PublicBucket: parsed.data.R2_PUBLIC_BUCKET,
+  r2PublicBaseUrl: parsed.data.R2_PUBLIC_BASE_URL,
   cronSecret: parsed.data.CRON_SECRET,
   port: parsed.data.PORT,
   nodeEnv: parsed.data.NODE_ENV,
