@@ -35,51 +35,48 @@ export function ProgrammeCard({
   return (
     <Link
       href={`/programmes/${programme.slug}`}
-      className="card-lift group flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card"
+      className="group flex h-full flex-col overflow-hidden rounded-xl border border-border bg-card transition-[border-color,box-shadow] hover:border-primary hover:shadow-(--w-lift)"
     >
-      <div className="relative aspect-[16/10] overflow-hidden bg-secondary">
-        {programme.heroImageUrl ? (
+      {/* Real CMS photography only. No image means a text-led card, never a
+          placeholder letter or stock art. */}
+      {programme.heroImageUrl && (
+        <div className="relative aspect-[16/10] overflow-hidden bg-secondary">
           <Image
             src={programme.heroImageUrl}
             alt=""
             fill
             sizes="(max-width: 768px) 100vw, 33vw"
-            className="object-cover transition-transform duration-300 group-hover:scale-105"
+            quality={60}
+            className="object-cover"
           />
-        ) : (
-          <div className="flex h-full items-center justify-center">
-            <span className="font-display text-4xl font-black text-border">
-              {programme.name.charAt(0)}
-            </span>
-          </div>
-        )}
-      </div>
-      <div className="flex flex-1 flex-col p-5">
+        </div>
+      )}
+      <div className="flex flex-1 flex-col gap-2.5 p-6">
         {pillarName && (
-          <p className="mb-2 text-[10px] font-extrabold uppercase tracking-widest text-primary">
+          <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
             {pillarName}
           </p>
         )}
-        <h3 className="font-display mb-2 text-lg font-bold text-foreground">
+        <h3 className="font-display text-[23px] font-semibold leading-tight text-(--w-green-deep)">
           {programme.name}
         </h3>
         {programme.summary && (
-          <p className="mb-4 line-clamp-2 text-sm leading-relaxed text-muted-foreground">
+          <p className="line-clamp-3 text-[15px] leading-relaxed text-muted-foreground">
             {programme.summary}
           </p>
         )}
-        <div className="mt-auto flex items-center justify-between">
+        <div className="mt-auto flex items-end justify-between gap-4 pt-3">
           {programme.impactValue ? (
-            <span className="text-sm font-semibold text-foreground">
-              {programme.impactValue}{" "}
-              <span className="font-normal text-muted-foreground">
-                {programme.impactLabel}
-              </span>
+            <span className="text-sm text-muted-foreground">
+              <span className="font-display text-lg font-semibold text-(--w-green-deep)">
+                {programme.impactValue}
+              </span>{" "}
+              {programme.impactLabel}
             </span>
           ) : (
             <span />
           )}
-          <ArrowRight className="size-4 text-primary transition-transform group-hover:translate-x-1" />
+          <MoreLink />
         </div>
       </div>
     </Link>
@@ -99,14 +96,6 @@ export function EventCard({
     endsAt?: Date | null;
   };
 }) {
-  const dateLabel = event.startsAt
-    ? event.startsAt.toLocaleDateString("en-GB", {
-        weekday: "short",
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      })
-    : null;
   const now = Date.now();
   const ends =
     (event as { endsAt?: Date | null }).endsAt?.getTime() ??
@@ -116,53 +105,66 @@ export function EventCard({
     ? event.startsAt.getTime() <= now && ends >= now
     : false;
 
-  const inner = (
-    <>
-      <div className="relative aspect-[16/9] overflow-hidden bg-secondary">
-        {event.imageUrl ? (
+  return (
+    <Link
+      href={`/events/${event.slug ?? event.id}`}
+      className="group flex h-full flex-col overflow-hidden rounded-xl border border-border bg-card transition-[border-color,box-shadow] hover:border-primary hover:shadow-(--w-lift)"
+    >
+      {event.imageUrl && (
+        <div className="relative aspect-[16/9] overflow-hidden bg-secondary">
           <Image
             src={event.imageUrl}
             alt=""
             fill
-            sizes="(max-width: 768px) 100vw, 50vw"
-            className="object-cover transition-transform duration-300 group-hover:scale-105"
+            sizes="(max-width: 768px) 100vw, 33vw"
+            quality={60}
+            className="object-cover"
           />
-        ) : (
-          <div className="flex h-full items-center justify-center">
-            <CalendarDays className="size-10 text-border" />
+        </div>
+      )}
+      <div className="flex flex-1 gap-5 p-6">
+        {event.startsAt && (
+          <div className="flex w-14 shrink-0 flex-col items-center border-r border-border pr-5 text-center">
+            <span className="text-xs font-semibold uppercase tracking-[0.08em] text-primary">
+              {event.startsAt.toLocaleDateString("en-GB", { month: "short" })}
+            </span>
+            <span className="font-display text-3xl font-semibold leading-none text-(--w-green-deep)">
+              {event.startsAt.getDate()}
+            </span>
           </div>
         )}
-      </div>
-      <div className="p-5">
-        <h3 className="font-display mb-2 text-lg font-bold text-foreground">
-          {event.title}
-        </h3>
-        <div className="flex flex-col gap-1 text-sm text-muted-foreground">
-          {dateLabel && (
-            <span className="flex items-center gap-2">
-              <CalendarDays className="size-3.5 shrink-0" />
-              {dateLabel}
+        <div className="flex flex-1 flex-col gap-2">
+          {ongoing && (
+            <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-(--w-leaf-soft) px-2.5 py-0.5 text-xs font-semibold text-primary">
+              <span className="size-1.5 rounded-full bg-(--w-leaf)" />
+              Happening now
             </span>
           )}
-          {event.location && (
-            <span className="flex items-center gap-2">
-              <MapPin className="size-3.5 shrink-0" />
-              {event.location}
-            </span>
-          )}
+          <h3 className="font-display text-xl font-semibold leading-snug text-(--w-green-deep)">
+            {event.title}
+          </h3>
+          <div className="flex flex-col gap-1 text-sm text-muted-foreground">
+            {event.startsAt && (
+              <span className="flex items-center gap-2">
+                <CalendarDays className="size-3.5 shrink-0" />
+                {event.startsAt.toLocaleDateString("en-GB", {
+                  weekday: "short",
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                })}
+              </span>
+            )}
+            {event.location && (
+              <span className="flex items-center gap-2">
+                <MapPin className="size-3.5 shrink-0" />
+                {event.location}
+              </span>
+            )}
+          </div>
+          <MoreLink className="mt-auto pt-2" />
         </div>
       </div>
-    </>
-  );
-
-  const className =
-    "card-lift group block h-full overflow-hidden rounded-2xl border border-border bg-card";
-
-  const href = `/events/${event.slug ?? event.id}`;
-
-  return (
-    <Link href={href} className={className}>
-      {inner}
     </Link>
   );
 }
@@ -182,36 +184,38 @@ export function StoryCard({
   return (
     <Link
       href={`/stories/${story.slug}`}
-      className="card-lift group flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card"
+      className="group flex h-full flex-col overflow-hidden rounded-xl border border-border bg-card transition-[border-color,box-shadow] hover:border-primary hover:shadow-(--w-lift)"
     >
-      <div className="relative aspect-[16/10] overflow-hidden bg-secondary">
-        {story.coverImageUrl ? (
+      {story.coverImageUrl && (
+        <div className="relative aspect-[16/10] overflow-hidden bg-secondary">
           <Image
             src={story.coverImageUrl}
             alt=""
             fill
             sizes="(max-width: 768px) 100vw, 33vw"
-            className="object-cover transition-transform duration-300 group-hover:scale-105"
+            quality={60}
+            className="object-cover"
           />
-        ) : null}
-      </div>
-      <div className="flex flex-1 flex-col p-5">
-        <p className="mb-2 text-[10px] font-extrabold uppercase tracking-widest text-accent">
+        </div>
+      )}
+      <div className="flex flex-1 flex-col gap-2.5 p-6">
+        <p className="text-xs font-semibold uppercase tracking-[0.08em] text-(--w-orange-ink)">
           {CATEGORY_LABEL[story.category] ?? story.category}
         </p>
-        <h3 className="font-display mb-2 text-lg font-bold text-foreground">
+        <h3 className="font-display text-[23px] font-semibold leading-tight text-(--w-green-deep)">
           {story.title}
         </h3>
         {story.excerpt && (
-          <p className="line-clamp-3 text-sm leading-relaxed text-muted-foreground">
+          <p className="line-clamp-3 font-display text-[16px] italic leading-relaxed text-muted-foreground">
             {story.excerpt}
           </p>
         )}
-        {story.authorName && (
-          <p className="mt-4 text-xs text-muted-foreground">
-            By {story.authorName}
-          </p>
-        )}
+        <div className="mt-auto flex items-end justify-between gap-4 pt-3">
+          <span className="text-sm text-muted-foreground">
+            {story.authorName ? `By ${story.authorName}` : ""}
+          </span>
+          <MoreLink label="Read" />
+        </div>
       </div>
     </Link>
   );
@@ -232,10 +236,10 @@ export function PartnerLogo({
       alt={partner.name}
       width={120}
       height={60}
-      className="max-h-14 w-auto object-contain opacity-80 transition-opacity hover:opacity-100"
+      className="max-h-12 w-auto object-contain opacity-70 grayscale transition hover:opacity-100 hover:grayscale-0"
     />
   ) : (
-    <span className="font-display text-lg font-bold text-muted-foreground">
+    <span className="font-display text-lg font-semibold text-muted-foreground">
       {partner.name}
     </span>
   );
@@ -254,19 +258,20 @@ export function PartnerLogo({
   );
 }
 
-export function ImpactCounter({
-  value,
-  label,
+/** "Learn more →", with the arrow sliding when its card is hovered. */
+export function MoreLink({
+  label = "Learn more",
+  className,
 }: {
-  value: string;
-  label: string;
+  label?: string;
+  className?: string;
 }) {
   return (
-    <div className="text-center">
-      <div className="font-display text-4xl font-black text-primary-foreground sm:text-5xl">
-        {value}
-      </div>
-      <div className="mt-1 text-sm font-medium text-primary-muted">{label}</div>
-    </div>
+    <span
+      className={`inline-flex items-center gap-1.5 text-sm font-semibold text-primary ${className ?? ""}`}
+    >
+      {label}
+      <ArrowRight className="size-4 transition-transform group-hover:translate-x-1 motion-reduce:transition-none" />
+    </span>
   );
 }

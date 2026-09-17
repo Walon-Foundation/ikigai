@@ -1,9 +1,11 @@
 "use client";
 
 import { ChevronDown } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { usePathname } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { buttonClass } from "@/components/system/button";
 import { clientEnv } from "@/lib/env.client";
 import { cn } from "@/lib/utils";
 
@@ -13,6 +15,8 @@ import { cn } from "@/lib/utils";
 // under a What We Do dropdown rather than spending six more slots on the top
 // bar. The old "Install the App" CTA is gone from here — the app is one
 // programme now, reached from the Mentorship page, not the whole site's point.
+//
+// No theme toggle: the marketing site is light only (docs/05-design-guide.md).
 
 const PRIMARY = [
   { href: "/about", label: "About" },
@@ -41,10 +45,15 @@ const ALL_LINKS = [
   { href: "/contact", label: "Contact" },
 ];
 
+const isCurrent = (pathname: string, href: string) =>
+  pathname === href || pathname.startsWith(`${href}/`);
+
 export function Nav() {
+  const pathname = usePathname() ?? "/";
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   const [dropdown, setDropdown] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 8);
@@ -53,29 +62,57 @@ export function Nav() {
     return () => window.removeEventListener("scroll", handler);
   }, []);
 
+  useEffect(() => {
+    if (!dropdown) return;
+    const onKey = (e: KeyboardEvent) =>
+      e.key === "Escape" && setDropdown(false);
+    const onClick = (e: MouseEvent) => {
+      if (!dropdownRef.current?.contains(e.target as Node)) setDropdown(false);
+    };
+    window.addEventListener("keydown", onKey);
+    window.addEventListener("click", onClick);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("click", onClick);
+    };
+  }, [dropdown]);
+
+  const whatWeDoCurrent = WHAT_WE_DO.some((l) => isCurrent(pathname, l.href));
+
   return (
     <header
       className={cn(
-        "fixed inset-x-0 top-0 z-50 transition-all duration-300",
-        scrolled
-          ? "border-b border-border bg-background/95 shadow-sm backdrop-blur-sm"
-          : "bg-transparent",
+        "fixed inset-x-0 top-0 z-50 border-b bg-background/90 backdrop-blur-md transition-colors duration-200",
+        scrolled || open ? "border-border" : "border-transparent",
       )}
     >
       <div className="mx-auto max-w-7xl px-6">
-        <div className="flex h-16 items-center justify-between">
-          <Link href="/" className="flex flex-col leading-none">
-            <span className="font-display text-2xl font-black tracking-tight text-foreground">
-              Ikigai
-            </span>
+        <div className="flex h-16 items-center gap-8">
+          <Link
+            href="/"
+            className="flex items-center gap-2.5 text-[18px] font-bold text-(--w-green-deep)"
+          >
+            <Image
+              src="/icon-192x192.png"
+              alt=""
+              width={34}
+              height={34}
+              data-essential
+              className="size-[34px]"
+            />
+            Ikigai
           </Link>
 
-          <nav className="hidden items-center gap-7 md:flex">
+          <nav
+            aria-label="Main"
+            className="ml-auto hidden items-center gap-1 md:flex"
+          >
             {PRIMARY.map((l) => (
               <Link
                 key={l.href}
                 href={l.href}
-                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                aria-current={isCurrent(pathname, l.href) ? "page" : undefined}
+                className="relative px-3 py-2 text-[14.5px] font-medium text-foreground transition-colors hover:text-primary aria-[current=page]:font-semibold aria-[current=page]:text-(--w-green-deep) aria-[current=page]:after:absolute aria-[current=page]:after:inset-x-3 aria-[current=page]:after:-bottom-[13px] aria-[current=page]:after:h-0.5 aria-[current=page]:after:bg-primary"
               >
                 {l.label}
               </Link>
@@ -87,6 +124,7 @@ export function Nav() {
                 accessibility weight of its own. */}
             {/* biome-ignore lint/a11y/noStaticElementInteractions: pointer-only hover convenience over a keyboard-operable button. */}
             <div
+              ref={dropdownRef}
               className="relative"
               onMouseEnter={() => setDropdown(true)}
               onMouseLeave={() => setDropdown(false)}
@@ -94,67 +132,83 @@ export function Nav() {
               <button
                 type="button"
                 onClick={() => setDropdown((v) => !v)}
-                className="flex items-center gap-1 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                className={cn(
+                  "flex items-center gap-1 px-3 py-2 text-[14.5px] font-medium text-foreground transition-colors hover:text-primary",
+                  whatWeDoCurrent && "font-semibold text-(--w-green-deep)",
+                )}
                 aria-expanded={dropdown}
                 aria-haspopup="menu"
               >
                 What We Do
-                <ChevronDown className="size-3.5" />
+                <ChevronDown
+                  className={cn(
+                    "size-3.5 transition-transform",
+                    dropdown && "rotate-180",
+                  )}
+                />
               </button>
               {dropdown && (
-                <div className="absolute left-0 top-full min-w-44 rounded-xl border border-border bg-card p-1.5 shadow-lg">
-                  {WHAT_WE_DO.map((l) => (
-                    <Link
-                      key={l.href}
-                      href={l.href}
-                      className="block rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-                    >
-                      {l.label}
-                    </Link>
-                  ))}
+                <div className="absolute left-0 top-full pt-2">
+                  <div className="min-w-48 rounded-xl border border-border bg-card p-1.5 shadow-(--w-lift)">
+                    {WHAT_WE_DO.map((l) => (
+                      <Link
+                        key={l.href}
+                        href={l.href}
+                        aria-current={
+                          isCurrent(pathname, l.href) ? "page" : undefined
+                        }
+                        className="block rounded-lg px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-secondary aria-[current=page]:bg-(--w-leaf-soft) aria-[current=page]:text-(--w-green-deep)"
+                      >
+                        {l.label}
+                      </Link>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
           </nav>
 
-          <div className="flex items-center gap-3">
-            <ThemeToggle className="hidden sm:inline-flex" />
+          <div className="ml-auto flex items-center gap-5 md:ml-0">
             {/* A quiet way back into the app for people who already have an
                 account — the loud CTA stays "Join A Programme". Points at the
                 app subdomain; the proxy takes it to the dashboard / sign-in. */}
             <a
               href={clientEnv.appUrl}
-              className="hidden text-sm font-medium text-muted-foreground transition-colors hover:text-foreground sm:inline-flex"
+              className="hidden text-[14.5px] font-medium text-muted-foreground transition-colors hover:text-foreground sm:inline-flex"
             >
               Sign in
             </a>
             <Link
               href="/get-involved"
-              className="hidden items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-transform hover:scale-[1.03] active:scale-[0.98] sm:inline-flex"
+              className={buttonClass("primary", {
+                size: "sm",
+                className: "hidden sm:inline-flex",
+              })}
             >
-              Join A Programme
+              Join a programme
             </Link>
             <button
               type="button"
               onClick={() => setOpen(!open)}
-              className="flex flex-col gap-1.5 p-2 md:hidden"
-              aria-label="Toggle menu"
+              className="flex size-10 flex-col items-center justify-center gap-1.5 rounded-lg border border-border md:hidden"
+              aria-label={open ? "Close menu" : "Open menu"}
+              aria-expanded={open}
             >
               <span
                 className={cn(
-                  "h-0.5 w-6 bg-foreground transition-transform duration-200",
+                  "h-0.5 w-5 bg-foreground transition-transform duration-200",
                   open && "translate-y-2 rotate-45",
                 )}
               />
               <span
                 className={cn(
-                  "h-0.5 w-6 bg-foreground transition-opacity duration-200",
+                  "h-0.5 w-5 bg-foreground transition-opacity duration-200",
                   open && "opacity-0",
                 )}
               />
               <span
                 className={cn(
-                  "h-0.5 w-6 bg-foreground transition-transform duration-200",
+                  "h-0.5 w-5 bg-foreground transition-transform duration-200",
                   open && "-translate-y-2 -rotate-45",
                 )}
               />
@@ -164,30 +218,28 @@ export function Nav() {
       </div>
 
       {open && (
-        <div className="flex flex-col gap-1 border-t border-border bg-background px-6 pb-6 pt-2 md:hidden">
+        <div className="flex flex-col border-t border-border bg-background px-6 pb-6 pt-2 md:hidden">
           {ALL_LINKS.map((l) => (
             <Link
               key={l.href}
               href={l.href}
               onClick={() => setOpen(false)}
-              className="border-b border-border py-3 text-base font-medium text-foreground"
+              aria-current={isCurrent(pathname, l.href) ? "page" : undefined}
+              className="border-b border-border py-3.5 text-base font-medium text-foreground aria-[current=page]:font-semibold aria-[current=page]:text-primary"
             >
               {l.label}
             </Link>
           ))}
-          <div className="mt-3 flex items-center gap-3">
-            <ThemeToggle variant="full" className="flex-1 justify-center" />
-          </div>
           <Link
             href="/get-involved"
             onClick={() => setOpen(false)}
-            className="mt-3 inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground"
+            className={buttonClass("primary", { className: "mt-5" })}
           >
-            Join A Programme
+            Join a programme
           </Link>
           <a
             href={clientEnv.appUrl}
-            className="inline-flex items-center justify-center rounded-full border border-border px-6 py-3 text-sm font-semibold text-foreground"
+            className={buttonClass("outline", { className: "mt-3" })}
           >
             Sign in to the app
           </a>

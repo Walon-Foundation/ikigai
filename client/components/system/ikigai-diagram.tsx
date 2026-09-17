@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
  */
 export function IkigaiDiagram({ className }: { className?: string }) {
   return (
+    // biome-ignore lint/a11y/noSvgWithoutTitle: decorative and aria-hidden; the four questions are in the page text
     <svg
       viewBox="0 0 400 340"
       aria-hidden
