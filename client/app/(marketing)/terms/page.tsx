@@ -15,16 +15,73 @@ export default function TermsPage() {
     <div className="flex min-h-screen flex-col bg-background">
       <Nav />
       <main>
-        <PageHero eyebrow="Legal" title="Terms of Service" narrow>
+        <PageHero eyebrow="Legal" title="Terms of Service">
           <p className="text-sm text-muted-foreground">
             Last updated: June 2026
           </p>
         </PageHero>
 
-        <section className="py-24">
-          <div className="mx-auto max-w-3xl px-6">
-            <div className="space-y-10 text-muted-foreground">
-              <div>
+        <section className="py-16 sm:py-20">
+          <div className="mx-auto grid max-w-7xl gap-12 px-6 lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-20">
+            <nav aria-label="On this page" className="hidden lg:block">
+              <div className="sticky top-28">
+                <p className="mb-3 text-xs font-semibold uppercase tracking-[0.12em] text-primary">
+                  On this page
+                </p>
+                <ol className="text-sm">
+                  <li>
+                    <a
+                      href="#acceptance"
+                      className="block border-l-2 border-transparent py-1.5 pl-3 text-muted-foreground transition-colors hover:border-primary hover:text-(--w-green-deep)"
+                    >
+                      Acceptance
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="#use-of-service"
+                      className="block border-l-2 border-transparent py-1.5 pl-3 text-muted-foreground transition-colors hover:border-primary hover:text-(--w-green-deep)"
+                    >
+                      Use of Service
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="#user-conduct"
+                      className="block border-l-2 border-transparent py-1.5 pl-3 text-muted-foreground transition-colors hover:border-primary hover:text-(--w-green-deep)"
+                    >
+                      User Conduct
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="#accounts"
+                      className="block border-l-2 border-transparent py-1.5 pl-3 text-muted-foreground transition-colors hover:border-primary hover:text-(--w-green-deep)"
+                    >
+                      Accounts
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="#limitation-of-liability"
+                      className="block border-l-2 border-transparent py-1.5 pl-3 text-muted-foreground transition-colors hover:border-primary hover:text-(--w-green-deep)"
+                    >
+                      Limitation of Liability
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="#governing-law"
+                      className="block border-l-2 border-transparent py-1.5 pl-3 text-muted-foreground transition-colors hover:border-primary hover:text-(--w-green-deep)"
+                    >
+                      Governing Law
+                    </a>
+                  </li>
+                </ol>
+              </div>
+            </nav>
+            <div className="legal-doc max-w-[68ch] space-y-12 text-[16.5px] leading-relaxed text-muted-foreground">
+              <div id="acceptance" className="scroll-mt-28">
                 <h2 className="font-display mb-3 text-2xl font-semibold text-(--w-green-deep)">
                   Acceptance
                 </h2>
@@ -37,7 +94,7 @@ export default function TermsPage() {
                 </p>
               </div>
 
-              <div>
+              <div id="use-of-service" className="scroll-mt-28">
                 <h2 className="font-display mb-3 text-2xl font-semibold text-(--w-green-deep)">
                   Use of Service
                 </h2>
@@ -51,7 +108,7 @@ export default function TermsPage() {
                 </p>
               </div>
 
-              <div>
+              <div id="user-conduct" className="scroll-mt-28">
                 <h2 className="font-display mb-3 text-2xl font-semibold text-(--w-green-deep)">
                   User Conduct
                 </h2>
@@ -66,7 +123,7 @@ export default function TermsPage() {
                 </p>
               </div>
 
-              <div>
+              <div id="accounts" className="scroll-mt-28">
                 <h2 className="font-display mb-3 text-2xl font-semibold text-(--w-green-deep)">
                   Accounts
                 </h2>
@@ -79,7 +136,7 @@ export default function TermsPage() {
                 </p>
               </div>
 
-              <div>
+              <div id="limitation-of-liability" className="scroll-mt-28">
                 <h2 className="font-display mb-3 text-2xl font-semibold text-(--w-green-deep)">
                   Limitation of Liability
                 </h2>
@@ -92,7 +149,7 @@ export default function TermsPage() {
                 </p>
               </div>
 
-              <div>
+              <div id="governing-law" className="scroll-mt-28">
                 <h2 className="font-display mb-3 text-2xl font-semibold text-(--w-green-deep)">
                   Governing Law
                 </h2>
