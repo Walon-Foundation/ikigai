@@ -5,8 +5,10 @@
 The visual system for the redesign of `client/app/(marketing)/` and
 `client/app/admin/`. It blends six reference designs (kept locally in `/images`, which is gitignored) into one
 system built on Ikigai's own brand, so that the public site, the staff panel
-and the mobile app read as one product. A visual preview of the system is at
-https://claude.ai/artifact/6gfh6Xd5Vt7pgMVXT5NDf4.
+and the mobile app read as one product. A visual preview is at
+https://claude.ai/artifact/6gfh6Xd5Vt7pgMVXT5NDf4 and a clickable prototype at
+https://claude.ai/artifact/EAKJs1CpcDAXQYhbCt9jPP (the prototype is newer where
+they differ).
 
 The PWA is being dropped, so these two surfaces are the whole of the web.
 Nothing here needs to stay compatible with `app/(pwa)/`.
@@ -21,15 +23,15 @@ named here for the detail, and nothing else from it.
 
 | Reference | Take | Leave |
 |---|---|---|
-| **landing-page** (Peepalfarm) | Pale leaf-tinted page ground. Serif headline in deep green. Green pill CTA. Staggered photo collage beside the headline. Faint nature silhouettes as the only ornament. A small "watch our story" pill above the headline. | Collage density. Ten photos is a bandwidth cost our audience pays, and our gallery is empty. Donation amount field. |
+| **landing-page** (Peepalfarm) | Barely tinted page ground. Serif headline in deep green. Headline left, one strong visual right. | The playful parts: pill buttons, photo collage, silhouettes, the "watch our story" badge. Tried in the first prototype and read as childish for an organisation working on safeguarding. |
 | **admin-dashboard** (ProfitPulse) | Dark sidebar with a light active pill. Warm off-white canvas. Soft pastel status chips. Selected row lifts to white. **Right-side detail drawer** that opens a record without leaving the list, with a paired action footer. | Near-black. Ours is deep forest green. Photo avatars everywhere. |
 | **admin-dashboard2** (Confidency OS) | **Grouped sidebar** with small section labels. Search with a `⌘K` hint. **KPI tiles** that give a number, a delta *and* its context ("vs last week"). Filter chips above the table. Name + email as a two-line cell. Secondary + primary header actions. "Showing 1–10 of 80" pagination footer. | Purple. |
 | **admin-ui2** (travel dashboard) | **Pipeline stages** as chevron headers with cards under each. Inline score bars inside table cells. Status as dot + word. Daily / monthly / yearly segmented toggle on charts. | Photo background. Wine-and-rust palette. Density for its own sake. The AI panel. |
 | **cms-ui** (Untitled UI) | Breadcrumbs over a title and its meta line. **Save as draft / Publish** as the header pair. Formatting toolbar above rich text. A context card beside the editor. User card pinned to the bottom of the sidebar. Count badges on nav items. | macOS window chrome. |
 | **cms2** (orange CMS) | **Three-pane editor**: outline of fields on the left, content in the middle, publishing panel on the right. An icon for each field type. A **sticky bottom bar** with Discard and Save. Per-item publish state. | Saturated orange ground. Environments (we have draft / published only). |
 
-**Short version:** a marketing site that looks like Peepalfarm in Ikigai's
-colours. An admin that has ProfitPulse's shell and drawer, Confidency's
+**Short version:** a marketing site with Peepalfarm's layout but an
+editorial, grown-up finish. An admin that has ProfitPulse's shell and drawer, Confidency's
 navigation and stats, and one CMS editor built from the two CMS references.
 
 ---
@@ -89,7 +91,7 @@ Warm, with a slight green bias, never pure grey.
 
 | Token | Hex | Use |
 |---|---|---|
-| `ground-site` | `#F3F8F1` | Marketing page background (the Peepalfarm tint) |
+| `ground-site` | `#F8F9F5` | Marketing page background, a barely-there green |
 | `ground-admin` | `#F6F5F0` | Admin canvas (the ProfitPulse warm off-white) |
 | `surface` | `#FFFFFF` | Cards, tables, drawers, inputs |
 | `ink` | `#1C1F1B` | Body text (15.3:1 on `ground-admin`) |
@@ -176,11 +178,11 @@ inside the canvas.
 
 | Radius | Use |
 |---|---|
-| `full` | Marketing buttons, status chips, filter chips, count badges, avatars |
+| `full` | Status chips, filter chips, count badges, avatars. **Not buttons** |
 | `8px` | Admin buttons, inputs, selects, segmented controls |
+| `10px` | Marketing buttons |
 | `12px` | Admin cards, tables, KPI tiles |
-| `16px` | Drawers, dialogs, the sidebar's active pill container |
-| `20px` | Marketing media: collage photos, feature panels |
+| `16px` | Drawers, dialogs, marketing feature panels and the CTA band |
 
 **Elevation:** flat by default. Borders (`line`) separate things on the
 canvas. Shadow is reserved for what floats above the page:
@@ -197,43 +199,57 @@ Shadows are tinted with `green-deep`, not black.
 ### Shell
 
 - **Nav:** coin logo + "Ikigai" left; links centred-right in DM Sans 500;
-  one green pill CTA on the right. Sticky, `surface` at 85% with a backdrop
+  one green CTA button on the right. The current link is marked with a 2px
+  `green` underline, not a filled pill. Sticky, `surface` at 85% with a backdrop
   blur, a `line` border appearing only after scroll. On mobile, a sheet menu.
 - **Footer:** `green-deep` ground, `sidebar-ink` text, white headings. The
   coin logo, the tagline, link columns, and the app store badge.
 
+### Tone
+
+Editorial and calm, not playful. The first prototype used pastel discs, tinted
+icon cards and pill buttons, and it read as childish for an organisation whose
+work includes safeguarding and mental health. The corrections:
+
+- **Hairlines, not tinted boxes.** Groups of items sit in columns under a
+  1px rule, not in pastel cards.
+- **Fraunces carries the character.** Headlines, section titles, card titles
+  and numbers. Letter-spacing `-0.01em` to `-0.015em` at display sizes.
+- **Small uppercase overlines** (`12px`, `+0.12em`) introduce sections instead
+  of badges and chips.
+- **Brand colours are accents, never grounds.** Soft brand tints belong to
+  admin status chips, not to marketing sections. On the site, colour appears
+  as `green-deep` panels, `green` actions, one `sun` dot, and stage numerals.
+- **Icons are line icons in `green`**, 22px, without a coloured container.
+
 ### Hero
 
-The Peepalfarm layout, rebuilt around what Ikigai actually has:
-
-- **Left:** a small pill ("How Ikigai works →", `leaf-soft` ground, `green`
-  text), the `display` headline in `green-deep`, a lede in `ink-muted` at
-  `50ch`, then a CTA pair: **Get the app** (green pill) and **Partner with us**
-  (outlined pill).
-- **Right:** a collage of **at most five** photos at staggered sizes and
-  offsets, `20px` radius, pulled from published `gallery_items`. If there are
-  fewer than three, show the **Ikigai composition** instead: the four ikigai
-  circles (what you love, what you are good at, what the world needs, what
-  sustains you) as overlapping soft discs in `orange-soft`, `teal-soft`,
-  `leaf-soft` and `sun-soft`, with the coin logo where they meet. It is SVG,
-  under 2KB, and true to the product rather than a stand-in for photos.
-- Faint silhouettes (a bird, leaves) at 6% opacity may sit behind the hero.
-  Inline SVG only; hidden under Lite Mode.
+- **Left:** an overline ("Freetown · Western Rural Area") followed by a short
+  rule, the `display` headline in `green-deep`, a lede in `ink-muted` at
+  `44ch`, then **Get the app** (primary) and **Partner with us** (outlined in
+  `green`).
+- **Right:** a `green-deep` panel, `16px` radius. Inside it, the four ikigai
+  circles drawn as thin `sidebar-ink` lines at 55% opacity, with uppercase
+  labels outside the circles, a single `sun` dot and "Ikigai" in Fraunces
+  where they meet. Beneath a hairline, the first real `impact_stats` figure.
+  Inline SVG, under 2KB.
+- When `gallery_items` has real photos, one photo may replace the panel. It is
+  never a collage.
 
 ### Sections
 
 | Section | Pattern | Empty behaviour |
 |---|---|---|
-| Impact | Four `stat` numbers from `impact_stats`, label beneath, on `surface` | Has real rows. Hide if ever empty |
-| The four pillars | Four cards, each tinted with one brand soft and its icon in the strong colour | CMS-driven; always seeded |
-| Programmes | Cards: image (optional), title, one line, status pill | Show published only; hide section if none |
-| How it works | The journey stages (Discover → Thrive → Build → Lead) as a horizontal sequence in the stage colours the app uses | Static |
-| Stories | Quote cards with name and role | **Hidden** until real rows exist |
+| Impact | Four `stat` numbers from `impact_stats` in a row between two hairlines, divided by vertical rules | Has real rows. Hide if ever empty |
+| The four questions | Four columns under a `green-deep` rule: line icon, Fraunces title, one sentence | CMS-driven; always seeded |
+| Programmes | White cards, `12px` radius, no image: an uppercase meta line (ages · place), Fraunces title, first sentence, "Learn more →". Hover turns the border `green` | Show published only; hide section if none |
+| How it works | Four columns under a rule: numerals `01`–`04` in Fraunces in the stage's text-safe ink, title, one sentence | Static |
+| Stories | Quote, name and role, set in Fraunces italic between rules | **Hidden** until real rows exist |
 | Partners / Team | Logo row / people grid | **Hidden** until real rows exist |
-| CTA band | `green-deep` panel, Fraunces headline, two pills | Static |
+| CTA band | `green-deep` panel, Fraunces headline, a white button and an outlined one | Static |
 
-Alternate section grounds between `ground-site` and `surface`; do not stack
-two tinted sections.
+Sections sit on `ground-site` with `96px` between them; cards and the impact
+row supply the white.
 
 ---
 
@@ -253,6 +269,11 @@ two tinted sections.
 │ user card  │                                              │           │
 └────────────┴──────────────────────────────────────────────┴───────────┘
 ```
+
+**Canvas:** page content is capped at `1280px` and **centred** in the space
+right of the sidebar, so on wide monitors it doesn't hug the sidebar with
+empty space to the right. The CMS editor's field column is capped at `760px`
+and centred in its pane.
 
 **Sidebar** (ProfitPulse + Confidency): `green-deep`, the coin logo and
 "Ikigai Admin" at the top, then a search field with a `⌘K` hint that opens the
@@ -375,7 +396,7 @@ restyled. This is step 1 of plan 04.
 
 | Component | Variants / notes |
 |---|---|
-| `Button` | `primary` (green), `secondary` (surface + `line-strong`), `ghost`, `danger`; sizes `sm 32` `md 40` `lg 48`; pill shape on marketing, 8px on admin |
+| `Button` | `primary` (green), `secondary` (surface + `line-strong`), `ghost`, `danger`; sizes `sm 32` `md 40` `lg 46`; 10px radius on marketing, 8px on admin |
 | `StatusChip` | the six status meanings above; `dot` option for tables |
 | `CountBadge` | nav and tab counts |
 | `Field` | label, input, hint, inline error from a server action's return shape |
@@ -393,7 +414,7 @@ restyled. This is step 1 of plan 04.
 | `Avatar` | initials on `accentFor(id)`, image when present |
 | `EmptyState`, `Skeleton`, `Toast` | as above |
 | `RichTextToolbar`, `Editor` | CMS pattern 5 |
-| `SiteNav`, `SiteFooter`, `Hero`, `Collage`, `IkigaiDiscs` | marketing |
+| `SiteNav`, `SiteFooter`, `Hero`, `IkigaiDiagram`, `Overline` | marketing |
 
 ---
 
@@ -421,10 +442,10 @@ guide assumes it, and every token above was checked against it.
 ## Low bandwidth
 
 - No background images, no hero video, no autoplay.
-- At most five collage images, lazy below the fold, `quality={60}`, sized
-  `sizes` attributes.
+- At most one hero photo, and images below the fold lazy, `quality={60}`,
+  with `sizes` attributes.
 - Ornament is inline SVG under 2KB. Lucide icons are imported per icon.
-- Lite Mode (`data-lite`) hides the collage, the silhouettes and the
+- Lite Mode (`data-lite`) hides the hero photo, the diagram and the
   section reveals.
 
 ---
