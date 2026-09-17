@@ -6,8 +6,10 @@ The only track that touches no architecture. It can run alongside all of
 [01](./01-api-server.md), [02](./02-auth.md) and [03](./03-mobile.md), and it
 is the only one that produces something visible early.
 
-The visual system (colour, type, layout patterns, components) is in
-[05-design-guide.md](./05-design-guide.md).
+**[05-design-guide.md](./05-design-guide.md) is the design system for the
+whole client app** (colour, type, layout patterns, components). Every screen
+in `client/` is built to it, including anything outside the two surfaces
+below.
 
 ---
 
@@ -22,8 +24,9 @@ Admin is three and a half times the size of marketing. Any plan that treats
 "redesign the remaining UI" as one job will spend all of its time in admin and
 none of it on the site the public actually sees.
 
-**`app/(pwa)/` is out of scope here** — it is being rebuilt in
-[mobile](./03-mobile.md), and the web PWA keeps its current design.
+**`app/(pwa)/` is out of scope here.** It is being rebuilt in
+[mobile](./03-mobile.md) and the web PWA is being dropped, so it is not
+redesigned.
 
 ---
 

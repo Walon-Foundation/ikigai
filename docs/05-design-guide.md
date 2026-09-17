@@ -1,17 +1,22 @@
-# 05 — Web design guide: marketing + admin
+# 05 — Web design guide: the client app
 
-**Status:** proposed. **Written:** 17 September 2026. **Serves:** [04-web-redesign.md](./04-web-redesign.md).
+**Status:** adopted. **Written:** 17 September 2026. **Serves:** [04-web-redesign.md](./04-web-redesign.md).
 
-The visual system for the redesign of `client/app/(marketing)/` and
-`client/app/admin/`. It blends six reference designs (kept locally in `/images`, which is gitignored) into one
+**The design system for the whole of `client/`.** Every page, component and
+new feature in the web app is built to this guide: the marketing site, the
+admin panel, auth screens, error and status pages, and anything added later.
+When something needs a pattern this guide doesn't cover, extend the guide
+first, from the tokens and tone here, rather than inventing one in a page.
+
+It blends six reference designs (kept locally in `/images`, which is gitignored) into one
 system built on Ikigai's own brand, so that the public site, the staff panel
 and the mobile app read as one product. A visual preview is at
 https://claude.ai/artifact/6gfh6Xd5Vt7pgMVXT5NDf4 and a clickable prototype at
 https://claude.ai/artifact/EAKJs1CpcDAXQYhbCt9jPP (the prototype is newer where
 they differ).
 
-The PWA is being dropped, so these two surfaces are the whole of the web.
-Nothing here needs to stay compatible with `app/(pwa)/`.
+The PWA is being dropped, so nothing here needs to stay compatible with
+`app/(pwa)/`, and its one-off components are not carried forward.
 
 ---
 
