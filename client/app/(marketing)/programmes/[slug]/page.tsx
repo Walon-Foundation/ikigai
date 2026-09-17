@@ -7,6 +7,7 @@ import { Nav } from "@/components/marketing/nav";
 import { PageHero } from "@/components/marketing/page-hero";
 import { buttonClass } from "@/components/system/button";
 import { canJoin, canVolunteer, getProgramme, isPast } from "@/lib/cms";
+import { pageMetadata } from "@/lib/seo";
 
 // Rendered per request so an edit to a programme's copy or photos is live
 // immediately, rather than frozen into build-time HTML.
@@ -19,11 +20,12 @@ export async function generateMetadata({
 }) {
   const { slug } = await params;
   const programme = await getProgramme(slug);
-  if (!programme) return { title: "Programme · Ikigai" };
-  return {
-    title: `${programme.name} · Ikigai`,
-    description: programme.summary ?? undefined,
-  };
+  if (!programme) return { title: "Programme not found" };
+  return pageMetadata({
+    title: programme.name,
+    description: programme.summary ?? programme.about,
+    path: `/programmes/${slug}`,
+  });
 }
 
 export default async function ProgrammePage({

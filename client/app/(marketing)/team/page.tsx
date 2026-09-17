@@ -1,22 +1,19 @@
-import type { Metadata } from "next";
 import { Avatar } from "@/components/avatar";
 import { Footer } from "@/components/marketing/footer";
 import { Nav } from "@/components/marketing/nav";
 import { PageHero } from "@/components/marketing/page-hero";
 import { SectionHeading } from "@/components/marketing/section-heading";
 import { getTeam } from "@/lib/cms";
+import { pageMetadata } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
-  title: "Team · Ikigai",
+export const metadata = pageMetadata({
+  title: "Team",
   description:
     "Meet the team behind Ikigai — youth leaders, mentors, and organizers building purpose with young people in Sierra Leone.",
-  openGraph: {
-    title: "Team · Ikigai",
-    description: "Meet the people building Ikigai in Sierra Leone.",
-  },
-};
+  path: "/team",
+});
 
 export default async function TeamPage() {
   const team = await getTeam();

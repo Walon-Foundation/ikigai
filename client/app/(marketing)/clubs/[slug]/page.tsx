@@ -6,6 +6,7 @@ import { Nav } from "@/components/marketing/nav";
 import { PageHero } from "@/components/marketing/page-hero";
 import { buttonClass } from "@/components/system/button";
 import { getPublicClub } from "@/lib/clubs";
+import { pageMetadata } from "@/lib/seo";
 
 const STAGE_LABELS: Record<string, string> = {
   discover: "Discover",
@@ -21,12 +22,13 @@ export async function generateMetadata({
 }) {
   const { slug } = await params;
   const club = await getPublicClub(slug);
-  if (!club) return { title: "Club not found · Ikigai" };
-  return {
-    title: `${club.name} · Ikigai Clubs`,
+  if (!club) return { title: "Club not found" };
+  return pageMetadata({
+    title: `${club.name} · Clubs`,
     description:
       club.description ?? `${club.name}, a club started by an Ikigai mentee.`,
-  };
+    path: `/clubs/${slug}`,
+  });
 }
 
 export default async function ClubPage({

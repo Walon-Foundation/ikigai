@@ -3,6 +3,7 @@ import { Footer } from "@/components/marketing/footer";
 import { Nav } from "@/components/marketing/nav";
 import { PageBlocks } from "@/components/marketing/page-blocks";
 import { getMarketingPage } from "@/lib/cms";
+import { pageMetadata } from "@/lib/seo";
 
 // Renders a page an admin created from /admin/pages — content that wasn't
 // part of the original site design and has no dedicated route file. A single
@@ -22,11 +23,12 @@ export async function generateMetadata({
 }) {
   const { slug } = await params;
   const page = await getMarketingPage(slug);
-  if (!page) return { title: "Ikigai" };
-  return {
-    title: `${page.title} · Ikigai`,
-    description: page.metaDescription ?? undefined,
-  };
+  if (!page) return { title: "Page not found" };
+  return pageMetadata({
+    title: page.title,
+    description: page.metaDescription,
+    path: `/${slug}`,
+  });
 }
 
 export default async function CustomMarketingPage({

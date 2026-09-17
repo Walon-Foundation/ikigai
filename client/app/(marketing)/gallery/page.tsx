@@ -2,15 +2,17 @@ import { Footer } from "@/components/marketing/footer";
 import { Nav } from "@/components/marketing/nav";
 import { PageHero } from "@/components/marketing/page-hero";
 import { getGalleryAlbums } from "@/lib/cms";
+import { pageMetadata } from "@/lib/seo";
 import { GalleryGrid } from "./gallery-grid";
 
 // Server-rendered per request so CMS edits appear immediately; see lib/cms.ts.
 export const dynamic = "force-dynamic";
 
-export const metadata = {
-  title: "Gallery · Ikigai",
+export const metadata = pageMetadata({
+  title: "Gallery",
   description: "Photos from Ikigai's programmes, campaigns and events.",
-};
+  path: "/gallery",
+});
 
 export default async function GalleryPage() {
   const albums = await getGalleryAlbums();

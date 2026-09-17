@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { Footer } from "@/components/marketing/footer";
 import { Nav } from "@/components/marketing/nav";
 import { getStory } from "@/lib/cms";
+import { pageMetadata } from "@/lib/seo";
 
 const CATEGORY_LABEL: Record<string, string> = {
   participant: "Participant story",
@@ -22,11 +23,13 @@ export async function generateMetadata({
 }) {
   const { slug } = await params;
   const story = await getStory(slug);
-  if (!story) return { title: "Story · Ikigai" };
-  return {
-    title: `${story.title} · Ikigai`,
-    description: story.excerpt ?? undefined,
-  };
+  if (!story) return { title: "Story not found" };
+  return pageMetadata({
+    title: story.title,
+    description: story.excerpt,
+    path: `/stories/${slug}`,
+    type: "article",
+  });
 }
 
 export default async function StoryPage({

@@ -6,14 +6,16 @@ import { Nav } from "@/components/marketing/nav";
 import { PageHero } from "@/components/marketing/page-hero";
 import { buttonClass } from "@/components/system/button";
 import { getPartners } from "@/lib/cms";
+import { pageMetadata } from "@/lib/seo";
 
 // Server-rendered per request so CMS edits appear immediately; see lib/cms.ts.
 export const dynamic = "force-dynamic";
 
-export const metadata = {
-  title: "Partners · Ikigai",
+export const metadata = pageMetadata({
+  title: "Partners",
   description: "The organizations Ikigai works with to reach young people.",
-};
+  path: "/partners",
+});
 
 export default async function PartnersPage() {
   const partners = await getPartners();
