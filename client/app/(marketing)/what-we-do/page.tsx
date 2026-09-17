@@ -33,7 +33,7 @@ export default async function WhatWeDoPage() {
           >
             <div className="mx-auto max-w-7xl px-6">
               <div className="mb-10 max-w-2xl">
-                <h2 className="font-display text-3xl font-black text-foreground sm:text-4xl">
+                <h2 className="font-display text-3xl font-semibold text-(--w-green-deep) sm:text-4xl">
                   <span aria-hidden className="mr-2">
                     {pillar.icon}
                   </span>

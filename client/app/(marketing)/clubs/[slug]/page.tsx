@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { Footer } from "@/components/marketing/footer";
 import { Nav } from "@/components/marketing/nav";
 import { PageHero } from "@/components/marketing/page-hero";
+import { buttonClass } from "@/components/system/button";
 import { getPublicClub } from "@/lib/clubs";
 
 const STAGE_LABELS: Record<string, string> = {
@@ -85,8 +86,8 @@ export default async function ClubPage({
             </div>
           )}
 
-          <div className="mt-12 rounded-2xl border border-border bg-card p-6">
-            <p className="font-display text-lg font-bold text-foreground">
+          <div className="mt-12 rounded-xl border border-border bg-card p-6">
+            <p className="font-display text-lg font-semibold text-(--w-green-deep)">
               Want to join?
             </p>
             <p className="mt-1 text-sm text-muted-foreground">
@@ -95,7 +96,7 @@ export default async function ClubPage({
             </p>
             <Link
               href="/get-involved"
-              className="mt-4 inline-block rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground"
+              className={buttonClass("primary", { className: "mt-4" })}
             >
               Get involved
             </Link>

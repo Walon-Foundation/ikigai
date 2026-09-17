@@ -24,7 +24,7 @@ export default function TermsPage() {
           <div className="mx-auto max-w-3xl px-6">
             <div className="space-y-10 text-muted-foreground">
               <div>
-                <h2 className="font-display mb-3 text-2xl font-bold text-foreground">
+                <h2 className="font-display mb-3 text-2xl font-semibold text-(--w-green-deep)">
                   Acceptance
                 </h2>
                 <p className="leading-relaxed">
@@ -37,7 +37,7 @@ export default function TermsPage() {
               </div>
 
               <div>
-                <h2 className="font-display mb-3 text-2xl font-bold text-foreground">
+                <h2 className="font-display mb-3 text-2xl font-semibold text-(--w-green-deep)">
                   Use of Service
                 </h2>
                 <p className="leading-relaxed">
@@ -51,7 +51,7 @@ export default function TermsPage() {
               </div>
 
               <div>
-                <h2 className="font-display mb-3 text-2xl font-bold text-foreground">
+                <h2 className="font-display mb-3 text-2xl font-semibold text-(--w-green-deep)">
                   User Conduct
                 </h2>
                 <p className="leading-relaxed">
@@ -66,7 +66,7 @@ export default function TermsPage() {
               </div>
 
               <div>
-                <h2 className="font-display mb-3 text-2xl font-bold text-foreground">
+                <h2 className="font-display mb-3 text-2xl font-semibold text-(--w-green-deep)">
                   Accounts
                 </h2>
                 <p className="leading-relaxed">
@@ -79,7 +79,7 @@ export default function TermsPage() {
               </div>
 
               <div>
-                <h2 className="font-display mb-3 text-2xl font-bold text-foreground">
+                <h2 className="font-display mb-3 text-2xl font-semibold text-(--w-green-deep)">
                   Limitation of Liability
                 </h2>
                 <p className="leading-relaxed">
@@ -92,7 +92,7 @@ export default function TermsPage() {
               </div>
 
               <div>
-                <h2 className="font-display mb-3 text-2xl font-bold text-foreground">
+                <h2 className="font-display mb-3 text-2xl font-semibold text-(--w-green-deep)">
                   Governing Law
                 </h2>
                 <p className="leading-relaxed">

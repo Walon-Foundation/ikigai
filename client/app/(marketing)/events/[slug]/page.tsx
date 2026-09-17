@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { Footer } from "@/components/marketing/footer";
 import { Nav } from "@/components/marketing/nav";
 import { PageHero } from "@/components/marketing/page-hero";
+import { buttonClass } from "@/components/system/button";
 import { canJoin, getPublicEvent, isPast as isPastCheck } from "@/lib/cms";
 import { clientEnv } from "@/lib/env.client";
 
@@ -80,13 +81,13 @@ export default async function EventPage({
         </PageHero>
 
         {event.imageUrl && (
-          <div className="relative mx-auto -mt-8 aspect-[21/9] max-w-5xl overflow-hidden rounded-2xl px-6">
+          <div className="relative mx-auto -mt-8 aspect-[21/9] max-w-5xl overflow-hidden rounded-xl px-6">
             <Image
               src={event.imageUrl}
               alt=""
               fill
               sizes="(max-width: 1024px) 100vw, 1024px"
-              className="rounded-2xl object-cover"
+              className="rounded-xl object-cover"
               priority
             />
           </div>
@@ -101,8 +102,8 @@ export default async function EventPage({
 
           {/* Post-event report / CTA — unified with programme lifecycle */}
           {isPast && event.reportSummary ? (
-            <div className="rounded-2xl border border-border bg-secondary p-8">
-              <h2 className="font-display mb-4 text-2xl font-bold text-foreground">
+            <div className="rounded-xl border border-border bg-secondary p-8">
+              <h2 className="font-display mb-4 text-2xl font-semibold text-(--w-green-deep)">
                 How it went
               </h2>
               <p className="whitespace-pre-wrap leading-relaxed text-muted-foreground">
@@ -134,15 +135,12 @@ export default async function EventPage({
           ) : !isPast ? (
             joinOpen ? (
               <div className="text-center">
-                <a
-                  href={clientEnv.appUrl}
-                  className="inline-flex items-center gap-2 rounded-lg bg-primary px-8 py-4 text-base font-semibold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98]"
-                >
+                <a href={clientEnv.appUrl} className={buttonClass("primary")}>
                   Register in the app
                 </a>
               </div>
             ) : (
-              <div className="rounded-2xl border border-border bg-secondary p-8 text-center">
+              <div className="rounded-xl border border-border bg-secondary p-8 text-center">
                 <p className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
                   Registration is currently closed for this event
                 </p>

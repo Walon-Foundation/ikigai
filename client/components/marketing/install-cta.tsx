@@ -1,3 +1,4 @@
+import { buttonClass } from "@/components/system/button";
 import { clientEnv } from "@/lib/env.client";
 
 interface InstallCtaProps {
@@ -6,23 +7,22 @@ interface InstallCtaProps {
 }
 
 export function InstallCta({ headline, body }: InstallCtaProps) {
-  const appUrl = clientEnv.appUrl;
-
   return (
-    <section className="bg-[#1C1C1A] py-24">
-      <div className="mx-auto max-w-3xl px-6 text-center">
-        <h2 className="font-display mb-5 text-4xl font-black text-[#FAFAF7] sm:text-5xl">
-          {headline}
-        </h2>
-        <p className="mx-auto mb-10 max-w-xl text-lg leading-relaxed text-[#A8A59F]">
-          {body}
-        </p>
-        <a
-          href={appUrl}
-          className="inline-flex items-center gap-2 rounded-full bg-accent px-8 py-4 text-base font-semibold text-foreground transition-transform hover:scale-[1.03] active:scale-[0.98]"
-        >
-          Install the App — Free
-        </a>
+    <section className="pt-24 sm:pt-28">
+      <div className="mx-auto max-w-7xl px-6">
+        <div className="grid items-center gap-8 rounded-2xl bg-(--w-green-deep) px-8 py-12 text-white sm:px-14 sm:py-14 lg:grid-cols-[1fr_auto]">
+          <div>
+            <h2 className="font-display text-[clamp(1.8rem,3vw,2.5rem)] font-semibold leading-[1.12] tracking-[-0.01em]">
+              {headline}
+            </h2>
+            <p className="mt-3 max-w-[52ch] text-[16.5px] leading-relaxed text-(--w-on-deep)">
+              {body}
+            </p>
+          </div>
+          <a href={clientEnv.appUrl} className={buttonClass("light")}>
+            Install the app, free
+          </a>
+        </div>
       </div>
     </section>
   );

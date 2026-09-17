@@ -24,7 +24,7 @@ export default function PrivacyPage() {
           <div className="mx-auto max-w-3xl px-6">
             <div className="space-y-10 text-muted-foreground">
               <div>
-                <h2 className="font-display mb-3 text-2xl font-bold text-foreground">
+                <h2 className="font-display mb-3 text-2xl font-semibold text-(--w-green-deep)">
                   What We Collect
                 </h2>
                 <p className="leading-relaxed">
@@ -39,7 +39,7 @@ export default function PrivacyPage() {
               </div>
 
               <div>
-                <h2 className="font-display mb-3 text-2xl font-bold text-foreground">
+                <h2 className="font-display mb-3 text-2xl font-semibold text-(--w-green-deep)">
                   How We Use It
                 </h2>
                 <p className="leading-relaxed">
@@ -54,7 +54,7 @@ export default function PrivacyPage() {
               </div>
 
               <div>
-                <h2 className="font-display mb-3 text-2xl font-bold text-foreground">
+                <h2 className="font-display mb-3 text-2xl font-semibold text-(--w-green-deep)">
                   Data Storage
                 </h2>
                 <p className="leading-relaxed">
@@ -69,7 +69,7 @@ export default function PrivacyPage() {
               </div>
 
               <div>
-                <h2 className="font-display mb-3 text-2xl font-bold text-foreground">
+                <h2 className="font-display mb-3 text-2xl font-semibold text-(--w-green-deep)">
                   Your Rights
                 </h2>
                 <p className="leading-relaxed">
@@ -83,7 +83,7 @@ export default function PrivacyPage() {
               </div>
 
               <div>
-                <h2 className="font-display mb-3 text-2xl font-bold text-foreground">
+                <h2 className="font-display mb-3 text-2xl font-semibold text-(--w-green-deep)">
                   Contact
                 </h2>
                 <p className="leading-relaxed">

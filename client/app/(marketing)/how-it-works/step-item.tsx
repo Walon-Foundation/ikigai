@@ -47,7 +47,7 @@ export function StepItem({ step, index }: { step: Step; index: number }) {
       {/* Number */}
       <div
         className={cn(
-          "step-number font-display text-7xl font-black leading-none sm:text-8xl",
+          "step-number font-display text-7xl font-semibold leading-none sm:text-8xl",
           isEven && "sm:order-2 sm:text-right",
         )}
       >
@@ -62,7 +62,7 @@ export function StepItem({ step, index }: { step: Step; index: number }) {
         <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-primary">
           {step.eyebrow}
         </p>
-        <h3 className="font-display mb-4 text-3xl font-black leading-tight text-foreground sm:text-4xl">
+        <h3 className="font-display mb-4 text-3xl font-semibold leading-tight text-(--w-green-deep) sm:text-4xl">
           {step.title}
         </h3>
         <p className="mb-5 text-base leading-relaxed text-muted-foreground">

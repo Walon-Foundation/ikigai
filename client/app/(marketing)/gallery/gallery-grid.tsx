@@ -27,7 +27,7 @@ export function GalleryGrid({ albums }: { albums: Album[] }) {
       <div className="space-y-16">
         {albums.map((album) => (
           <section key={album.album}>
-            <h2 className="font-display mb-6 text-2xl font-bold text-foreground">
+            <h2 className="font-display mb-6 text-2xl font-semibold text-(--w-green-deep)">
               {album.album}
             </h2>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">

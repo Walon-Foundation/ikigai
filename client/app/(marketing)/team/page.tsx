@@ -44,12 +44,12 @@ export default async function TeamPage() {
                   {team.map((m) => (
                     <div
                       key={m.id}
-                      className="rounded-2xl border border-border bg-card p-6 text-center"
+                      className="rounded-xl border border-border bg-card p-6 text-center"
                     >
                       <div className="mx-auto mb-4 w-fit">
                         <Avatar name={m.name} src={m.photoUrl} size={88} />
                       </div>
-                      <h3 className="font-display text-lg font-bold text-foreground">
+                      <h3 className="font-display text-lg font-semibold text-(--w-green-deep)">
                         {m.name}
                       </h3>
                       {m.role && (
@@ -67,8 +67,8 @@ export default async function TeamPage() {
                 </div>
               </>
             ) : (
-              <div className="mx-auto max-w-2xl rounded-2xl border border-dashed border-border bg-secondary/40 p-10 text-center">
-                <p className="font-display text-xl font-bold text-foreground">
+              <div className="mx-auto max-w-2xl rounded-xl border border-dashed border-border bg-secondary/40 p-10 text-center">
+                <p className="font-display text-xl font-semibold text-(--w-green-deep)">
                   Team coming soon
                 </p>
                 <p className="mt-2 text-sm leading-relaxed text-muted-foreground">

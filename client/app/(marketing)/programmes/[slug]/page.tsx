@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { Footer } from "@/components/marketing/footer";
 import { Nav } from "@/components/marketing/nav";
 import { PageHero } from "@/components/marketing/page-hero";
+import { buttonClass } from "@/components/system/button";
 import { canJoin, canVolunteer, getProgramme, isPast } from "@/lib/cms";
 
 // Rendered per request so an edit to a programme's copy or photos is live
@@ -73,13 +74,13 @@ export default async function ProgrammePage({
 
         {/* Hero image */}
         {programme.heroImageUrl && (
-          <div className="relative mx-auto -mt-8 aspect-[21/9] max-w-5xl overflow-hidden rounded-2xl px-6">
+          <div className="relative mx-auto -mt-8 aspect-[21/9] max-w-5xl overflow-hidden rounded-xl px-6">
             <Image
               src={programme.heroImageUrl}
               alt=""
               fill
               sizes="(max-width: 1024px) 100vw, 1024px"
-              className="rounded-2xl object-cover"
+              className="rounded-xl object-cover"
               priority
             />
           </div>
@@ -89,7 +90,7 @@ export default async function ProgrammePage({
           {/* About */}
           {programme.about && (
             <div className="mb-16">
-              <h2 className="font-display mb-4 text-2xl font-bold text-foreground">
+              <h2 className="font-display mb-4 text-2xl font-semibold text-(--w-green-deep)">
                 About this programme
               </h2>
               <p className="whitespace-pre-wrap text-lg leading-relaxed text-muted-foreground">
@@ -102,7 +103,7 @@ export default async function ProgrammePage({
             {/* Objectives */}
             {programme.objectives.length > 0 && (
               <div>
-                <h2 className="font-display mb-4 text-xl font-bold text-foreground">
+                <h2 className="font-display mb-4 text-xl font-semibold text-(--w-green-deep)">
                   What you gain
                 </h2>
                 <ul className="space-y-3">
@@ -119,7 +120,7 @@ export default async function ProgrammePage({
             {/* Activities */}
             {programme.activities.length > 0 && (
               <div>
-                <h2 className="font-display mb-4 text-xl font-bold text-foreground">
+                <h2 className="font-display mb-4 text-xl font-semibold text-(--w-green-deep)">
                   What happens
                 </h2>
                 <ul className="space-y-3">
@@ -136,8 +137,8 @@ export default async function ProgrammePage({
 
           {/* Impact */}
           {programme.impactValue && (
-            <div className="mt-16 rounded-2xl border border-border bg-secondary p-8 text-center">
-              <div className="font-display text-5xl font-black text-primary">
+            <div className="mt-16 rounded-xl border border-border bg-secondary p-8 text-center">
+              <div className="font-display text-5xl font-semibold text-primary">
                 {programme.impactValue}
               </div>
               <div className="mt-2 text-sm font-medium uppercase tracking-wider text-muted-foreground">
@@ -149,7 +150,7 @@ export default async function ProgrammePage({
           {/* Gallery */}
           {programme.photos.length > 0 && (
             <div className="mt-16">
-              <h2 className="font-display mb-4 text-xl font-bold text-foreground">
+              <h2 className="font-display mb-4 text-xl font-semibold text-(--w-green-deep)">
                 Gallery
               </h2>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -174,15 +175,12 @@ export default async function ProgrammePage({
           {/* CTA — hidden when past or admin-closed */}
           {showCta ? (
             <div className="mt-16 text-center">
-              <Link
-                href={ctaHref}
-                className="inline-flex items-center gap-2 rounded-lg bg-primary px-8 py-4 text-base font-semibold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98]"
-              >
+              <Link href={ctaHref} className={buttonClass("primary")}>
                 {ctaLabel} <ArrowRight className="size-4" />
               </Link>
             </div>
           ) : (
-            <div className="mt-16 rounded-2xl border border-border bg-secondary p-8 text-center">
+            <div className="mt-16 rounded-xl border border-border bg-secondary p-8 text-center">
               <p className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
                 {past
                   ? "This programme has ended"

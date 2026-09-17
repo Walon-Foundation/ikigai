@@ -47,7 +47,7 @@ export default async function ClubsPage() {
 
         <section className="mx-auto max-w-5xl px-6 py-16">
           {clubs.length === 0 ? (
-            <p className="rounded-2xl border border-border bg-card p-8 text-center text-muted-foreground">
+            <p className="rounded-xl border border-border bg-card p-8 text-center text-muted-foreground">
               No clubs have been started yet. Check back soon.
             </p>
           ) : (
@@ -56,9 +56,9 @@ export default async function ClubsPage() {
                 <Link
                   key={club.id}
                   href={`/clubs/${club.slug}`}
-                  className="card-lift flex flex-col rounded-2xl border border-border bg-card p-6"
+                  className="transition-[border-color,box-shadow] hover:border-primary hover:shadow-(--w-lift) flex flex-col rounded-xl border border-border bg-card p-6"
                 >
-                  <h2 className="font-display text-xl font-bold text-foreground">
+                  <h2 className="font-display text-xl font-semibold text-(--w-green-deep)">
                     {club.name}
                   </h2>
                   {club.description && (
