@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Footer } from "@/components/marketing/footer";
 import { Nav } from "@/components/marketing/nav";
+import { PageHero } from "@/components/marketing/page-hero";
 
 export const metadata: Metadata = {
   title: "Privacy Policy · Ikigai",
@@ -13,23 +14,17 @@ export default function PrivacyPage() {
     <div className="min-h-screen bg-background">
       <Nav />
       <main>
-        <section className="bg-primary pb-16 pt-40">
-          <div className="mx-auto max-w-3xl px-6">
-            <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-primary-muted">
-              Legal
-            </p>
-            <h1 className="font-display text-5xl font-black leading-[1.05] text-primary-foreground sm:text-6xl">
-              Privacy Policy
-            </h1>
-            <p className="mt-4 text-primary-muted">Last updated: June 2026</p>
-          </div>
-        </section>
+        <PageHero eyebrow="Legal" title="Privacy Policy" narrow>
+          <p className="text-sm text-muted-foreground">
+            Last updated: June 2026
+          </p>
+        </PageHero>
 
         <section className="py-24">
           <div className="mx-auto max-w-3xl px-6">
             <div className="space-y-10 text-muted-foreground">
               <div>
-                <h2 className="font-display mb-3 text-2xl font-bold text-foreground">
+                <h2 className="font-display mb-3 text-2xl font-semibold text-(--w-green-deep)">
                   What We Collect
                 </h2>
                 <p className="leading-relaxed">
@@ -44,7 +39,7 @@ export default function PrivacyPage() {
               </div>
 
               <div>
-                <h2 className="font-display mb-3 text-2xl font-bold text-foreground">
+                <h2 className="font-display mb-3 text-2xl font-semibold text-(--w-green-deep)">
                   How We Use It
                 </h2>
                 <p className="leading-relaxed">
@@ -59,7 +54,7 @@ export default function PrivacyPage() {
               </div>
 
               <div>
-                <h2 className="font-display mb-3 text-2xl font-bold text-foreground">
+                <h2 className="font-display mb-3 text-2xl font-semibold text-(--w-green-deep)">
                   Data Storage
                 </h2>
                 <p className="leading-relaxed">
@@ -74,7 +69,7 @@ export default function PrivacyPage() {
               </div>
 
               <div>
-                <h2 className="font-display mb-3 text-2xl font-bold text-foreground">
+                <h2 className="font-display mb-3 text-2xl font-semibold text-(--w-green-deep)">
                   Your Rights
                 </h2>
                 <p className="leading-relaxed">
@@ -88,7 +83,7 @@ export default function PrivacyPage() {
               </div>
 
               <div>
-                <h2 className="font-display mb-3 text-2xl font-bold text-foreground">
+                <h2 className="font-display mb-3 text-2xl font-semibold text-(--w-green-deep)">
                   Contact
                 </h2>
                 <p className="leading-relaxed">

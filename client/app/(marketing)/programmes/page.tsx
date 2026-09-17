@@ -1,6 +1,7 @@
 import { ProgrammeCard } from "@/components/marketing/cards";
 import { Footer } from "@/components/marketing/footer";
 import { Nav } from "@/components/marketing/nav";
+import { PageHero } from "@/components/marketing/page-hero";
 import { getPillars, getProgrammes } from "@/lib/cms";
 
 // Server-rendered per request so CMS edits appear immediately; see lib/cms.ts.
@@ -22,16 +23,7 @@ export default async function ProgrammesPage() {
     <div className="min-h-screen bg-background">
       <Nav />
       <main>
-        <section className="bg-primary pb-20 pt-40">
-          <div className="mx-auto max-w-3xl px-6">
-            <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-primary-muted">
-              Programmes
-            </p>
-            <h1 className="font-display text-5xl font-black leading-[1.05] text-primary-foreground sm:text-6xl">
-              Everything we run.
-            </h1>
-          </div>
-        </section>
+        <PageHero eyebrow="Programmes" title="Everything we run." />
 
         <section className="py-24">
           <div className="mx-auto max-w-7xl px-6">

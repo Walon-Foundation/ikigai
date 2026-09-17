@@ -1,6 +1,7 @@
 import { Avatar } from "@/components/avatar";
 import { Footer } from "@/components/marketing/footer";
 import { Nav } from "@/components/marketing/nav";
+import { PageHero } from "@/components/marketing/page-hero";
 import { SectionHeading } from "@/components/marketing/section-heading";
 import { SectionReveal } from "@/components/marketing/section-reveal";
 import { getCopy, getTeam } from "@/lib/cms";
@@ -31,16 +32,10 @@ export default async function AboutPage() {
       <Nav />
       <main>
         {/* Header */}
-        <section className="bg-primary pb-20 pt-40">
-          <div className="mx-auto max-w-3xl px-6">
-            <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-primary-muted">
-              About Ikigai
-            </p>
-            <h1 className="font-display text-5xl font-black leading-[1.05] text-primary-foreground sm:text-6xl">
-              A youth movement built on purpose.
-            </h1>
-          </div>
-        </section>
+        <PageHero
+          eyebrow="About Ikigai"
+          title="A youth movement built on purpose."
+        />
 
         {/* Mission & Vision */}
         <section className="py-24">
@@ -58,7 +53,7 @@ export default async function AboutPage() {
             </SectionReveal>
             <SectionReveal delay={0.1}>
               <div>
-                <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-accent">
+                <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-(--w-orange-ink)">
                   Our vision
                 </p>
                 <p className="text-lg leading-relaxed text-foreground">
@@ -82,7 +77,7 @@ export default async function AboutPage() {
               {valueItems.map((v) => (
                 <span
                   key={v}
-                  className="rounded-full border border-border bg-card px-6 py-3 font-display text-lg font-bold text-foreground"
+                  className="rounded-full border border-border bg-card px-6 py-3 font-display text-lg font-semibold text-(--w-green-deep)"
                 >
                   {v}
                 </span>
@@ -102,7 +97,7 @@ export default async function AboutPage() {
                     <div className="mx-auto mb-4 w-fit">
                       <Avatar name={m.name} src={m.photoUrl} size={96} />
                     </div>
-                    <h3 className="font-display text-lg font-bold text-foreground">
+                    <h3 className="font-display text-lg font-semibold text-(--w-green-deep)">
                       {m.name}
                     </h3>
                     {m.role && (

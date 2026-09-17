@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { WebSurface } from "@/components/system/web-surface";
 import { clientEnv } from "@/lib/env.client";
 
 export default function MarketingLayout({ children }: { children: ReactNode }) {
@@ -17,7 +18,7 @@ export default function MarketingLayout({ children }: { children: ReactNode }) {
       */}
       <link rel="preconnect" href={clientEnv.appUrl} />
       <link rel="dns-prefetch" href={clientEnv.appUrl} />
-      {children}
+      <WebSurface>{children}</WebSurface>
     </>
   );
 }

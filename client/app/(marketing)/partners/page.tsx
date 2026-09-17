@@ -3,6 +3,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { Footer } from "@/components/marketing/footer";
 import { Nav } from "@/components/marketing/nav";
+import { PageHero } from "@/components/marketing/page-hero";
+import { buttonClass } from "@/components/system/button";
 import { getPartners } from "@/lib/cms";
 
 // Server-rendered per request so CMS edits appear immediately; see lib/cms.ts.
@@ -20,16 +22,7 @@ export default async function PartnersPage() {
     <div className="min-h-screen bg-background">
       <Nav />
       <main>
-        <section className="bg-primary pb-20 pt-40">
-          <div className="mx-auto max-w-3xl px-6">
-            <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-primary-muted">
-              Partners
-            </p>
-            <h1 className="font-display text-5xl font-black leading-[1.05] text-primary-foreground sm:text-6xl">
-              We do this together.
-            </h1>
-          </div>
-        </section>
+        <PageHero eyebrow="Partners" title="We do this together." />
 
         <section className="py-24">
           <div className="mx-auto max-w-5xl px-6">
@@ -38,7 +31,7 @@ export default async function PartnersPage() {
                 {partners.map((p) => (
                   <div
                     key={p.id}
-                    className="flex gap-4 rounded-2xl border border-border bg-card p-6"
+                    className="flex gap-4 rounded-xl border border-border bg-card p-6"
                   >
                     {p.logoUrl && (
                       <Image
@@ -50,7 +43,7 @@ export default async function PartnersPage() {
                       />
                     )}
                     <div>
-                      <h3 className="font-display text-lg font-bold text-foreground">
+                      <h3 className="font-display text-lg font-semibold text-(--w-green-deep)">
                         {p.websiteUrl ? (
                           <a
                             href={p.websiteUrl}
@@ -80,8 +73,8 @@ export default async function PartnersPage() {
             )}
 
             {/* Become a partner CTA */}
-            <div className="mt-16 rounded-2xl bg-secondary p-10 text-center">
-              <h2 className="font-display text-3xl font-black text-foreground">
+            <div className="mt-16 rounded-xl bg-secondary p-10 text-center">
+              <h2 className="font-display text-3xl font-semibold text-(--w-green-deep)">
                 Become a partner
               </h2>
               <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
@@ -90,7 +83,7 @@ export default async function PartnersPage() {
               </p>
               <Link
                 href="/get-involved#partner"
-                className="mt-6 inline-flex items-center gap-2 rounded-lg bg-primary px-8 py-4 text-base font-semibold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98]"
+                className={buttonClass("primary", { className: "mt-6" })}
               >
                 Partner with us <ArrowRight className="size-4" />
               </Link>

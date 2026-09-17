@@ -49,10 +49,10 @@ export default async function StoryPage({
           >
             ← All stories
           </Link>
-          <p className="mb-3 text-xs font-extrabold uppercase tracking-widest text-accent">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-(--w-orange-ink)">
             {CATEGORY_LABEL[story.category] ?? story.category}
           </p>
-          <h1 className="font-display text-4xl font-black leading-[1.1] text-foreground sm:text-5xl">
+          <h1 className="font-display text-4xl font-semibold leading-[1.1] text-(--w-green-deep) sm:text-5xl">
             {story.title}
           </h1>
           {story.authorName && (
@@ -62,7 +62,7 @@ export default async function StoryPage({
           )}
 
           {story.coverImageUrl && (
-            <div className="relative mt-8 aspect-[16/9] overflow-hidden rounded-2xl bg-secondary">
+            <div className="relative mt-8 aspect-[16/9] overflow-hidden rounded-xl bg-secondary">
               <Image
                 src={story.coverImageUrl}
                 alt=""

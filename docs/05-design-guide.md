@@ -267,6 +267,8 @@ A full-width `green-deep` block, inset `16px` from the page edges with a
   capture of the real app, not a mock-up, and must not show demo people.
 - **Bottom:** the four `impact_stats` figures in a bar across the foot of the
   hero, on a 18% black overlay, white numbers, `sidebar-ink` labels.
+- The headline is CMS text. Admins mark the highlighted phrase with
+  asterisks in the page builder: `Find your *reason for being*`.
 - On load, the copy and phone rise `14px` (transform only, never from
   `opacity: 0`); off under reduced motion.
 - When real photography exists, one photo may take the phone's place. Never a
@@ -296,6 +298,12 @@ A full-width `green-deep` block, inset `16px` from the page edges with a
 
 Sections sit on `ground-site` with `96px` between them; cards and white bands
 supply the white.
+
+**In the code:** the home page is page-builder blocks in
+`client/lib/blocks/registry.tsx`, and the "Safe by design" section is the
+`safe_by_design` block. Tokens are in `client/components/system/web.css` under
+`[data-surface="web"]`, applied by `WebSurface` in the marketing layout;
+inner pages use `PageHero` for their header and `buttonClass` for buttons.
 
 ---
 

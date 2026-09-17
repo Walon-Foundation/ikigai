@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Avatar } from "@/components/avatar";
 import { Footer } from "@/components/marketing/footer";
 import { Nav } from "@/components/marketing/nav";
+import { PageHero } from "@/components/marketing/page-hero";
 import { SectionHeading } from "@/components/marketing/section-heading";
 import { getTeam } from "@/lib/cms";
 
@@ -24,20 +25,11 @@ export default async function TeamPage() {
     <div className="min-h-screen bg-background">
       <Nav />
       <main>
-        <section className="bg-primary pb-20 pt-40">
-          <div className="mx-auto max-w-3xl px-6">
-            <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-primary-muted">
-              Our People
-            </p>
-            <h1 className="font-display text-5xl font-black leading-[1.05] text-primary-foreground sm:text-6xl">
-              The team.
-            </h1>
-            <p className="mt-6 max-w-2xl text-lg leading-relaxed text-primary-muted">
-              The mentors, organizers, and youth leaders who make Ikigai run —
-              in Freetown, the Western Rural Area, and beyond.
-            </p>
-          </div>
-        </section>
+        <PageHero
+          eyebrow="Our people"
+          title="The team."
+          lede="The mentors, organizers, and youth leaders who make Ikigai run — in Freetown, the Western Rural Area, and beyond."
+        />
 
         <section className="py-24">
           <div className="mx-auto max-w-6xl px-6">
@@ -52,12 +44,12 @@ export default async function TeamPage() {
                   {team.map((m) => (
                     <div
                       key={m.id}
-                      className="rounded-2xl border border-border bg-card p-6 text-center"
+                      className="rounded-xl border border-border bg-card p-6 text-center"
                     >
                       <div className="mx-auto mb-4 w-fit">
                         <Avatar name={m.name} src={m.photoUrl} size={88} />
                       </div>
-                      <h3 className="font-display text-lg font-bold text-foreground">
+                      <h3 className="font-display text-lg font-semibold text-(--w-green-deep)">
                         {m.name}
                       </h3>
                       {m.role && (
@@ -75,8 +67,8 @@ export default async function TeamPage() {
                 </div>
               </>
             ) : (
-              <div className="mx-auto max-w-2xl rounded-2xl border border-dashed border-border bg-secondary/40 p-10 text-center">
-                <p className="font-display text-xl font-bold text-foreground">
+              <div className="mx-auto max-w-2xl rounded-xl border border-dashed border-border bg-secondary/40 p-10 text-center">
+                <p className="font-display text-xl font-semibold text-(--w-green-deep)">
                   Team coming soon
                 </p>
                 <p className="mt-2 text-sm leading-relaxed text-muted-foreground">

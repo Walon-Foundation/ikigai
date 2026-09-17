@@ -4,6 +4,7 @@ import { CheckCircle2 } from "lucide-react";
 import { useState, useTransition } from "react";
 import { MissingFields } from "@/components/missing-fields";
 import { BusyLabel } from "@/components/spinner";
+import { buttonClass } from "@/components/system/button";
 import { submitEnquiry } from "../get-involved/actions";
 
 // Previously this built a `mailto:` link and handed off to the visitor's own
@@ -49,9 +50,9 @@ export function ContactForm() {
 
   if (done) {
     return (
-      <div className="rounded-2xl border border-primary/30 bg-card p-10 text-center">
+      <div className="rounded-xl border border-primary/30 bg-card p-10 text-center">
         <CheckCircle2 className="mx-auto mb-4 size-12 text-primary" />
-        <h3 className="font-display text-2xl font-bold text-foreground">
+        <h3 className="font-display text-2xl font-semibold text-(--w-green-deep)">
           Message sent
         </h3>
         <p className="mt-2 text-muted-foreground">
@@ -121,7 +122,7 @@ export function ContactForm() {
         type="submit"
         disabled={pending}
         aria-busy={pending}
-        className="inline-flex items-center gap-2 rounded-full bg-primary px-8 py-3 text-sm font-semibold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-40"
+        className={buttonClass("primary", { className: "disabled:opacity-40" })}
       >
         <BusyLabel pending={pending} busy="Sending…">
           Send Message

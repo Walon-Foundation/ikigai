@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Footer } from "@/components/marketing/footer";
 import { Nav } from "@/components/marketing/nav";
+import { PageHero } from "@/components/marketing/page-hero";
 import { ContactForm } from "./contact-form";
 
 export const metadata: Metadata = {
@@ -14,16 +15,7 @@ export default function ContactPage() {
     <div className="min-h-screen bg-background">
       <Nav />
       <main>
-        <section className="bg-primary pb-16 pt-40">
-          <div className="mx-auto max-w-3xl px-6">
-            <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-primary-muted">
-              Get in Touch
-            </p>
-            <h1 className="font-display text-5xl font-black leading-[1.05] text-primary-foreground sm:text-6xl">
-              Contact Us
-            </h1>
-          </div>
-        </section>
+        <PageHero eyebrow="Get in touch" title="Contact us" />
 
         <section className="py-24">
           <div className="mx-auto max-w-3xl px-6">

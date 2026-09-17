@@ -25,6 +25,7 @@ const FALLBACK_PAGE_BLOCKS: Record<string, BlockType[]> = {
     "stories",
     "partners",
     "app_cta",
+    "safe_by_design",
     "final_cta",
   ],
 };

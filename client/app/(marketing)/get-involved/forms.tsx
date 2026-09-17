@@ -4,6 +4,7 @@ import { CheckCircle2 } from "lucide-react";
 import { useEffect, useState, useTransition } from "react";
 import { MissingFields } from "@/components/missing-fields";
 import { BusyLabel } from "@/components/spinner";
+import { buttonClass } from "@/components/system/button";
 import { cn } from "@/lib/utils";
 import { submitEnquiry } from "./actions";
 
@@ -225,9 +226,9 @@ function PathwayForm({
   if (done) {
     const isMentor = pathway.key === "mentor";
     return (
-      <div className="rounded-2xl border border-primary/30 bg-card p-10 text-center">
+      <div className="rounded-xl border border-primary/30 bg-card p-10 text-center">
         <CheckCircle2 className="mx-auto mb-4 size-12 text-primary" />
-        <h3 className="font-display text-2xl font-bold text-foreground">
+        <h3 className="font-display text-2xl font-semibold text-(--w-green-deep)">
           Thank you!
         </h3>
         <p className="mt-2 text-muted-foreground">
@@ -250,9 +251,9 @@ function PathwayForm({
   return (
     <form
       action={handleSubmit}
-      className="rounded-2xl border border-border bg-secondary/40 p-6 sm:p-8"
+      className="rounded-xl border border-border bg-secondary/40 p-6 sm:p-8"
     >
-      <h2 className="font-display text-2xl font-bold text-foreground">
+      <h2 className="font-display text-2xl font-semibold text-(--w-green-deep)">
         {pathway.title}
       </h2>
       <p className="mb-6 mt-1 text-muted-foreground">{pathway.blurb}</p>
@@ -322,7 +323,9 @@ function PathwayForm({
         type="submit"
         disabled={pending}
         aria-busy={pending}
-        className="mt-6 inline-flex items-center justify-center gap-2 rounded-full bg-primary px-8 py-3.5 font-semibold text-primary-foreground hover:bg-primary-light disabled:opacity-40 transition-colors"
+        className={buttonClass("primary", {
+          className: "mt-6 disabled:opacity-40 transition-colors",
+        })}
       >
         <BusyLabel pending={pending} busy="Sending…">
           Submit

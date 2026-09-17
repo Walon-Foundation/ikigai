@@ -1,9 +1,10 @@
 import { CalendarDays, MapPin } from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Footer } from "@/components/marketing/footer";
 import { Nav } from "@/components/marketing/nav";
+import { PageHero } from "@/components/marketing/page-hero";
+import { buttonClass } from "@/components/system/button";
 import { canJoin, getPublicEvent, isPast as isPastCheck } from "@/lib/cms";
 import { clientEnv } from "@/lib/env.client";
 
@@ -59,42 +60,34 @@ export default async function EventPage({
     <div className="min-h-screen bg-background">
       <Nav />
       <main>
-        <section className="bg-primary pb-16 pt-40">
-          <div className="mx-auto max-w-4xl px-6">
-            <Link
-              href="/events"
-              className="mb-4 inline-block text-xs font-semibold uppercase tracking-widest text-primary-muted hover:text-primary-foreground"
-            >
-              ← All events
-            </Link>
-            <h1 className="font-display text-4xl font-black leading-[1.1] text-primary-foreground sm:text-5xl">
-              {event.title}
-            </h1>
-            <div className="mt-6 flex flex-wrap gap-6 text-primary-muted">
-              {dateLabel && (
-                <span className="flex items-center gap-2">
-                  <CalendarDays className="size-4" />
-                  {dateLabel}
-                </span>
-              )}
-              {event.location && (
-                <span className="flex items-center gap-2">
-                  <MapPin className="size-4" />
-                  {event.location}
-                </span>
-              )}
-            </div>
+        <PageHero
+          back={{ href: "/events", label: "All events" }}
+          title={event.title}
+        >
+          <div className="flex flex-wrap gap-x-6 gap-y-2 text-muted-foreground">
+            {dateLabel && (
+              <span className="flex items-center gap-2">
+                <CalendarDays className="size-4 text-primary" />
+                {dateLabel}
+              </span>
+            )}
+            {event.location && (
+              <span className="flex items-center gap-2">
+                <MapPin className="size-4 text-primary" />
+                {event.location}
+              </span>
+            )}
           </div>
-        </section>
+        </PageHero>
 
         {event.imageUrl && (
-          <div className="relative mx-auto -mt-8 aspect-[21/9] max-w-5xl overflow-hidden rounded-2xl px-6">
+          <div className="relative mx-auto -mt-8 aspect-[21/9] max-w-5xl overflow-hidden rounded-xl px-6">
             <Image
               src={event.imageUrl}
               alt=""
               fill
               sizes="(max-width: 1024px) 100vw, 1024px"
-              className="rounded-2xl object-cover"
+              className="rounded-xl object-cover"
               priority
             />
           </div>
@@ -109,8 +102,8 @@ export default async function EventPage({
 
           {/* Post-event report / CTA — unified with programme lifecycle */}
           {isPast && event.reportSummary ? (
-            <div className="rounded-2xl border border-border bg-secondary p-8">
-              <h2 className="font-display mb-4 text-2xl font-bold text-foreground">
+            <div className="rounded-xl border border-border bg-secondary p-8">
+              <h2 className="font-display mb-4 text-2xl font-semibold text-(--w-green-deep)">
                 How it went
               </h2>
               <p className="whitespace-pre-wrap leading-relaxed text-muted-foreground">
@@ -142,15 +135,12 @@ export default async function EventPage({
           ) : !isPast ? (
             joinOpen ? (
               <div className="text-center">
-                <a
-                  href={clientEnv.appUrl}
-                  className="inline-flex items-center gap-2 rounded-lg bg-primary px-8 py-4 text-base font-semibold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98]"
-                >
+                <a href={clientEnv.appUrl} className={buttonClass("primary")}>
                   Register in the app
                 </a>
               </div>
             ) : (
-              <div className="rounded-2xl border border-border bg-secondary p-8 text-center">
+              <div className="rounded-xl border border-border bg-secondary p-8 text-center">
                 <p className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
                   Registration is currently closed for this event
                 </p>

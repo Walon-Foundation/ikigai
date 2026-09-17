@@ -1,5 +1,6 @@
 import { Footer } from "@/components/marketing/footer";
 import { Nav } from "@/components/marketing/nav";
+import { PageHero } from "@/components/marketing/page-hero";
 import { getGalleryAlbums } from "@/lib/cms";
 import { GalleryGrid } from "./gallery-grid";
 
@@ -18,16 +19,7 @@ export default async function GalleryPage() {
     <div className="min-h-screen bg-background">
       <Nav />
       <main>
-        <section className="bg-primary pb-20 pt-40">
-          <div className="mx-auto max-w-3xl px-6">
-            <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-primary-muted">
-              Gallery
-            </p>
-            <h1 className="font-display text-5xl font-black leading-[1.05] text-primary-foreground sm:text-6xl">
-              Moments from our work.
-            </h1>
-          </div>
-        </section>
+        <PageHero eyebrow="Gallery" title="Moments from our work." />
 
         <section className="py-24">
           <div className="mx-auto max-w-7xl px-6">

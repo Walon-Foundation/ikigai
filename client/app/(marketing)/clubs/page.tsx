@@ -2,6 +2,7 @@ import { Users } from "lucide-react";
 import Link from "next/link";
 import { Footer } from "@/components/marketing/footer";
 import { Nav } from "@/components/marketing/nav";
+import { PageHero } from "@/components/marketing/page-hero";
 import { getPublicClubs } from "@/lib/clubs";
 
 // Rendered per request rather than prerendered at build.
@@ -38,25 +39,15 @@ export default async function ClubsPage() {
     <div className="min-h-screen bg-background">
       <Nav />
       <main>
-        <section className="bg-primary pb-20 pt-40">
-          <div className="mx-auto max-w-3xl px-6">
-            <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-primary-muted">
-              Clubs
-            </p>
-            <h1 className="font-display text-5xl font-black leading-[1.05] text-primary-foreground sm:text-6xl">
-              Started by our young people.
-            </h1>
-            <p className="mt-6 text-lg text-primary-muted">
-              Every club on this page was created by a mentee on the Ikigai
-              platform — their idea, their subject, their invitation to everyone
-              else.
-            </p>
-          </div>
-        </section>
+        <PageHero
+          eyebrow="Clubs"
+          title="Started by our young people."
+          lede="Every club on this page was created by a mentee on the Ikigai platform — their idea, their subject, their invitation to everyone else."
+        />
 
         <section className="mx-auto max-w-5xl px-6 py-16">
           {clubs.length === 0 ? (
-            <p className="rounded-2xl border border-border bg-card p-8 text-center text-muted-foreground">
+            <p className="rounded-xl border border-border bg-card p-8 text-center text-muted-foreground">
               No clubs have been started yet. Check back soon.
             </p>
           ) : (
@@ -65,9 +56,9 @@ export default async function ClubsPage() {
                 <Link
                   key={club.id}
                   href={`/clubs/${club.slug}`}
-                  className="card-lift flex flex-col rounded-2xl border border-border bg-card p-6"
+                  className="transition-[border-color,box-shadow] hover:border-primary hover:shadow-(--w-lift) flex flex-col rounded-xl border border-border bg-card p-6"
                 >
-                  <h2 className="font-display text-xl font-bold text-foreground">
+                  <h2 className="font-display text-xl font-semibold text-(--w-green-deep)">
                     {club.name}
                   </h2>
                   {club.description && (
