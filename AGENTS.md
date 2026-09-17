@@ -36,7 +36,7 @@ change. Branches are kept, locally and on origin. Never commit to `main`;
 | [01](./docs/01-api-server.md) | NestJS API | **Done** — every module, route and service ported (107 REST endpoints + one Socket.IO gateway for chat and notifications), R2 uploads, tests |
 | [02](./docs/02-auth.md) | Clerk → Better Auth | **Next.** Better Auth is mounted in the API (`/api/auth/*`, `/me`, socket), but 18 controllers still use the transitional `InternalAuthGuard` and the client still uses Clerk |
 | [03](./docs/03-mobile.md) | Expo app | **Done** as screens — every PWA screen rebuilt in the brand design, running on a device, on **demo data** (`mobile/src/data/demo.ts`). Wiring to the API waits on 02 |
-| [04](./docs/04-web-redesign.md) | Marketing + admin redesign | Not started |
+| [04](./docs/04-web-redesign.md) | Marketing + admin redesign | Not started. Visual system proposed in [05](./docs/05-design-guide.md) |
 
 Deliberately deferred, not forgotten: cron scheduling and AWS EC2 deployment
 (nginx must pass WebSocket upgrade headers), the iOS SwiftUI / Liquid Glass
