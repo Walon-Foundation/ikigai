@@ -5,6 +5,7 @@
 **The design system for the whole of `client/`.** Every page, component and
 new feature in the web app is built to this guide: the marketing site, the
 admin panel, auth screens, error and status pages, and anything added later.
+**Not the PWA:** `app/(pwa)/` is being dropped and is not redesigned.
 When something needs a pattern this guide doesn't cover, extend the guide
 first, from the tokens and tone here, rather than inventing one in a page.
 
@@ -15,8 +16,8 @@ https://claude.ai/artifact/6gfh6Xd5Vt7pgMVXT5NDf4 and a clickable prototype at
 https://claude.ai/artifact/EAKJs1CpcDAXQYhbCt9jPP (the prototype is newer where
 they differ).
 
-The PWA is being dropped, so nothing here needs to stay compatible with
-`app/(pwa)/`, and its one-off components are not carried forward.
+Nothing here needs to stay compatible with `app/(pwa)/`, and its one-off
+components are not carried forward.
 
 ---
 

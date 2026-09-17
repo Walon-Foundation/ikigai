@@ -43,7 +43,8 @@ Deliberately deferred, not forgotten: cron scheduling and AWS EC2 deployment
 version of the app.
 
 **All UI in `client/` follows [docs/05-design-guide.md](./docs/05-design-guide.md)**,
-the design system for the whole web app.
+the design system for the whole web app. The PWA (`client/app/(pwa)/`) is
+being dropped and is **not** redesigned.
 
 `client/` is only changed when a plan says so — the API was built without
 touching it, and it still runs the product on Clerk.
