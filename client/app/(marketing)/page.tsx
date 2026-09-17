@@ -27,7 +27,7 @@ export const dynamic = "force-dynamic";
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex min-h-screen flex-col bg-background">
       <Nav />
       <main>
         <PageBlocks page="home" />

@@ -20,7 +20,7 @@ export default async function ProgrammesPage() {
   const pillarName = new Map(pillars.map((p) => [p.id, p.name]));
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex min-h-screen flex-col bg-background">
       <Nav />
       <main>
         <PageHero eyebrow="Programmes" title="Everything we run." />

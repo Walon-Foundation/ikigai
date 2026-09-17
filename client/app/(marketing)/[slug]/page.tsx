@@ -39,7 +39,7 @@ export default async function CustomMarketingPage({
   if (!page) notFound();
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex min-h-screen flex-col bg-background">
       <Nav />
       <main>
         <PageBlocks page={slug} />

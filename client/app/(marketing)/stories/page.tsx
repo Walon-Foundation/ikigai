@@ -29,7 +29,7 @@ export default async function StoriesPage({
   const stories = category ? all.filter((s) => s.category === category) : all;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex min-h-screen flex-col bg-background">
       <Nav />
       <main>
         <PageHero eyebrow="Stories" title="Voices from Ikigai." />
