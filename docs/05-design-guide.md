@@ -219,37 +219,58 @@ work includes safeguarding and mental health. The corrections:
   of badges and chips.
 - **Brand colours are accents, never grounds.** Soft brand tints belong to
   admin status chips, not to marketing sections. On the site, colour appears
-  as `green-deep` panels, `green` actions, one `sun` dot, and stage numerals.
+  as `green-deep` blocks, `green` actions, the `sun` italic in the hero, and
+  stage numerals.
+- **Show the real product.** Actual app screenshots in phone frames do the
+  work that stock imagery would otherwise do, and stay honest.
 - **Icons are line icons in `green`**, 22px, without a coloured container.
 
 ### Hero
 
-- **Left:** an overline ("Freetown · Western Rural Area") followed by a short
-  rule, the `display` headline in `green-deep`, a lede in `ink-muted` at
-  `44ch`, then **Get the app** (primary) and **Partner with us** (outlined in
-  `green`).
-- **Right:** a `green-deep` panel, `16px` radius. Inside it, the four ikigai
-  circles drawn as thin `sidebar-ink` lines at 55% opacity, with uppercase
-  labels outside the circles, a single `sun` dot and "Ikigai" in Fraunces
-  where they meet. Beneath a hairline, the first real `impact_stats` figure.
-  Inline SVG, under 2KB.
-- When `gallery_items` has real photos, one photo may replace the panel. It is
-  never a collage.
+A full-width `green-deep` block, inset `16px` from the page edges with a
+`24px` radius, directly under the nav.
 
-### Sections
+- **Left:** the overline in `sidebar-ink`, then the headline in white at
+  `clamp(2.8rem, 6vw, 5rem)`, `-0.02em`. The key phrase is set in **Fraunces
+  italic in `sun`**: "Find your *reason for being*". (`sun` on `green-deep` is
+  7.4:1; this is the one place `sun` is used for text.) A lede in `#CFE0D4` at
+  `42ch`, then **Get the app** (white button) and **Partner with us**
+  (outlined in 35% white).
+- **Right:** a **real screenshot of the mobile app** in a phone frame (`42px`
+  radius, near-black bezel, deep shadow), over the four ikigai circles drawn
+  as thin `sidebar-ink` lines at low opacity. The screenshot must be a current
+  capture of the real app, not a mock-up, and must not show demo people.
+- **Bottom:** the four `impact_stats` figures in a bar across the foot of the
+  hero, on a 18% black overlay, white numbers, `sidebar-ink` labels.
+- On load, the copy and phone rise `14px` (transform only, never from
+  `opacity: 0`); off under reduced motion.
+- When real photography exists, one photo may take the phone's place. Never a
+  collage.
+
+### Home page, in order
 
 | Section | Pattern | Empty behaviour |
 |---|---|---|
-| Impact | Four `stat` numbers from `impact_stats` in a row between two hairlines, divided by vertical rules | Has real rows. Hide if ever empty |
+| Hero | As above, with the impact bar | Impact bar hides if `impact_stats` is empty |
+| Mission | The tagline set large in Fraunces (`clamp(1.9rem, 3.8vw, 3.1rem)`), its last phrase in `ink-faint`, under an overline | Static |
 | The four questions | Four columns under a `green-deep` rule: line icon, Fraunces title, one sentence | CMS-driven; always seeded |
-| Programmes | White cards, `12px` radius, no image: an uppercase meta line (ages · place), Fraunces title, first sentence, "Learn more →". Hover turns the border `green` | Show published only; hide section if none |
-| How it works | Four columns under a rule: numerals `01`–`04` in Fraunces in the stage's text-safe ink, title, one sentence | Static |
-| Stories | Quote, name and role, set in Fraunces italic between rules | **Hidden** until real rows exist |
+| The app | Full-width white band. Left: heading, four feature rows between hairlines (icon, bold title, one line), **Get the app**. Right: two real app screenshots in phone frames, overlapped and slightly rotated, on a `ground-site` panel | Static; screenshots refreshed when the app changes |
+| Safe by design | Three columns under a rule: guardian consent, mentor verification, concerns reaching a person. Only claims the product actually delivers | Static |
+| Programmes | **One featured programme** as a large card (title at `2.4rem`, first paragraph, a When / Where / Ages row under a hairline), with the next two as standard cards stacked beside it | Published only; one programme shows full width; none hides the section |
+| Stories | Quote, name and role, in Fraunces italic between rules | **Hidden** until real rows exist |
 | Partners / Team | Logo row / people grid | **Hidden** until real rows exist |
 | CTA band | `green-deep` panel, Fraunces headline, a white button and an outlined one | Static |
 
-Sections sit on `ground-site` with `96px` between them; cards and the impact
-row supply the white.
+### Other marketing pages
+
+| Pattern | Use |
+|---|---|
+| Programme card | White, `12px` radius, no image: uppercase meta line (ages · place), Fraunces title, first sentence, "Learn more →". Hover turns the border `green` and slides the arrow `4px` |
+| Stage columns | How it works: numerals `01`–`04` in Fraunces in the stage's text-safe ink, title, one sentence, under a rule |
+| Page header | Overline, Fraunces display title, lede. No hero block on inner pages |
+
+Sections sit on `ground-site` with `96px` between them; cards and white bands
+supply the white.
 
 ---
 
@@ -414,7 +435,7 @@ restyled. This is step 1 of plan 04.
 | `Avatar` | initials on `accentFor(id)`, image when present |
 | `EmptyState`, `Skeleton`, `Toast` | as above |
 | `RichTextToolbar`, `Editor` | CMS pattern 5 |
-| `SiteNav`, `SiteFooter`, `Hero`, `IkigaiDiagram`, `Overline` | marketing |
+| `SiteNav`, `SiteFooter`, `Hero`, `ImpactBar`, `PhoneFrame`, `FeatureList`, `FeaturedProgramme`, `IkigaiDiagram`, `Overline` | marketing |
 
 ---
 
@@ -442,8 +463,9 @@ guide assumes it, and every token above was checked against it.
 ## Low bandwidth
 
 - No background images, no hero video, no autoplay.
-- At most one hero photo, and images below the fold lazy, `quality={60}`,
-  with `sizes` attributes.
+- App screenshots as WebP at 360px wide, about 20KB each. At most one hero
+  photo. Images below the fold are lazy, `quality={60}`, with `sizes`
+  attributes.
 - Ornament is inline SVG under 2KB. Lucide icons are imported per icon.
 - Lite Mode (`data-lite`) hides the hero photo, the diagram and the
   section reveals.
