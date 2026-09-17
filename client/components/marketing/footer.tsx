@@ -43,7 +43,7 @@ export function Footer() {
           <div className="col-span-2 max-w-xs md:col-span-1">
             <span className="flex items-center gap-2.5 text-[18px] font-bold text-white">
               <Image
-                src="/icon-192x192.png"
+                src="/marketing/logo-coin.png"
                 alt=""
                 width={34}
                 height={34}

@@ -93,7 +93,7 @@ export function Nav() {
             className="flex items-center gap-2.5 text-[18px] font-bold text-(--w-green-deep)"
           >
             <Image
-              src="/icon-192x192.png"
+              src="/marketing/logo-coin.png"
               alt=""
               width={34}
               height={34}

@@ -63,6 +63,15 @@
   color: var(--foreground);
 }
 
+/* The page root, only while a web surface is on the page. Without this, a
+   visitor whose system (or PWA setting) is dark gets a dark scrollbar gutter
+   and overscroll area around a light page. :has() keeps it off PWA pages. */
+html:has([data-surface="web"]),
+html:has([data-surface="web"]) body {
+  color-scheme: light;
+  background: #f8f9f5;
+}
+
 [data-surface="web"] ::selection {
   background: rgb(250 198 19 / 0.35);
 }
