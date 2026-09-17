@@ -294,7 +294,9 @@ A full-width `green-deep` block, inset `16px` from the page edges with a
 |---|---|
 | Programme card | White, `12px` radius, no image: uppercase meta line (ages · place), Fraunces title, first sentence, "Learn more →". Hover turns the border `green` and slides the arrow `4px` |
 | Stage columns | How it works: numerals `01`–`04` in Fraunces in the stage's text-safe ink, title, one sentence, under a rule |
-| Page header | Overline, Fraunces display title, lede. No hero block on inner pages |
+| Page header | `PageHero`: overline, Fraunces display title, lede, with the ikigai circles faint at the top right (desktop). No green hero block, except About, which carries the organisation's identity |
+| Empty list | `EmptyState`: icon in a leaf-soft disc, a Fraunces title, one sentence, one outlined action. Never placeholder people or quotes |
+| Legal document | Privacy and Terms: sticky "On this page" list, numbered sections (`.legal-doc`), text at `68ch` |
 
 Sections sit on `ground-site` with `96px` between them; cards and white bands
 supply the white.
