@@ -24,9 +24,10 @@ Admin is three and a half times the size of marketing. Any plan that treats
 "redesign the remaining UI" as one job will spend all of its time in admin and
 none of it on the site the public actually sees.
 
-**`app/(pwa)/` is out of scope here.** It is being rebuilt in
-[mobile](./03-mobile.md) and the web PWA is being dropped, so it is not
-redesigned.
+**`app/(pwa)/` is out of scope here.** It is rebuilt in
+[mobile](./03-mobile.md); the web PWA stays live but is not touched, and
+keeps its current design. The redesign must not change it through shared
+files (see 05, *The PWA must not change*).
 
 ---
 
