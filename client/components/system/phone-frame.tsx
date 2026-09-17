@@ -6,9 +6,10 @@ import { cn } from "@/lib/utils";
  * current captures of the real app and never show demo people
  * (docs/05-design-guide.md, "Show the real product").
  *
- * Export screenshots at 360:770 with the phone's status bar removed, a clean
- * top band (56px at 720 wide) and 16px side margins in the app's background
- * colour, so the header clears the frame's rounded corners.
+ * Export screenshots at 720x1540 with the phone's status bar removed, a clean
+ * 110px top band and 26px side margins in the app's background colour
+ * (#F6FBF4), so the app header clears the frame's rounded corners and the
+ * camera dot. Give each new export a new filename: next/image caches by URL.
  */
 export function PhoneFrame({
   src,
