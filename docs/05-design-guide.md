@@ -5,7 +5,8 @@
 **The design system for the whole of `client/`.** Every page, component and
 new feature in the web app is built to this guide: the marketing site, the
 admin panel, auth screens, error and status pages, and anything added later.
-**Not the PWA:** `app/(pwa)/` is being dropped and is not redesigned.
+**Not the PWA:** `app/(pwa)/` stays live and working, but it is not touched.
+It keeps its current design.
 When something needs a pattern this guide doesn't cover, extend the guide
 first, from the tokens and tone here, rather than inventing one in a page.
 
@@ -16,8 +17,26 @@ https://claude.ai/artifact/6gfh6Xd5Vt7pgMVXT5NDf4 and a clickable prototype at
 https://claude.ai/artifact/EAKJs1CpcDAXQYhbCt9jPP (the prototype is newer where
 they differ).
 
-Nothing here needs to stay compatible with `app/(pwa)/`, and its one-off
-components are not carried forward.
+### The PWA must not change
+
+The PWA shares `app/globals.css`, `app/layout.tsx`, `components/ui/` and
+`components/page-header.tsx` with marketing and admin; 19 PWA files import
+shared components. Applying this guide by editing those shared files would
+restyle the PWA without anyone deciding to. So:
+
+- **New tokens are scoped, not swapped.** Define this guide's tokens in a
+  stylesheet imported by the marketing and admin layouts, or under an
+  attribute those layouts set on their root. Do not change the values of the
+  existing `:root` tokens in `globals.css`.
+- **New components live beside the old ones,** in `components/system/`,
+  which only marketing and admin import. Do not restyle a component the
+  PWA imports; check with a search of `app/(pwa)/` before changing any shared
+  file.
+- **Fonts stay as they are.** Fraunces, DM Sans and JetBrains Mono are
+  already loaded in the root layout; the weight change to Fraunces 600 is
+  applied in the new styles, not the root font setup.
+- After any change to a shared file, open the PWA and confirm it looks the
+  same.
 
 ---
 
@@ -69,10 +88,10 @@ navigation and stats, and one CMS editor built from the two CMS references.
 
 ## Colour
 
-The web palette is replaced by the logo palette the mobile app already uses.
-`--accent #F5A623` (gold) becomes `sun`, and `--earth #C05C3A` (terracotta)
-becomes `orange`. Keep the existing token *names* in `globals.css` where they
-map cleanly, so component code changes less than the values do.
+Marketing and admin move to the logo palette the mobile app already uses:
+gold `#F5A623` gives way to `sun`, and terracotta `#C05C3A` to `orange`. The
+PWA keeps the old palette, so these are new, scoped tokens (see *The PWA must
+not change*), not new values for the existing ones.
 
 ### Brand
 
@@ -418,7 +437,8 @@ site now."
 
 ## Components
 
-Built once in `client/components/ui/`, in this order, before any page is
+Built once in **`client/components/system/`**, a new folder the PWA does not
+import, in this order, before any page is
 restyled. This is step 1 of plan 04.
 
 | Component | Variants / notes |
@@ -435,7 +455,7 @@ restyled. This is step 1 of plan 04.
 | `ScoreBar` | inline progress with number |
 | `Pipeline` | chevron stage headers and cards |
 | `Drawer` | 420px, URL-bound, sticky footer |
-| `PageHeader` | breadcrumb, title, meta, actions (replaces `components/page-header.tsx`) |
+| `PageHeader` | breadcrumb, title, meta, actions (a new one; `components/page-header.tsx` stays for the PWA) |
 | `AdminSidebar` | grouped, badges, search, user card |
 | `Card` | `surface`, `line` border, 12px radius, header slot |
 | `Avatar` | initials on `accentFor(id)`, image when present |
@@ -483,6 +503,3 @@ guide assumes it, and every token above was checked against it.
 - **Admin dark mode.** Kept, as proposed above, or light only like mobile?
 - **Hero copy and the two CTAs.** "Get the app" assumes a Play Store listing
   exists by launch.
-- **Plan 00 still says the PWA stays**, which it justified by users who cannot
-  afford a Play Store install. Plan 00 and plan 04's scope table need updating
-  to record that it is dropped, and what the route in is for those users now.
