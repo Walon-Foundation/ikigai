@@ -1,6 +1,7 @@
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Handshake } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { EmptyState } from "@/components/marketing/empty-state";
 import { Footer } from "@/components/marketing/footer";
 import { Nav } from "@/components/marketing/nav";
 import { PageHero } from "@/components/marketing/page-hero";
@@ -69,9 +70,11 @@ export default async function PartnersPage() {
                 ))}
               </div>
             ) : (
-              <p className="text-center text-muted-foreground">
-                Partner organizations will appear here.
-              </p>
+              <EmptyState
+                icon={Handshake}
+                title="Our partners will appear here"
+                body="The organizations we work with to reach young people will be listed here."
+              />
             )}
 
             {/* Become a partner CTA */}

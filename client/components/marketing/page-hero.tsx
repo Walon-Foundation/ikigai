@@ -1,6 +1,7 @@
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { IkigaiRings } from "@/components/system/ikigai-diagram";
 import { cn } from "@/lib/utils";
 import { Overline } from "./section-heading";
 
@@ -31,8 +32,19 @@ export function PageHero({
   narrow?: boolean;
 }) {
   return (
-    <section className="border-b border-border pb-14 pt-32 sm:pb-16 sm:pt-36">
-      <div className={cn("mx-auto px-6", narrow ? "max-w-3xl" : "max-w-7xl")}>
+    <section className="relative overflow-hidden border-b border-border pb-14 pt-32 sm:pb-16 sm:pt-36">
+      {/* The one flourish on inner pages: the ikigai circles, faint, bleeding
+          off the header's right edge. Decorative, desktop only. */}
+      <IkigaiRings
+        tone="light"
+        className="pointer-events-none absolute -top-10 -right-24 hidden w-[520px] max-w-none md:block"
+      />
+      <div
+        className={cn(
+          "relative mx-auto px-6",
+          narrow ? "max-w-3xl" : "max-w-7xl",
+        )}
+      >
         {back && (
           <Link
             href={back.href}

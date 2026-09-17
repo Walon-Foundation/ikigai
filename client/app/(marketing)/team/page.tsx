@@ -1,4 +1,6 @@
+import { Users } from "lucide-react";
 import { Avatar } from "@/components/avatar";
+import { EmptyState } from "@/components/marketing/empty-state";
 import { Footer } from "@/components/marketing/footer";
 import { Nav } from "@/components/marketing/nav";
 import { PageHero } from "@/components/marketing/page-hero";
@@ -64,15 +66,13 @@ export default async function TeamPage() {
                 </div>
               </>
             ) : (
-              <div className="mx-auto max-w-2xl rounded-xl border border-dashed border-border bg-secondary/40 p-10 text-center">
-                <p className="font-display text-xl font-semibold text-(--w-green-deep)">
-                  Team coming soon
-                </p>
-                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                  We’re adding the people behind Ikigai — youth leaders,
-                  mentors, and organizers. Check back soon to meet them.
-                </p>
-              </div>
+              <EmptyState
+                icon={Users}
+                title="Meet the team soon"
+                body="We're adding the people behind Ikigai: youth leaders, mentors and organizers."
+                action={{ href: "/about", label: "About Ikigai" }}
+                className="mx-auto max-w-2xl"
+              />
             )}
           </div>
         </section>

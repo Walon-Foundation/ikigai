@@ -15,16 +15,65 @@ export default function PrivacyPage() {
     <div className="flex min-h-screen flex-col bg-background">
       <Nav />
       <main>
-        <PageHero eyebrow="Legal" title="Privacy Policy" narrow>
+        <PageHero eyebrow="Legal" title="Privacy Policy">
           <p className="text-sm text-muted-foreground">
             Last updated: June 2026
           </p>
         </PageHero>
 
-        <section className="py-24">
-          <div className="mx-auto max-w-3xl px-6">
-            <div className="space-y-10 text-muted-foreground">
-              <div>
+        <section className="py-16 sm:py-20">
+          <div className="mx-auto grid max-w-7xl gap-12 px-6 lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-20">
+            <nav aria-label="On this page" className="hidden lg:block">
+              <div className="sticky top-28">
+                <p className="mb-3 text-xs font-semibold uppercase tracking-[0.12em] text-primary">
+                  On this page
+                </p>
+                <ol className="text-sm">
+                  <li>
+                    <a
+                      href="#what-we-collect"
+                      className="block border-l-2 border-transparent py-1.5 pl-3 text-muted-foreground transition-colors hover:border-primary hover:text-(--w-green-deep)"
+                    >
+                      What We Collect
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="#how-we-use-it"
+                      className="block border-l-2 border-transparent py-1.5 pl-3 text-muted-foreground transition-colors hover:border-primary hover:text-(--w-green-deep)"
+                    >
+                      How We Use It
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="#data-storage"
+                      className="block border-l-2 border-transparent py-1.5 pl-3 text-muted-foreground transition-colors hover:border-primary hover:text-(--w-green-deep)"
+                    >
+                      Data Storage
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="#your-rights"
+                      className="block border-l-2 border-transparent py-1.5 pl-3 text-muted-foreground transition-colors hover:border-primary hover:text-(--w-green-deep)"
+                    >
+                      Your Rights
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="#contact"
+                      className="block border-l-2 border-transparent py-1.5 pl-3 text-muted-foreground transition-colors hover:border-primary hover:text-(--w-green-deep)"
+                    >
+                      Contact
+                    </a>
+                  </li>
+                </ol>
+              </div>
+            </nav>
+            <div className="legal-doc max-w-[68ch] space-y-12 text-[16.5px] leading-relaxed text-muted-foreground">
+              <div id="what-we-collect" className="scroll-mt-28">
                 <h2 className="font-display mb-3 text-2xl font-semibold text-(--w-green-deep)">
                   What We Collect
                 </h2>
@@ -39,7 +88,7 @@ export default function PrivacyPage() {
                 </p>
               </div>
 
-              <div>
+              <div id="how-we-use-it" className="scroll-mt-28">
                 <h2 className="font-display mb-3 text-2xl font-semibold text-(--w-green-deep)">
                   How We Use It
                 </h2>
@@ -54,7 +103,7 @@ export default function PrivacyPage() {
                 </p>
               </div>
 
-              <div>
+              <div id="data-storage" className="scroll-mt-28">
                 <h2 className="font-display mb-3 text-2xl font-semibold text-(--w-green-deep)">
                   Data Storage
                 </h2>
@@ -69,7 +118,7 @@ export default function PrivacyPage() {
                 </p>
               </div>
 
-              <div>
+              <div id="your-rights" className="scroll-mt-28">
                 <h2 className="font-display mb-3 text-2xl font-semibold text-(--w-green-deep)">
                   Your Rights
                 </h2>
@@ -83,7 +132,7 @@ export default function PrivacyPage() {
                 </p>
               </div>
 
-              <div>
+              <div id="contact" className="scroll-mt-28">
                 <h2 className="font-display mb-3 text-2xl font-semibold text-(--w-green-deep)">
                   Contact
                 </h2>

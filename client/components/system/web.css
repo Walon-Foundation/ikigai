@@ -95,3 +95,25 @@ html:has([data-surface="web"]) body {
     animation: web-rise 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both;
   }
 }
+
+/* Legal documents (privacy, terms): numbered sections. The numbers carry real
+   information here, since the documents are cited by section. */
+[data-surface="web"] .legal-doc {
+  counter-reset: legal;
+}
+
+[data-surface="web"] .legal-doc h2 {
+  counter-increment: legal;
+  display: flex;
+  align-items: baseline;
+  gap: 0.9rem;
+}
+
+[data-surface="web"] .legal-doc h2::before {
+  content: counter(legal, decimal-leading-zero);
+  font-family: var(--font-dm-sans), system-ui, sans-serif;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--w-orange-ink);
+}

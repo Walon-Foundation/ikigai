@@ -1,5 +1,6 @@
-import { Users } from "lucide-react";
+import { Sprout, Users } from "lucide-react";
 import Link from "next/link";
+import { EmptyState } from "@/components/marketing/empty-state";
 import { Footer } from "@/components/marketing/footer";
 import { Nav } from "@/components/marketing/nav";
 import { PageHero } from "@/components/marketing/page-hero";
@@ -49,9 +50,12 @@ export default async function ClubsPage() {
 
         <section className="mx-auto max-w-5xl px-6 py-16">
           {clubs.length === 0 ? (
-            <p className="rounded-xl border border-border bg-card p-8 text-center text-muted-foreground">
-              No clubs have been started yet. Check back soon.
-            </p>
+            <EmptyState
+              icon={Sprout}
+              title="No clubs yet"
+              body="Clubs are started by young people on the Ikigai app. The first ones will appear here as soon as they begin."
+              action={{ href: "/get-involved", label: "Join a programme" }}
+            />
           ) : (
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {clubs.map((club) => (

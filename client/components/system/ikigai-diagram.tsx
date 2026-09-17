@@ -57,8 +57,14 @@ export function IkigaiDiagram({ className }: { className?: string }) {
   );
 }
 
-/** Just the four circles, faint, as a backdrop behind the hero's phone. */
-export function IkigaiRings({ className }: { className?: string }) {
+/** Just the four circles, faint, as a backdrop. `light` is for pale grounds. */
+export function IkigaiRings({
+  className,
+  tone = "dark",
+}: {
+  className?: string;
+  tone?: "dark" | "light";
+}) {
   return (
     // biome-ignore lint/a11y/noSvgWithoutTitle: purely decorative backdrop
     <svg
@@ -67,12 +73,20 @@ export function IkigaiRings({ className }: { className?: string }) {
       data-decorative
       className={cn("h-auto", className)}
     >
-      <g fill="none" stroke="#A9C4B2" strokeOpacity="0.3" strokeWidth="1">
+      <g
+        fill="none"
+        stroke={tone === "light" ? "#1A5C3A" : "#A9C4B2"}
+        strokeOpacity={tone === "light" ? 0.09 : 0.3}
+        strokeWidth="1"
+      >
         <circle cx="240" cy="210" r="170" />
         <circle cx="360" cy="210" r="170" />
         <circle cx="240" cy="310" r="170" />
         <circle cx="360" cy="310" r="170" />
       </g>
+      {tone === "light" && (
+        <circle cx="300" cy="260" r="5" fill="#FAC613" fillOpacity="0.9" />
+      )}
     </svg>
   );
 }
