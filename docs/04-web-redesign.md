@@ -6,6 +6,9 @@ The only track that touches no architecture. It can run alongside all of
 [01](./01-api-server.md), [02](./02-auth.md) and [03](./03-mobile.md), and it
 is the only one that produces something visible early.
 
+The visual system (colour, type, layout patterns, components) is in
+[05-design-guide.md](./05-design-guide.md).
+
 ---
 
 ## Scope
