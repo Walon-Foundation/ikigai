@@ -169,14 +169,14 @@ export function Nav() {
           </nav>
 
           <div className="ml-auto flex items-center gap-5 md:ml-0">
-            {/* A quiet way back into the app for people who already have an
-                account — the loud CTA stays "Join A Programme". Points at the
-                app subdomain; the proxy takes it to the dashboard / sign-in. */}
+            {/* A quiet way to the app; the loud CTA stays "Join a programme".
+                The site no longer signs people in to the web app: the app is
+                downloaded from the store. */}
             <a
-              href={clientEnv.appUrl}
+              href={clientEnv.appDownloadUrl}
               className="hidden text-[14.5px] font-medium text-muted-foreground transition-colors hover:text-foreground sm:inline-flex"
             >
-              Sign in
+              Get the app
             </a>
             <Link
               href="/get-involved"
@@ -238,10 +238,10 @@ export function Nav() {
             Join a programme
           </Link>
           <a
-            href={clientEnv.appUrl}
+            href={clientEnv.appDownloadUrl}
             className={buttonClass("outline", { className: "mt-3" })}
           >
-            Sign in to the app
+            Download the app
           </a>
         </div>
       )}

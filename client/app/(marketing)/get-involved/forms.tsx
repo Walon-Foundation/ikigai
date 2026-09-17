@@ -99,7 +99,7 @@ const PATHWAYS: Pathway[] = [
     tab: "Mentor",
     title: "Become a mentor",
     blurb:
-      "Guide a young person through the things you've learned. Please watch your email inbox after you apply — approval includes your PWA install link.",
+      "Guide a young person through the things you've learned. Please watch your email inbox after you apply — approval includes how to download the app and sign in.",
     fields: () => [
       NAME,
       EMAIL,
@@ -237,7 +237,7 @@ function PathwayForm({
         <p className="mt-3 rounded-xl bg-secondary px-4 py-3 text-sm text-foreground">
           Please check your email inbox — and spam/junk folder — for our reply.{" "}
           {isMentor
-            ? "If you're approved, your email will include a link to install the Ikigai app (PWA) and get started."
+            ? "If you're approved, your email will explain how to download the Ikigai app and get started."
             : "Approved volunteers and partners receive a confirmation email with next steps."}
         </p>
       </div>

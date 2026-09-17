@@ -17,6 +17,14 @@ export const clientEnv = {
   appHostname,
   /** Absolute base URL of the PWA, derived from the hostname. */
   appUrl: `${schemeFor(appHostname)}://${appHostname}`,
+  /**
+   * Where the marketing site sends people to get the app: its Google Play
+   * listing (the app is Android first). Override with
+   * NEXT_PUBLIC_APP_DOWNLOAD_URL if the listing moves or iOS ships.
+   */
+  appDownloadUrl:
+    process.env.NEXT_PUBLIC_APP_DOWNLOAD_URL ??
+    "https://play.google.com/store/apps/details?id=org.walonfoundation.ikigai",
   /** Absolute URL of the marketing site. */
   marketingUrl:
     process.env.NEXT_PUBLIC_MARKETING_URL ?? "http://localhost:3000",

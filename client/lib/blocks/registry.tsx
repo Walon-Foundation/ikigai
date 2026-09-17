@@ -467,9 +467,9 @@ async function AppCtaBlock({ config }: { config: BlockConfig }) {
   const body = str(
     config,
     "body",
-    "Mentees and mentors use the Ikigai app to track goals, meet, and grow together. Join a programme first, then sign in — it installs to your phone like any other app.",
+    "Mentees and mentors use the Ikigai app to track goals, meet, and grow together. Download it free from Google Play and create your account in the app.",
   );
-  const ctaLabel = str(config, "ctaLabel", "Open the app");
+  const ctaLabel = str(config, "ctaLabel", "Download the app");
 
   return (
     <section className="mt-28 border-y border-border bg-card sm:mt-36">
@@ -498,7 +498,7 @@ async function AppCtaBlock({ config }: { config: BlockConfig }) {
             ))}
           </ul>
           <a
-            href={clientEnv.appUrl}
+            href={clientEnv.appDownloadUrl}
             className={buttonClass("primary", { className: "mt-8" })}
           >
             {ctaLabel}
@@ -746,8 +746,8 @@ export const BLOCK_REGISTRY = {
     ],
     defaultConfig: {
       title: "There's an app for your journey.",
-      body: "Mentees and mentors use the Ikigai app to track goals, meet, and grow together. Join a programme first, then sign in — it installs to your phone like any other app.",
-      ctaLabel: "Open the app",
+      body: "Mentees and mentors use the Ikigai app to track goals, meet, and grow together. Download it free from Google Play and create your account in the app.",
+      ctaLabel: "Download the app",
     },
     Render: AppCtaBlock,
   },

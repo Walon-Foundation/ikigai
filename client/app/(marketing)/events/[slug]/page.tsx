@@ -169,8 +169,11 @@ export default async function EventPage({
           ) : !isPast ? (
             joinOpen ? (
               <div className="text-center">
-                <a href={clientEnv.appUrl} className={buttonClass("primary")}>
-                  Register in the app
+                <a
+                  href={clientEnv.appDownloadUrl}
+                  className={buttonClass("primary")}
+                >
+                  Download the app to register
                 </a>
               </div>
             ) : (

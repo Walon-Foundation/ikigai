@@ -19,8 +19,12 @@ const COLUMNS = [
       { href: "/get-involved#volunteer", label: "Volunteer" },
       { href: "/get-involved#partner", label: "Partner with us" },
       { href: "/contact", label: "Contact" },
-      // The app lives on another subdomain, so this is a plain external link.
-      { href: clientEnv.appUrl, label: "Sign in to the app", external: true },
+      // The store listing, so a plain external link.
+      {
+        href: clientEnv.appDownloadUrl,
+        label: "Download the app",
+        external: true,
+      },
     ],
   },
   {

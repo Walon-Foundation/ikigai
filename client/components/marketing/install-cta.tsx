@@ -19,8 +19,8 @@ export function InstallCta({ headline, body }: InstallCtaProps) {
               {body}
             </p>
           </div>
-          <a href={clientEnv.appUrl} className={buttonClass("light")}>
-            Install the app, free
+          <a href={clientEnv.appDownloadUrl} className={buttonClass("light")}>
+            Download the app, free
           </a>
         </div>
       </div>
