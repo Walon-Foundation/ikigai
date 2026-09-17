@@ -21,7 +21,6 @@ import {
   SectionHeading,
 } from "@/components/marketing/section-heading";
 import { buttonClass } from "@/components/system/button";
-import { IkigaiRings } from "@/components/system/ikigai-diagram";
 import { PhoneFrame } from "@/components/system/phone-frame";
 import {
   getFeaturedProgrammes,
@@ -178,9 +177,13 @@ async function HeroBlock({ config }: { config: BlockConfig }) {
           </div>
         </div>
         <div className="relative grid place-items-center">
-          <IkigaiRings className="pointer-events-none absolute top-1/2 left-1/2 w-[560px] max-w-none -translate-x-1/2 -translate-y-1/2" />
+          {/* A soft light behind the phone, lifting it off the green. */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute top-1/2 left-1/2 size-[440px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(closest-side,rgb(169_196_178/0.22),transparent)]"
+          />
           <PhoneFrame
-            src="/marketing/app-screen-welcome.webp"
+            src="/marketing/app-screen-welcome-hd.webp"
             alt="The Ikigai app's welcome screen"
             priority
             className="web-rise relative w-[210px] sm:w-[250px]"
@@ -506,7 +509,7 @@ async function AppCtaBlock({ config }: { config: BlockConfig }) {
           className="relative flex justify-center overflow-hidden rounded-2xl bg-background px-6 pt-12"
         >
           <PhoneFrame
-            src="/marketing/app-screen-sign-in.webp"
+            src="/marketing/app-screen-sign-in-hd.webp"
             alt=""
             className="-mb-24 w-[220px] sm:w-[250px]"
           />
