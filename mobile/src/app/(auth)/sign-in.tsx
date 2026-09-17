@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Button, Column, Row, Text, TextButton, useMaterialColors } from '@expo/ui/jetpack-compose';
 import { fillMaxWidth, padding } from '@expo/ui/jetpack-compose/modifiers';
 import { router } from 'expo-router';
@@ -21,9 +22,12 @@ export default function SignInScreen() {
   );
 }
 
-// Better Auth: Google or email + password. Demo only — both go straight in.
+// Better Auth: Google, or email here and the password on the next screen.
+// Demo only — both go straight in.
 function SignIn() {
   const c = useMaterialColors();
+  const [email, setEmail] = useState('');
+  const valid = /^\S+@\S+\.\S+$/.test(email.trim());
   return (
     <Page title="" back={false}>
       <Column
@@ -50,11 +54,14 @@ function SignIn() {
         </Type>
       </Row>
 
-      <Field label="Email" keyboard="email" />
-      <Field label="Password" password />
+      <Field label="Email" keyboard="email" onChange={setEmail} />
 
       <Column verticalArrangement={{ spacedBy: 4 }} modifiers={[fillMaxWidth(), padding(16, 12, 16, 0)]}>
-        <Button onClick={() => enter()} modifiers={[fillMaxWidth()]}>
+        <Button
+          enabled={valid}
+          onClick={() => router.push({ pathname: '/password', params: { email: email.trim() } })}
+          modifiers={[fillMaxWidth()]}
+        >
           <Text>Sign in</Text>
         </Button>
         <TextButton onClick={() => router.replace('/sign-up')} modifiers={[fillMaxWidth()]}>
