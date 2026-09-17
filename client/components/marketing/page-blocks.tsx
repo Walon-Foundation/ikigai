@@ -19,7 +19,6 @@ const FALLBACK_PAGE_BLOCKS: Record<string, BlockType[]> = {
     "hero",
     "about_intro",
     "four_pillars",
-    "impact_stats",
     "featured_programmes",
     "upcoming_events",
     "stories",
@@ -54,10 +53,16 @@ export async function PageBlocks({ page }: { page: string }) {
     );
   }
 
+  // The hero shows the impact numbers in its foot, so a separate Impact stats
+  // block on the same page would repeat them. Skip it rather than asking every
+  // admin to remove it; on a page without a hero it still renders.
+  const hasHero = rows.some((row) => row.type === "hero");
+
   return (
     <>
       {rows.map((row) => {
         if (!isBlockType(row.type)) return null;
+        if (hasHero && row.type === "impact_stats") return null;
         const { Render } = BLOCK_REGISTRY[row.type];
         return (
           <Render key={row.id} config={(row.config as BlockConfig) ?? {}} />

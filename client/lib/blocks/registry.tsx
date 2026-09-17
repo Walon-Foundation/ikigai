@@ -21,7 +21,7 @@ import {
   SectionHeading,
 } from "@/components/marketing/section-heading";
 import { buttonClass } from "@/components/system/button";
-import { IkigaiDiagram } from "@/components/system/ikigai-diagram";
+import { IkigaiRings } from "@/components/system/ikigai-diagram";
 import { PhoneFrame } from "@/components/system/phone-frame";
 import {
   getFeaturedProgrammes,
@@ -151,10 +151,13 @@ async function HeroBlock({ config }: { config: BlockConfig }) {
   const primaryHref = str(config, "primaryHref", "/get-involved");
   const secondaryLabel = str(config, "secondaryLabel", "Partner with us");
   const secondaryHref = str(config, "secondaryHref", "/get-involved#partner");
+  // The impact numbers sit in the hero's foot, so the page opens on its proof
+  // instead of repeating it in a row further down (see page-blocks.tsx).
+  const stats = await getImpactStats();
 
   return (
     <section className="mx-2 mt-[72px] overflow-hidden rounded-[18px] bg-(--w-green-deep) text-white sm:mx-4 sm:rounded-3xl">
-      <Container className="grid items-center gap-12 py-16 sm:py-20 lg:grid-cols-[1.15fr_0.85fr] lg:gap-10 lg:py-24">
+      <Container className="grid items-center gap-10 pt-14 pb-12 sm:pt-20 lg:grid-cols-[1.15fr_0.85fr] lg:gap-10 lg:py-20">
         <div>
           <Overline onDeep rule className="web-rise">
             Sierra Leone · Youth Organization
@@ -162,7 +165,7 @@ async function HeroBlock({ config }: { config: BlockConfig }) {
           <h1 className="web-rise mt-5 font-display text-[clamp(2.6rem,5.6vw,4.75rem)] font-semibold leading-[1.02] tracking-[-0.02em] [&_em]:text-(--w-sun)">
             {withEmphasis(headline)}
           </h1>
-          <p className="web-rise mt-6 max-w-[46ch] text-[18.5px] leading-relaxed text-(--w-on-deep-strong)">
+          <p className="web-rise mt-6 max-w-[44ch] text-[18.5px] leading-relaxed text-(--w-on-deep-strong)">
             {body}
           </p>
           <div className="web-rise mt-9 flex flex-wrap gap-3">
@@ -174,10 +177,37 @@ async function HeroBlock({ config }: { config: BlockConfig }) {
             </Link>
           </div>
         </div>
-        <div className="mx-auto hidden w-full max-w-md sm:block">
-          <IkigaiDiagram />
+        <div className="relative grid place-items-center">
+          <IkigaiRings className="pointer-events-none absolute top-1/2 left-1/2 w-[560px] max-w-none -translate-x-1/2 -translate-y-1/2" />
+          <PhoneFrame
+            src="/marketing/app-welcome.webp"
+            alt="The Ikigai app's welcome screen"
+            priority
+            className="web-rise relative w-[210px] sm:w-[250px]"
+          />
         </div>
       </Container>
+      {stats.length > 0 && (
+        <div className="border-t border-(--w-on-deep)/20 bg-black/20">
+          <Container>
+            <dl className="grid grid-cols-2 lg:grid-cols-4">
+              {stats.map((s, i) => (
+                <div
+                  key={s.id}
+                  className={`flex flex-col-reverse gap-1 py-6 pr-4 ${i % 2 ? "border-l border-(--w-on-deep)/20 pl-5 lg:pl-7" : ""} ${i >= 2 ? "border-t border-(--w-on-deep)/20 lg:border-t-0" : ""} ${i === 2 ? "lg:border-l lg:pl-7" : ""}`}
+                >
+                  <dt className="text-[14.5px] text-(--w-on-deep)">
+                    {s.label}
+                  </dt>
+                  <dd className="font-display text-[clamp(1.9rem,3.2vw,2.6rem)] font-semibold leading-none text-white tabular-nums">
+                    {s.value}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </Container>
+        </div>
+      )}
     </section>
   );
 }
@@ -187,7 +217,7 @@ async function AboutIntroBlock({ config }: { config: BlockConfig }) {
   if (!body) return null;
 
   return (
-    <section className="pt-24 sm:pt-28">
+    <section className="pt-28 sm:pt-36">
       <Container>
         <Overline rule>Our mission</Overline>
         <p className="mt-5 max-w-[34ch] font-display text-[clamp(1.8rem,3.6vw,3rem)] font-semibold leading-[1.18] tracking-[-0.015em] text-(--w-green-deep)">
@@ -206,7 +236,7 @@ async function FourPillarsBlock({ config }: { config: BlockConfig }) {
   const title = str(config, "title", "Four ways we help young people grow.");
 
   return (
-    <section className="pt-24 sm:pt-28">
+    <section className="pt-28 sm:pt-36">
       <Container>
         <SectionHeading eyebrow={eyebrow} title={title} />
         <div className="grid gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
@@ -214,7 +244,7 @@ async function FourPillarsBlock({ config }: { config: BlockConfig }) {
             <Link
               key={pillar.id}
               href="/what-we-do"
-              className="group flex flex-col gap-3 border-t border-(--w-green-deep) pt-6 sm:pr-6 lg:[&:not(:first-child)]:pl-6"
+              className="group flex flex-col gap-3 border-t border-(--w-green-deep) pt-6 sm:pr-6 lg:[&:not(:first-child)]:pl-6 [&_h3]:transition-colors hover:[&_h3]:text-primary"
             >
               <span className="flex items-center gap-2.5 text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
                 <span
@@ -231,14 +261,6 @@ async function FourPillarsBlock({ config }: { config: BlockConfig }) {
                   {pillar.description}
                 </p>
               )}
-              <MoreLink
-                label={
-                  pillar.programmes.length === 1
-                    ? "1 programme"
-                    : `${pillar.programmes.length} programmes`
-                }
-                className="mt-auto pt-2"
-              />
             </Link>
           ))}
         </div>
@@ -284,7 +306,7 @@ async function FeaturedProgrammesBlock({ config }: { config: BlockConfig }) {
   const [lead, ...rest] = featured;
 
   return (
-    <section className="pt-24 sm:pt-28">
+    <section className="pt-28 sm:pt-36">
       <Container>
         <HeadingRow
           eyebrow={eyebrow}
@@ -306,11 +328,6 @@ async function FeaturedProgrammesBlock({ config }: { config: BlockConfig }) {
             {lead.summary && (
               <p className="max-w-[52ch] text-[17px] leading-relaxed text-muted-foreground">
                 {lead.summary}
-              </p>
-            )}
-            {lead.about && (
-              <p className="line-clamp-4 max-w-[60ch] text-[15px] leading-relaxed text-muted-foreground">
-                {lead.about}
               </p>
             )}
             <div className="mt-auto flex flex-wrap items-end justify-between gap-4 border-t border-border pt-5">
@@ -351,7 +368,7 @@ async function UpcomingEventsBlock({ config }: { config: BlockConfig }) {
   const title = str(config, "title", "What's coming up.");
 
   return (
-    <section className="pt-24 sm:pt-28">
+    <section className="pt-28 sm:pt-36">
       <Container>
         <HeadingRow
           eyebrow={eyebrow}
@@ -377,7 +394,7 @@ async function StoriesBlock({ config }: { config: BlockConfig }) {
   const title = str(config, "title", "Voices from Ikigai.");
 
   return (
-    <section className="pt-24 sm:pt-28">
+    <section className="pt-28 sm:pt-36">
       <Container>
         <HeadingRow
           eyebrow={eyebrow}
@@ -402,7 +419,7 @@ async function PartnersBlock({ config }: { config: BlockConfig }) {
   const label = str(config, "label", "In partnership with");
 
   return (
-    <section className="pt-24 sm:pt-28">
+    <section className="pt-28 sm:pt-36">
       <Container>
         <div className="border-y border-border py-10">
           <Overline className="mb-8 justify-center">{label}</Overline>
@@ -452,7 +469,7 @@ async function AppCtaBlock({ config }: { config: BlockConfig }) {
   const ctaLabel = str(config, "ctaLabel", "Open the app");
 
   return (
-    <section className="mt-24 border-y border-border bg-card sm:mt-28">
+    <section className="mt-28 border-y border-border bg-card sm:mt-36">
       <Container className="grid items-center gap-14 py-20 lg:grid-cols-2 lg:py-24">
         <div>
           <SectionHeading
@@ -486,17 +503,12 @@ async function AppCtaBlock({ config }: { config: BlockConfig }) {
         </div>
         <div
           aria-hidden
-          className="relative flex min-h-[460px] justify-center overflow-hidden rounded-2xl bg-background pt-12 sm:min-h-[540px]"
+          className="relative flex justify-center overflow-hidden rounded-2xl bg-background px-6 pt-12"
         >
           <PhoneFrame
             src="/marketing/app-sign-in.webp"
             alt=""
-            className="z-10 w-[190px] translate-x-8 -rotate-[4deg] sm:w-[230px]"
-          />
-          <PhoneFrame
-            src="/marketing/app-welcome.webp"
-            alt=""
-            className="w-[190px] -translate-x-8 translate-y-12 rotate-[3deg] sm:w-[230px]"
+            className="-mb-24 w-[220px] sm:w-[250px]"
           />
         </div>
       </Container>
@@ -542,7 +554,7 @@ async function SafeByDesignBlock({ config }: { config: BlockConfig }) {
   ];
 
   return (
-    <section className="pt-24 sm:pt-28">
+    <section className="pt-28 sm:pt-36">
       <Container>
         <SectionHeading eyebrow={eyebrow} title={title} />
         <div className="grid gap-y-10 md:grid-cols-3">
@@ -583,7 +595,7 @@ async function FinalCtaBlock({ config }: { config: BlockConfig }) {
   const secondaryHref = str(config, "secondaryHref", "/what-we-do");
 
   return (
-    <section className="pt-24 sm:pt-28">
+    <section className="pt-28 sm:pt-36">
       <Container>
         <div className="grid items-center gap-8 rounded-2xl bg-(--w-green-deep) px-8 py-12 text-white sm:px-14 sm:py-14 lg:grid-cols-[1fr_auto]">
           <div>
@@ -671,7 +683,8 @@ export const BLOCK_REGISTRY = {
   },
   impact_stats: {
     label: "Impact stats",
-    description: "Shows the published stats from CMS → Impact.",
+    description:
+      "Shows the published stats from CMS → Impact. Not shown on a page that has a Hero, which already includes these numbers.",
     fields: [
       {
         type: "text",
