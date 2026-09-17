@@ -1,4 +1,6 @@
+import { CalendarDays } from "lucide-react";
 import { EventCard } from "@/components/marketing/cards";
+import { EmptyState } from "@/components/marketing/empty-state";
 import { Footer } from "@/components/marketing/footer";
 import { Nav } from "@/components/marketing/nav";
 import { PageHero } from "@/components/marketing/page-hero";
@@ -37,9 +39,12 @@ export default async function EventsPage() {
                 ))}
               </div>
             ) : (
-              <p className="text-muted-foreground">
-                Nothing scheduled right now — check back soon.
-              </p>
+              <EmptyState
+                icon={CalendarDays}
+                title="Nothing scheduled right now"
+                body="New events are added here as soon as they're confirmed."
+                action={{ href: "/programmes", label: "Explore programmes" }}
+              />
             )}
           </div>
         </section>

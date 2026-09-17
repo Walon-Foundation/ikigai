@@ -1,4 +1,6 @@
+import { Sprout } from "lucide-react";
 import { ProgrammeCard } from "@/components/marketing/cards";
+import { EmptyState } from "@/components/marketing/empty-state";
 import { Footer } from "@/components/marketing/footer";
 import { Nav } from "@/components/marketing/nav";
 import { PageHero } from "@/components/marketing/page-hero";
@@ -40,9 +42,15 @@ export default async function ProgrammesPage() {
                 ))}
               </div>
             ) : (
-              <p className="text-center text-muted-foreground">
-                Programmes will appear here soon.
-              </p>
+              <EmptyState
+                icon={Sprout}
+                title="Programmes are coming"
+                body="Our programmes will be listed here as soon as they're published."
+                action={{
+                  href: "/get-involved",
+                  label: "Register your interest",
+                }}
+              />
             )}
           </div>
         </section>

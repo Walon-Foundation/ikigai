@@ -1,5 +1,7 @@
+import { Quote } from "lucide-react";
 import Link from "next/link";
 import { StoryCard } from "@/components/marketing/cards";
+import { EmptyState } from "@/components/marketing/empty-state";
 import { Footer } from "@/components/marketing/footer";
 import { Nav } from "@/components/marketing/nav";
 import { PageHero } from "@/components/marketing/page-hero";
@@ -65,7 +67,12 @@ export default async function StoriesPage({
                 ))}
               </div>
             ) : (
-              <p className="text-muted-foreground">No stories here yet.</p>
+              <EmptyState
+                icon={Quote}
+                title="No stories here yet"
+                body="Stories from young people, volunteers and partners will be published here, with their permission."
+                action={{ href: "/get-involved", label: "Get involved" }}
+              />
             )}
           </div>
         </section>

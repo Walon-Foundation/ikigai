@@ -1,3 +1,5 @@
+import { Images } from "lucide-react";
+import { EmptyState } from "@/components/marketing/empty-state";
 import { Footer } from "@/components/marketing/footer";
 import { Nav } from "@/components/marketing/nav";
 import { PageHero } from "@/components/marketing/page-hero";
@@ -28,9 +30,12 @@ export default async function GalleryPage() {
             {albums.length > 0 ? (
               <GalleryGrid albums={albums} />
             ) : (
-              <p className="text-center text-muted-foreground">
-                Photos coming soon.
-              </p>
+              <EmptyState
+                icon={Images}
+                title="Photos are on their way"
+                body="Pictures from our programmes, campaigns and events will be shared here."
+                action={{ href: "/events", label: "See upcoming events" }}
+              />
             )}
           </div>
         </section>
