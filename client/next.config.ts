@@ -78,6 +78,9 @@ const nextConfig: NextConfig = {
     //
     // Note this is only for CMS content. Avatars stay on a plain <img> by
     // design; see components/avatar.tsx.
+    // Required since Next.js 16. 60 is the marketing site's CMS photography
+    // (docs/05-design-guide.md); 75 is the default everything else uses.
+    qualities: [60, 75],
     remotePatterns: [
       { protocol: "https", hostname: "*.ufs.sh" },
       { protocol: "https", hostname: "utfs.io" },
