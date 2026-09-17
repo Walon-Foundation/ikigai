@@ -1,7 +1,8 @@
-import { Button, Column, OutlinedButton, Row, Text, TextButton, useMaterialColors } from '@expo/ui/jetpack-compose';
+import { Button, Column, Row, Text, TextButton, useMaterialColors } from '@expo/ui/jetpack-compose';
 import { fillMaxWidth, padding } from '@expo/ui/jetpack-compose/modifiers';
 import { router } from 'expo-router';
 import { BrandMark } from '@/components/BrandMark';
+import { GoogleButton } from '@/components/GoogleButton';
 import { Field, Page, Paragraph } from '@/components/Kit';
 import { Screen } from '@/components/Screen';
 import { signIn } from '@/state/session';
@@ -30,9 +31,7 @@ function SignUp() {
       <Paragraph muted>Ikigai pairs young people in Sierra Leone with mentors who help them find their purpose.</Paragraph>
 
       <Column modifiers={[fillMaxWidth(), padding(16, 12, 16, 8)]}>
-        <OutlinedButton onClick={() => enter()} modifiers={[fillMaxWidth()]}>
-          <Text>Sign up with Google</Text>
-        </OutlinedButton>
+        <GoogleButton label="Sign up with Google" onClick={() => enter()} />
       </Column>
 
       <Row horizontalArrangement="center" modifiers={[fillMaxWidth(), padding(0, 8, 0, 8)]}>
