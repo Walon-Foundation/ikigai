@@ -1,7 +1,8 @@
-import { Button, Column, OutlinedButton, Row, Text, TextButton, useMaterialColors } from '@expo/ui/jetpack-compose';
+import { Button, Column, Row, Text, TextButton, useMaterialColors } from '@expo/ui/jetpack-compose';
 import { fillMaxWidth, padding } from '@expo/ui/jetpack-compose/modifiers';
 import { router } from 'expo-router';
 import { BrandMark } from '@/components/BrandMark';
+import { GoogleButton } from '@/components/GoogleButton';
 import { Field, Page } from '@/components/Kit';
 import { Screen } from '@/components/Screen';
 import { signIn } from '@/state/session';
@@ -40,9 +41,7 @@ function SignIn() {
       </Column>
 
       <Column modifiers={[fillMaxWidth(), padding(16, 0, 16, 8)]}>
-        <OutlinedButton onClick={() => enter()} modifiers={[fillMaxWidth()]}>
-          <Text>Continue with Google</Text>
-        </OutlinedButton>
+        <GoogleButton label="Continue with Google" onClick={() => enter()} />
       </Column>
 
       <Row horizontalArrangement="center" modifiers={[fillMaxWidth(), padding(0, 8, 0, 8)]}>
