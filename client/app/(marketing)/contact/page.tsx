@@ -1,14 +1,15 @@
-import type { Metadata } from "next";
 import { Footer } from "@/components/marketing/footer";
 import { Nav } from "@/components/marketing/nav";
 import { PageHero } from "@/components/marketing/page-hero";
+import { pageMetadata } from "@/lib/seo";
 import { ContactForm } from "./contact-form";
 
-export const metadata: Metadata = {
-  title: "Contact · Ikigai",
+export const metadata = pageMetadata({
+  title: "Contact",
   description:
     "Get in touch with Ikigai — questions, partnerships, or bringing Ikigai to your school in Sierra Leone.",
-};
+  path: "/contact",
+});
 
 export default function ContactPage() {
   return (

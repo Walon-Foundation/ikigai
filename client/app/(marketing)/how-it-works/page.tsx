@@ -1,16 +1,17 @@
-import type { Metadata } from "next";
 import { Footer } from "@/components/marketing/footer";
 import { InstallCta } from "@/components/marketing/install-cta";
 import { Nav } from "@/components/marketing/nav";
 import { PageHero } from "@/components/marketing/page-hero";
+import { pageMetadata } from "@/lib/seo";
 import { StepItem } from "./step-item";
 import { STEPS } from "./steps";
 
-export const metadata: Metadata = {
-  title: "How It Works · Ikigai",
+export const metadata = pageMetadata({
+  title: "How It Works",
   description:
     "How Ikigai works — from self-discovery and Ikigai assessment to mentor matching, growth roadmap, and community impact.",
-};
+  path: "/how-it-works",
+});
 
 export default function HowItWorksPage() {
   return (

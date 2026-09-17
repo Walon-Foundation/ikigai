@@ -10,16 +10,17 @@ import {
 import { buttonClass } from "@/components/system/button";
 import { IkigaiDiagram } from "@/components/system/ikigai-diagram";
 import { getCopy, getImpactStats, getTeam } from "@/lib/cms";
+import { pageMetadata } from "@/lib/seo";
 
 // Server-rendered per request so CMS edits appear immediately; see lib/cms.ts.
 export const dynamic = "force-dynamic";
 
-export const metadata = {
+export const metadata = pageMetadata({
   title: "About",
   description:
     "Ikigai is a youth-led organization helping young people in Sierra Leone discover purpose, build skills, and lead change.",
-  alternates: { canonical: "/about" },
-};
+  path: "/about",
+});
 
 // What the name means. "Ikigai" and its meaning are fixed brand facts
 // (docs/PRODUCT.md); the four questions are the method the site describes.

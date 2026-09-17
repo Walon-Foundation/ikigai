@@ -3,14 +3,16 @@ import { Footer } from "@/components/marketing/footer";
 import { Nav } from "@/components/marketing/nav";
 import { PageHero } from "@/components/marketing/page-hero";
 import { getPillars, getProgrammes } from "@/lib/cms";
+import { pageMetadata } from "@/lib/seo";
 
 // Server-rendered per request so CMS edits appear immediately; see lib/cms.ts.
 export const dynamic = "force-dynamic";
 
-export const metadata = {
-  title: "Programmes · Ikigai",
+export const metadata = pageMetadata({
+  title: "Programmes",
   description: "Every programme Ikigai runs for young people in Sierra Leone.",
-};
+  path: "/programmes",
+});
 
 export default async function ProgrammesPage() {
   const [programmes, pillars] = await Promise.all([

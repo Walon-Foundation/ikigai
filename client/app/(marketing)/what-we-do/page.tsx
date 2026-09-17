@@ -3,15 +3,17 @@ import { Footer } from "@/components/marketing/footer";
 import { Nav } from "@/components/marketing/nav";
 import { PageHero } from "@/components/marketing/page-hero";
 import { getPillarsWithProgrammes } from "@/lib/cms";
+import { pageMetadata } from "@/lib/seo";
 
 // Server-rendered per request so CMS edits appear immediately; see lib/cms.ts.
 export const dynamic = "force-dynamic";
 
-export const metadata = {
-  title: "What We Do · Ikigai",
+export const metadata = pageMetadata({
+  title: "What We Do",
   description:
     "Ikigai's programmes across four pillars: Discover, Thrive, Build and Lead.",
-};
+  path: "/what-we-do",
+});
 
 export default async function WhatWeDoPage() {
   const pillars = await getPillarsWithProgrammes();

@@ -6,13 +6,15 @@ import {
   getActiveProgrammesForVolunteer,
   getProgrammes,
 } from "@/lib/cms";
+import { pageMetadata } from "@/lib/seo";
 import { GetInvolvedForms } from "./forms";
 
-export const metadata = {
-  title: "Get Involved · Ikigai",
+export const metadata = pageMetadata({
+  title: "Get Involved",
   description:
     "Join a programme, volunteer, mentor, or partner with Ikigai in Sierra Leone.",
-};
+  path: "/get-involved",
+});
 
 export const dynamic = "force-dynamic";
 

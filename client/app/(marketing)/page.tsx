@@ -1,18 +1,16 @@
-import type { Metadata } from "next";
 import { Footer } from "@/components/marketing/footer";
 import { Nav } from "@/components/marketing/nav";
 import { PageBlocks } from "@/components/marketing/page-blocks";
+import { JsonLd } from "@/components/system/json-ld";
+import { ORGANIZATION, pageMetadata, SITE } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata = pageMetadata({
   title: "Ikigai — Find your reason to wake up every morning",
   description:
-    "A purpose-discovery and mentorship platform for youth in Sierra Leone. Discover purpose, be matched with verified mentors, and grow with your community.",
-  openGraph: {
-    title: "Ikigai — Find your reason to wake up every morning",
-    description:
-      "A purpose-discovery and mentorship platform for youth in Sierra Leone.",
-  },
-};
+    "A youth-led organization helping young people in Sierra Leone discover purpose, build skills, and lead change, with verified mentors and a community built for their future.",
+  path: "/",
+  absoluteTitle: true,
+});
 
 // The public organisation homepage. Every section is a block from
 // lib/blocks/registry.ts, ordered and configured at /admin/page-builder — see
@@ -28,6 +26,22 @@ export const dynamic = "force-dynamic";
 export default function Home() {
   return (
     <div className="flex min-h-screen flex-col bg-background">
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@graph": [
+            ORGANIZATION,
+            {
+              "@type": "WebSite",
+              "@id": `${SITE.url}/#website`,
+              name: SITE.name,
+              url: SITE.url,
+              inLanguage: "en",
+              publisher: { "@id": ORGANIZATION["@id"] },
+            },
+          ],
+        }}
+      />
       <Nav />
       <main>
         <PageBlocks page="home" />

@@ -4,14 +4,16 @@ import { Nav } from "@/components/marketing/nav";
 import { PageHero } from "@/components/marketing/page-hero";
 import { SectionHeading } from "@/components/marketing/section-heading";
 import { getPastPublicEvents, getUpcomingPublicEvents } from "@/lib/cms";
+import { pageMetadata } from "@/lib/seo";
 
 // Server-rendered per request so CMS edits appear immediately; see lib/cms.ts.
 export const dynamic = "force-dynamic";
 
-export const metadata = {
-  title: "Events · Ikigai",
+export const metadata = pageMetadata({
+  title: "Events",
   description: "Upcoming and past Ikigai events across Sierra Leone.",
-};
+  path: "/events",
+});
 
 export default async function EventsPage() {
   const [upcoming, past] = await Promise.all([

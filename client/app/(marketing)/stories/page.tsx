@@ -4,12 +4,14 @@ import { Footer } from "@/components/marketing/footer";
 import { Nav } from "@/components/marketing/nav";
 import { PageHero } from "@/components/marketing/page-hero";
 import { getStories } from "@/lib/cms";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata = {
-  title: "Stories · Ikigai",
+export const metadata = pageMetadata({
+  title: "Stories",
   description:
     "Stories from the young people, volunteers and partners of Ikigai.",
-};
+  path: "/stories",
+});
 
 const CATEGORIES = [
   { key: "", label: "All" },

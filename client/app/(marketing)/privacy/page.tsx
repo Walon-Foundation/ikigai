@@ -1,13 +1,14 @@
-import type { Metadata } from "next";
 import { Footer } from "@/components/marketing/footer";
 import { Nav } from "@/components/marketing/nav";
 import { PageHero } from "@/components/marketing/page-hero";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Privacy Policy · Ikigai",
+export const metadata = pageMetadata({
+  title: "Privacy Policy",
   description:
     "How Ikigai collects, uses, and protects your personal information. Our privacy policy for youth, mentors, and guardians in Sierra Leone.",
-};
+  path: "/privacy",
+});
 
 export default function PrivacyPage() {
   return (

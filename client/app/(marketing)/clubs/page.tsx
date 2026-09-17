@@ -4,6 +4,7 @@ import { Footer } from "@/components/marketing/footer";
 import { Nav } from "@/components/marketing/nav";
 import { PageHero } from "@/components/marketing/page-hero";
 import { getPublicClubs } from "@/lib/clubs";
+import { pageMetadata } from "@/lib/seo";
 
 // Rendered per request rather than prerendered at build.
 //
@@ -13,11 +14,12 @@ import { getPublicClubs } from "@/lib/clubs";
 // every column in it.
 export const dynamic = "force-dynamic";
 
-export const metadata = {
-  title: "Clubs · Ikigai",
+export const metadata = pageMetadata({
+  title: "Clubs",
   description:
     "Clubs started by the young people of Ikigai, in Freetown and the Western Rural Area.",
-};
+  path: "/clubs",
+});
 
 const STAGE_LABELS: Record<string, string> = {
   discover: "Discover",

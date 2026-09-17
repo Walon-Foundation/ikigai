@@ -5,8 +5,10 @@ import { Footer } from "@/components/marketing/footer";
 import { Nav } from "@/components/marketing/nav";
 import { PageHero } from "@/components/marketing/page-hero";
 import { buttonClass } from "@/components/system/button";
+import { JsonLd } from "@/components/system/json-ld";
 import { canJoin, getPublicEvent, isPast as isPastCheck } from "@/lib/cms";
 import { clientEnv } from "@/lib/env.client";
+import { ORGANIZATION, pageMetadata, SITE } from "@/lib/seo";
 
 // Rendered per request so making an event public or adding its report is live
 // immediately.
@@ -19,7 +21,12 @@ export async function generateMetadata({
 }) {
   const { slug } = await params;
   const event = await getPublicEvent(slug);
-  return { title: event ? `${event.title} · Ikigai` : "Event · Ikigai" };
+  if (!event) return { title: "Event not found" };
+  return pageMetadata({
+    title: event.title,
+    description: event.description,
+    path: `/events/${slug}`,
+  });
 }
 
 export default async function EventPage({
@@ -58,6 +65,33 @@ export default async function EventPage({
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "Event",
+          name: event.title,
+          description: event.description ?? undefined,
+          startDate: event.startsAt?.toISOString(),
+          endDate: event.endsAt?.toISOString(),
+          eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
+          eventStatus: "https://schema.org/EventScheduled",
+          url: `${SITE.url}/events/${slug}`,
+          image: event.imageUrl ?? undefined,
+          location: {
+            "@type": "Place",
+            name: event.location ?? "Sierra Leone",
+            address: {
+              "@type": "PostalAddress",
+              addressCountry: "SL",
+            },
+          },
+          organizer: {
+            "@id": ORGANIZATION["@id"],
+            name: SITE.name,
+            url: SITE.url,
+          },
+        }}
+      />
       <Nav />
       <main>
         <PageHero
