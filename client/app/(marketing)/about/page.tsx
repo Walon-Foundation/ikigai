@@ -28,7 +28,7 @@ export default async function AboutPage() {
     : ["Purpose", "Growth", "Community", "Inclusion", "Empowerment"];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex min-h-screen flex-col bg-background">
       <Nav />
       <main>
         {/* Header */}

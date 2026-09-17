@@ -39,7 +39,7 @@ export default async function StoryPage({
   if (!story) notFound();
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex min-h-screen flex-col bg-background">
       <Nav />
       <main>
         <article className="mx-auto max-w-3xl px-6 pb-24 pt-40">

@@ -56,3 +56,23 @@ export function IkigaiDiagram({ className }: { className?: string }) {
     </svg>
   );
 }
+
+/** Just the four circles, faint, as a backdrop behind the hero's phone. */
+export function IkigaiRings({ className }: { className?: string }) {
+  return (
+    // biome-ignore lint/a11y/noSvgWithoutTitle: purely decorative backdrop
+    <svg
+      viewBox="0 0 600 520"
+      aria-hidden
+      data-decorative
+      className={cn("h-auto", className)}
+    >
+      <g fill="none" stroke="#A9C4B2" strokeOpacity="0.3" strokeWidth="1">
+        <circle cx="240" cy="210" r="170" />
+        <circle cx="360" cy="210" r="170" />
+        <circle cx="240" cy="310" r="170" />
+        <circle cx="360" cy="310" r="170" />
+      </g>
+    </svg>
+  );
+}

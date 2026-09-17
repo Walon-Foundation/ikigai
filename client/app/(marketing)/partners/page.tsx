@@ -19,7 +19,7 @@ export default async function PartnersPage() {
   const partners = await getPartners();
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex min-h-screen flex-col bg-background">
       <Nav />
       <main>
         <PageHero eyebrow="Partners" title="We do this together." />

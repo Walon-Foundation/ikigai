@@ -36,7 +36,7 @@ export default async function ClubsPage() {
   const clubs = await getPublicClubs();
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex min-h-screen flex-col bg-background">
       <Nav />
       <main>
         <PageHero
