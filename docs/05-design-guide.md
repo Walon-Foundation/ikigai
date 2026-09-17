@@ -3,7 +3,7 @@
 **Status:** proposed. **Written:** 17 September 2026. **Serves:** [04-web-redesign.md](./04-web-redesign.md).
 
 The visual system for the redesign of `client/app/(marketing)/` and
-`client/app/admin/`. It blends six reference designs (in `/images`) into one
+`client/app/admin/`. It blends six reference designs (kept locally in `/images`, which is gitignored) into one
 system built on Ikigai's own brand, so that the public site, the staff panel
 and the mobile app read as one product. A visual preview of the system is at
 https://claude.ai/artifact/6gfh6Xd5Vt7pgMVXT5NDf4.
