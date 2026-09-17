@@ -1,5 +1,6 @@
 import { Footer } from "@/components/marketing/footer";
 import { Nav } from "@/components/marketing/nav";
+import { PageHero } from "@/components/marketing/page-hero";
 import {
   getActiveEventsForVolunteer,
   getActiveProgrammesForVolunteer,
@@ -34,20 +35,11 @@ export default async function GetInvolvedPage() {
     <div className="min-h-screen bg-background">
       <Nav />
       <main>
-        <section className="bg-primary pb-20 pt-40">
-          <div className="mx-auto max-w-3xl px-6">
-            <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-primary-muted">
-              Get involved
-            </p>
-            <h1 className="font-display text-5xl font-black leading-[1.05] text-primary-foreground sm:text-6xl">
-              There's a place for you.
-            </h1>
-            <p className="mt-6 max-w-2xl text-lg leading-relaxed text-primary-muted">
-              Whether you're a young person looking to grow, someone with time
-              to give, or an organization that wants to help — start here.
-            </p>
-          </div>
-        </section>
+        <PageHero
+          eyebrow="Get involved"
+          title="There's a place for you."
+          lede="Whether you're a young person looking to grow, someone with time to give, or an organization that wants to help — start here."
+        />
 
         <section className="py-24">
           <div className="mx-auto max-w-3xl px-6">

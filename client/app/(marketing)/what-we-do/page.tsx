@@ -1,6 +1,7 @@
 import { ProgrammeCard } from "@/components/marketing/cards";
 import { Footer } from "@/components/marketing/footer";
 import { Nav } from "@/components/marketing/nav";
+import { PageHero } from "@/components/marketing/page-hero";
 import { getPillarsWithProgrammes } from "@/lib/cms";
 
 // Server-rendered per request so CMS edits appear immediately; see lib/cms.ts.
@@ -19,21 +20,11 @@ export default async function WhatWeDoPage() {
     <div className="min-h-screen bg-background">
       <Nav />
       <main>
-        <section className="bg-primary pb-20 pt-40">
-          <div className="mx-auto max-w-3xl px-6">
-            <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-primary-muted">
-              What we do
-            </p>
-            <h1 className="font-display text-5xl font-black leading-[1.05] text-primary-foreground sm:text-6xl">
-              Four pillars, one mission.
-            </h1>
-            <p className="mt-6 max-w-2xl text-lg leading-relaxed text-primary-muted">
-              Every programme we run sits under one of four pillars — together
-              they take a young person from discovering who they are to leading
-              change in their community.
-            </p>
-          </div>
-        </section>
+        <PageHero
+          eyebrow="What we do"
+          title="Four pillars, one mission."
+          lede="Every programme we run sits under one of four pillars — together they take a young person from discovering who they are to leading change in their community."
+        />
 
         {pillars.map((pillar) => (
           <section

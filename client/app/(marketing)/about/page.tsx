@@ -1,6 +1,7 @@
 import { Avatar } from "@/components/avatar";
 import { Footer } from "@/components/marketing/footer";
 import { Nav } from "@/components/marketing/nav";
+import { PageHero } from "@/components/marketing/page-hero";
 import { SectionHeading } from "@/components/marketing/section-heading";
 import { SectionReveal } from "@/components/marketing/section-reveal";
 import { getCopy, getTeam } from "@/lib/cms";
@@ -31,16 +32,10 @@ export default async function AboutPage() {
       <Nav />
       <main>
         {/* Header */}
-        <section className="bg-primary pb-20 pt-40">
-          <div className="mx-auto max-w-3xl px-6">
-            <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-primary-muted">
-              About Ikigai
-            </p>
-            <h1 className="font-display text-5xl font-black leading-[1.05] text-primary-foreground sm:text-6xl">
-              A youth movement built on purpose.
-            </h1>
-          </div>
-        </section>
+        <PageHero
+          eyebrow="About Ikigai"
+          title="A youth movement built on purpose."
+        />
 
         {/* Mission & Vision */}
         <section className="py-24">

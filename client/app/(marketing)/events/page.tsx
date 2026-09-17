@@ -1,6 +1,7 @@
 import { EventCard } from "@/components/marketing/cards";
 import { Footer } from "@/components/marketing/footer";
 import { Nav } from "@/components/marketing/nav";
+import { PageHero } from "@/components/marketing/page-hero";
 import { SectionHeading } from "@/components/marketing/section-heading";
 import { getPastPublicEvents, getUpcomingPublicEvents } from "@/lib/cms";
 
@@ -22,16 +23,7 @@ export default async function EventsPage() {
     <div className="min-h-screen bg-background">
       <Nav />
       <main>
-        <section className="bg-primary pb-20 pt-40">
-          <div className="mx-auto max-w-3xl px-6">
-            <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-primary-muted">
-              Events
-            </p>
-            <h1 className="font-display text-5xl font-black leading-[1.05] text-primary-foreground sm:text-6xl">
-              Come and be part of it.
-            </h1>
-          </div>
-        </section>
+        <PageHero eyebrow="Events" title="Come and be part of it." />
 
         <section className="py-24">
           <div className="mx-auto max-w-7xl px-6">

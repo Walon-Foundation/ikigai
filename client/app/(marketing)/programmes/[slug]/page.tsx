@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Footer } from "@/components/marketing/footer";
 import { Nav } from "@/components/marketing/nav";
+import { PageHero } from "@/components/marketing/page-hero";
 import { canJoin, canVolunteer, getProgramme, isPast } from "@/lib/cms";
 
 // Rendered per request so an edit to a programme's copy or photos is live
@@ -62,26 +63,13 @@ export default async function ProgrammePage({
       <Nav />
       <main>
         {/* Header */}
-        <section className="bg-primary pb-16 pt-40">
-          <div className="mx-auto max-w-4xl px-6">
-            {programme.pillar && (
-              <Link
-                href="/what-we-do"
-                className="mb-4 inline-block text-xs font-semibold uppercase tracking-widest text-primary-muted hover:text-primary-foreground"
-              >
-                {programme.pillar.icon} {programme.pillar.name}
-              </Link>
-            )}
-            <h1 className="font-display text-5xl font-black leading-[1.05] text-primary-foreground sm:text-6xl">
-              {programme.name}
-            </h1>
-            {programme.summary && (
-              <p className="mt-6 max-w-2xl text-lg leading-relaxed text-primary-muted">
-                {programme.summary}
-              </p>
-            )}
-          </div>
-        </section>
+        <PageHero
+          back={{ href: "/programmes", label: "All programmes" }}
+          eyebrow={programme.pillar?.name}
+          eyebrowHref={programme.pillar ? "/what-we-do" : undefined}
+          title={programme.name}
+          lede={programme.summary ?? undefined}
+        />
 
         {/* Hero image */}
         {programme.heroImageUrl && (

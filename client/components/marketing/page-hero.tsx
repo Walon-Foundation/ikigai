@@ -1,3 +1,5 @@
+import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { Overline } from "./section-heading";
@@ -9,12 +11,18 @@ import { Overline } from "./section-heading";
  */
 export function PageHero({
   eyebrow,
+  eyebrowHref,
+  back,
   title,
   lede,
   children,
   narrow,
 }: {
-  eyebrow?: string;
+  eyebrow?: ReactNode;
+  /** Make the overline a link, e.g. to a programme's pillar. */
+  eyebrowHref?: string;
+  /** A "← All events" link above the title, for detail pages. */
+  back?: { href: string; label: string };
   title: ReactNode;
   lede?: ReactNode;
   /** Extra content under the lede, such as meta or buttons. */
@@ -25,9 +33,24 @@ export function PageHero({
   return (
     <section className="border-b border-border pb-14 pt-32 sm:pb-16 sm:pt-36">
       <div className={cn("mx-auto px-6", narrow ? "max-w-3xl" : "max-w-7xl")}>
+        {back && (
+          <Link
+            href={back.href}
+            className="group mb-5 inline-flex items-center gap-1.5 text-sm font-semibold text-primary"
+          >
+            <ArrowLeft className="size-4 transition-transform group-hover:-translate-x-1 motion-reduce:transition-none" />
+            {back.label}
+          </Link>
+        )}
         {eyebrow && (
           <Overline rule className="web-rise">
-            {eyebrow}
+            {eyebrowHref ? (
+              <Link href={eyebrowHref} className="hover:underline">
+                {eyebrow}
+              </Link>
+            ) : (
+              eyebrow
+            )}
           </Overline>
         )}
         <h1 className="web-rise font-display text-[clamp(2.5rem,5vw,4rem)] font-semibold leading-[1.04] tracking-[-0.015em] text-(--w-green-deep) [max-width:22ch]">

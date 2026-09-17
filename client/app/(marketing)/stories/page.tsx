@@ -2,6 +2,7 @@ import Link from "next/link";
 import { StoryCard } from "@/components/marketing/cards";
 import { Footer } from "@/components/marketing/footer";
 import { Nav } from "@/components/marketing/nav";
+import { PageHero } from "@/components/marketing/page-hero";
 import { getStories } from "@/lib/cms";
 
 export const metadata = {
@@ -31,16 +32,7 @@ export default async function StoriesPage({
     <div className="min-h-screen bg-background">
       <Nav />
       <main>
-        <section className="bg-primary pb-20 pt-40">
-          <div className="mx-auto max-w-3xl px-6">
-            <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-primary-muted">
-              Stories
-            </p>
-            <h1 className="font-display text-5xl font-black leading-[1.05] text-primary-foreground sm:text-6xl">
-              Voices from Ikigai.
-            </h1>
-          </div>
-        </section>
+        <PageHero eyebrow="Stories" title="Voices from Ikigai." />
 
         <section className="py-24">
           <div className="mx-auto max-w-7xl px-6">

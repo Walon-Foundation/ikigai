@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Avatar } from "@/components/avatar";
 import { Footer } from "@/components/marketing/footer";
 import { Nav } from "@/components/marketing/nav";
+import { PageHero } from "@/components/marketing/page-hero";
 import { SectionHeading } from "@/components/marketing/section-heading";
 import { getTeam } from "@/lib/cms";
 
@@ -24,20 +25,11 @@ export default async function TeamPage() {
     <div className="min-h-screen bg-background">
       <Nav />
       <main>
-        <section className="bg-primary pb-20 pt-40">
-          <div className="mx-auto max-w-3xl px-6">
-            <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-primary-muted">
-              Our People
-            </p>
-            <h1 className="font-display text-5xl font-black leading-[1.05] text-primary-foreground sm:text-6xl">
-              The team.
-            </h1>
-            <p className="mt-6 max-w-2xl text-lg leading-relaxed text-primary-muted">
-              The mentors, organizers, and youth leaders who make Ikigai run —
-              in Freetown, the Western Rural Area, and beyond.
-            </p>
-          </div>
-        </section>
+        <PageHero
+          eyebrow="Our people"
+          title="The team."
+          lede="The mentors, organizers, and youth leaders who make Ikigai run — in Freetown, the Western Rural Area, and beyond."
+        />
 
         <section className="py-24">
           <div className="mx-auto max-w-6xl px-6">
